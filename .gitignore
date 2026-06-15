@@ -1,0 +1,5 @@
+.aml_runs/
+.env
+simulators/StockSim/.env
+__pycache__/
+.DS_Store
