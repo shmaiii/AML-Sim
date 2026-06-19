@@ -6,10 +6,24 @@ orders. Later this agent can react to synthetic news and herding signals.
 """
 
 import random
+from dataclasses import dataclass
 from typing import Any, Dict, Optional
 
+from aml_sim.agents.state import BaseStrategyState
 from agents.benchmark_traders.trader import TraderAgent
 from utils.orders import OrderType, Side
+
+
+@dataclass
+class RetailStrategyState(BaseStrategyState):
+    """Role-specific strategy state for an AML retail trader."""
+
+    strategy_type: str = "retail_noise"
+    trade_probability: float = 0.3
+    buy_bias: float = 0.5
+    max_order_size: int = 25
+    herding_tendency: float = 0.0
+    panic_level: float = 0.0
 
 
 class AMLRetailTrader(TraderAgent):
@@ -48,15 +62,16 @@ class AMLRetailTrader(TraderAgent):
             **trader_kwargs,
         )
 
-        self.trade_probability = max(0.0, min(1.0, trade_probability))
-        self.max_order_size = max(1, max_order_size)
-        self.buy_bias = max(0.0, min(1.0, buy_bias))
+        self.strategy_state = RetailStrategyState(
+            trade_probability=max(0.0, min(1.0, trade_probability)),
+            max_order_size=max(1, max_order_size),
+            buy_bias=max(0.0, min(1.0, buy_bias)),
+        )
         self.random = random.Random(random_seed)
 
         self.logger.info(
             f"AMLRetailTrader {self.agent_id} initialized: "
-            f"trade_probability={self.trade_probability}, "
-            f"max_order_size={self.max_order_size}, buy_bias={self.buy_bias}"
+            f"strategy_state={self.strategy_state}"
         )
 
     async def handle_time_tick(self, payload: Dict[str, Any]) -> None:
@@ -72,11 +87,12 @@ class AMLRetailTrader(TraderAgent):
             self.next_action_time = current_time + self.action_interval
 
     async def _maybe_trade(self, instrument: str) -> None:
-        if self.random.random() > self.trade_probability:
+        strategy = self.strategy_state
+        if self.random.random() > strategy.trade_probability:
             return
 
-        quantity = self.random.randint(1, self.max_order_size)
-        side = Side.BUY.value if self.random.random() < self.buy_bias else Side.SELL.value
+        quantity = self.random.randint(1, strategy.max_order_size)
+        side = Side.BUY.value if self.random.random() < strategy.buy_bias else Side.SELL.value
 
         if side == Side.SELL.value:
             held = self.long_qty[instrument]
@@ -97,4 +113,3 @@ class AMLRetailTrader(TraderAgent):
                 f"AMLRetailTrader {self.agent_id} placed {side} market order "
                 f"for {quantity} {instrument}"
             )
-

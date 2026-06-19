@@ -5,10 +5,24 @@ Posts both bid and ask limit orders around a configurable fair price so an
 orderbook scenario has synthetic liquidity without historical replay data.
 """
 
+from dataclasses import dataclass
 from typing import Any, Dict, Optional
 
+from aml_sim.agents.state import BaseStrategyState
 from agents.benchmark_traders.trader import TraderAgent
 from utils.orders import OrderType, Side
+
+
+@dataclass
+class MarketMakerStrategyState(BaseStrategyState):
+    """Role-specific strategy state for an AML market maker."""
+
+    strategy_type: str = "market_making"
+    fair_price: float = 100.0
+    spread: float = 0.2
+    quote_size: int = 100
+    target_inventory: int = 0
+    inventory_skew: float = 0.001
 
 
 class AMLMarketMakerTrader(TraderAgent):
@@ -52,18 +66,19 @@ class AMLMarketMakerTrader(TraderAgent):
             **trader_kwargs,
         )
 
-        self.fair_price = fair_price
-        self.spread = spread
-        self.quote_size = quote_size
-        self.inventory_skew = inventory_skew
-        self.target_inventory = target_inventory
+        self.strategy_state = MarketMakerStrategyState(
+            fair_price=fair_price,
+            spread=spread,
+            quote_size=max(1, quote_size),
+            target_inventory=target_inventory,
+            inventory_skew=inventory_skew,
+        )
         self.allow_short_selling = allow_short_selling
         self.quote_order_ids: set[str] = set()
 
         self.logger.info(
             f"AMLMarketMakerTrader {self.agent_id} initialized: "
-            f"fair_price={self.fair_price}, spread={self.spread}, "
-            f"quote_size={self.quote_size}, target_inventory={self.target_inventory}"
+            f"strategy_state={self.strategy_state}"
         )
 
     async def handle_time_tick(self, payload: Dict[str, Any]) -> None:
@@ -92,12 +107,13 @@ class AMLMarketMakerTrader(TraderAgent):
             self.quote_order_ids.discard(order_id)
 
     def _quote_prices(self, instrument: str) -> tuple[float, float]:
+        strategy = self.strategy_state
         inventory = self.long_qty[instrument] - self.short_qty[instrument]
-        inventory_gap = inventory - self.target_inventory
-        skew = inventory_gap * self.inventory_skew
+        inventory_gap = inventory - strategy.target_inventory
+        skew = inventory_gap * strategy.inventory_skew
 
-        midpoint = max(0.01, self.fair_price - skew)
-        half_spread = max(0.01, self.spread / 2)
+        midpoint = max(0.01, strategy.fair_price - skew)
+        half_spread = max(0.01, strategy.spread / 2)
         bid = max(0.01, midpoint - half_spread)
         ask = max(bid + 0.01, midpoint + half_spread)
         return round(bid, 2), round(ask, 2)
@@ -106,7 +122,7 @@ class AMLMarketMakerTrader(TraderAgent):
         order_id = await self.place_order(
             instrument=instrument,
             side=Side.BUY.value,
-            quantity=self.quote_size,
+            quantity=self.strategy_state.quote_size,
             order_type=OrderType.LIMIT.value,
             price=price,
             explanation="AML market maker bid quote",
@@ -116,7 +132,8 @@ class AMLMarketMakerTrader(TraderAgent):
 
     async def _place_ask(self, instrument: str, price: float) -> None:
         held = self.long_qty[instrument]
-        quantity = min(self.quote_size, held) if not self.allow_short_selling else self.quote_size
+        quote_size = self.strategy_state.quote_size
+        quantity = min(quote_size, held) if not self.allow_short_selling else quote_size
         if quantity <= 0:
             self.logger.debug(f"Skipping ask for {instrument}: no inventory to sell")
             return
@@ -139,4 +156,3 @@ class AMLMarketMakerTrader(TraderAgent):
             f"AMLMarketMakerTrader {self.agent_id} inventory after trade: "
             f"{dict(self.long_qty)}"
         )
-
