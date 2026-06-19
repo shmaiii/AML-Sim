@@ -6,8 +6,11 @@ child orders over time. Later this can become the LLM-directed strategy agent.
 """
 
 from dataclasses import dataclass, field
+from datetime import timedelta
 from typing import Any, Dict, Optional
 
+from aml_sim.agents.observation import build_observation_context
+from aml_sim.agents.slow_strategist import RuleBasedSlowStrategist, SlowStrategist
 from aml_sim.agents.state import BaseStrategyState
 from aml_sim.agents.strategy_validator import validate_strategy_state
 from agents.benchmark_traders.trader import TraderAgent
@@ -42,6 +45,8 @@ class AMLInstitutionalTrader(TraderAgent):
         child_order_size: int = 100,
         order_type: str = OrderType.MARKET.value,
         limit_price: Optional[float] = None,
+        slow_loop_interval_seconds: Optional[int] = None,
+        slow_strategist: Optional[SlowStrategist] = None,
         agent_id: Optional[str] = None,
         rabbitmq_host: str = "localhost",
         **kwargs,
@@ -71,6 +76,11 @@ class AMLInstitutionalTrader(TraderAgent):
                 limit_price=limit_price,
             )
         )
+        self.slow_strategist = slow_strategist or RuleBasedSlowStrategist()
+        self.slow_loop_interval = timedelta(
+            seconds=slow_loop_interval_seconds or self.action_interval.total_seconds()
+        )
+        self.next_slow_loop_time = None
 
         self.logger.info(
             f"AMLInstitutionalTrader {self.agent_id} initialized: "
@@ -84,10 +94,25 @@ class AMLInstitutionalTrader(TraderAgent):
         if self.next_action_time is None:
             self.next_action_time = current_time
 
+        if self.next_slow_loop_time is None:
+            self.next_slow_loop_time = current_time
+
+        if current_time >= self.next_slow_loop_time:
+            self._run_slow_loop()
+            self.next_slow_loop_time = current_time + self.slow_loop_interval
+
         if current_time >= self.next_action_time:
             for instrument in self.instrument_exchange_map.keys():
                 await self._execute_toward_target(instrument)
             self.next_action_time = current_time + self.action_interval
+
+    def _run_slow_loop(self) -> None:
+        observation = build_observation_context(self)
+        proposed_strategy = self.slow_strategist.propose(
+            observation,
+            self.strategy_state,
+        )
+        self.strategy_state = validate_strategy_state(proposed_strategy)
 
     async def _execute_toward_target(self, instrument: str) -> None:
         strategy = self.strategy_state
