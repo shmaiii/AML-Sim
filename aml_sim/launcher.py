@@ -137,51 +137,17 @@ def import_stocksim_components(config: dict[str, Any]) -> dict[str, Any]:
 
 
 def import_agent_class(agent_type: str) -> type:
-    """Resolve a scenario agent type to a concrete StockSim-compatible class."""
-    if agent_type == "LLMTradingAgent":
-        from agents.llm_agent import LLMTradingAgent
-
-        return LLMTradingAgent
-    if agent_type == "Buy_And_Hold_Trader":
-        from agents.benchmark_traders.buy_and_hold_trader import BuyAndHoldTrader
-
-        return BuyAndHoldTrader
-    if agent_type == "SMA_Trader":
-        from agents.benchmark_traders.sma_trader import SMATrader
-
-        return SMATrader
-    if agent_type == "MACD_Trader":
-        from agents.benchmark_traders.macd_trader import MACDTrader
-
-        return MACDTrader
-    if agent_type == "Random_Trader":
-        from agents.benchmark_traders.random_trader import RandomTrader
-
-        return RandomTrader
-    if agent_type == "Bollinger_Bands_Trader":
-        from agents.benchmark_traders.bollinger_bands_trader import BollingerBandsTrader
-
-        return BollingerBandsTrader
-    if agent_type == "SLMA_Trader":
-        from agents.benchmark_traders.slma_trader import SLMATrader
-
-        return SLMATrader
-    if agent_type == "HistoricalOrderTrader":
-        from agents.benchmark_traders.historical_order_trader import HistoricalOrderTrader
-
-        return HistoricalOrderTrader
-    # For now these still point at StockSim classes. Moving these to AML-Sim
-    # later should only require changing these branches.
+    """Resolve an AML scenario agent type to an AML-Sim class."""
     if agent_type == "AML_Market_Maker":
-        from agents.aml.market_maker_trader import AMLMarketMakerTrader
+        from aml_sim.agents.market_maker_trader import AMLMarketMakerTrader
 
         return AMLMarketMakerTrader
     if agent_type == "AML_Retail_Trader":
-        from agents.aml.retail_trader import AMLRetailTrader
+        from aml_sim.agents.retail_trader import AMLRetailTrader
 
         return AMLRetailTrader
     if agent_type == "AML_Institutional_Trader":
-        from agents.aml.institutional_trader import AMLInstitutionalTrader
+        from aml_sim.agents.institutional_trader import AMLInstitutionalTrader
 
         return AMLInstitutionalTrader
 
@@ -238,79 +204,9 @@ def simulation_clock_runner(
 
 def build_agent_param_customizers(
     interval_to_seconds: Any,
-    simulation_start_time: str,
-    simulation_end_time: str,
-    warmup_candles_map: dict[str, Any],
-    indicator_kwargs_map: dict[str, Any],
-    data_source_map: dict[str, dict[str, Any]],
 ) -> dict[str, Any]:
-    """Create StockSim-compatible parameter transforms for each agent type."""
+    """Create parameter transforms for AML-owned agent types."""
     return {
-        "Random_Trader": lambda params: {
-            **params,
-            "action_interval_seconds": interval_to_seconds(params["action_interval"])
-            if "action_interval" in params
-            else params.get("action_interval_seconds", 86400),
-        },
-        "LLMTradingAgent": lambda params: {
-            **{key: value for key, value in params.items() if key != "action_interval"},
-            "start_time": simulation_start_time,
-            "end_time": simulation_end_time,
-            "extended_intervals": params.get("extended_intervals"),
-            "extended_warmup_candles": warmup_candles_map,
-            "extended_indicator_kwargs": indicator_kwargs_map,
-            "data_source_config": data_source_map,
-            "action_interval_seconds": interval_to_seconds(params["action_interval"])
-            if "action_interval" in params
-            else params.get("action_interval_seconds", 86400),
-        },
-        "HistoricalOrderTrader": lambda params: {
-            **params,
-            "orders": load_json_file(params.get("orders", "")) if "orders" in params else None,
-        },
-        "Buy_And_Hold_Trader": lambda params: {
-            **params,
-            "quantity_size": params.get("quantity_size", 100),
-            "action_interval_seconds": interval_to_seconds(params["action_interval"])
-            if "action_interval" in params
-            else params.get("action_interval_seconds", 86400),
-        },
-        "SMA_Trader": lambda params: {
-            **params,
-            "window": params.get("window", 20),
-            "position_size_pct": params.get("position_size_pct", 0.05),
-            "action_interval_seconds": interval_to_seconds(params["action_interval"])
-            if "action_interval" in params
-            else params.get("action_interval_seconds", 86400),
-        },
-        "SLMA_Trader": lambda params: {
-            **params,
-            "short_window": params.get("short_window", 20),
-            "long_window": params.get("long_window", 50),
-            "position_size_pct": params.get("position_size_pct", 0.05),
-            "action_interval_seconds": interval_to_seconds(params["action_interval"])
-            if "action_interval" in params
-            else params.get("action_interval_seconds", 86400),
-        },
-        "MACD_Trader": lambda params: {
-            **params,
-            "fast_period": params.get("fast_period", 12),
-            "slow_period": params.get("slow_period", 26),
-            "signal_period": params.get("signal_period", 9),
-            "position_size_pct": params.get("position_size_pct", 0.05),
-            "action_interval_seconds": interval_to_seconds(params["action_interval"])
-            if "action_interval" in params
-            else params.get("action_interval_seconds", 86400),
-        },
-        "Bollinger_Bands_Trader": lambda params: {
-            **params,
-            "sma_period": params.get("sma_period", 20),
-            "std_dev_multiplier": params.get("std_dev_multiplier", 2.0),
-            "position_size_pct": params.get("position_size_pct", 0.05),
-            "action_interval_seconds": interval_to_seconds(params["action_interval"])
-            if "action_interval" in params
-            else params.get("action_interval_seconds", 86400),
-        },
         "AML_Market_Maker": lambda params: {
             **params,
             "action_interval_seconds": interval_to_seconds(params["action_interval"])
@@ -391,14 +287,6 @@ def run_stocksim_components(
         instrument: inst_cfg.get("warmup_candles", 250)
         for instrument, inst_cfg in exchanges_config.items()
     }
-    data_source_map = {
-        instrument: {
-            "data_source": inst_cfg.get("data_source", "polygon"),
-            "symbol_type": inst_cfg.get("symbol_type", "stock"),
-        }
-        for instrument, inst_cfg in exchanges_config.items()
-    }
-
     print(f"Exchange mode: {exchange_mode}")
     print(f"Instruments: {', '.join(instruments)}")
     print(f"Configured agent groups: {len(agents_config)}")
@@ -420,12 +308,7 @@ def run_stocksim_components(
 
     instrument_exchange_map = build_instrument_exchange_map(exchange_mode, instruments)
     agent_custom_params = build_agent_param_customizers(
-        interval_to_seconds=interval_to_seconds,
-        simulation_start_time=simulation_start_time,
-        simulation_end_time=simulation_end_time,
-        warmup_candles_map=warmup_candles_map,
-        indicator_kwargs_map=indicator_kwargs_map,
-        data_source_map=data_source_map,
+        interval_to_seconds=interval_to_seconds
     )
     agent_processes = start_trader_processes(
         agents_config=agents_config,

@@ -25,13 +25,16 @@ participants for studying market behavior, robustness, and decision making.
 ```text
 AML-Sim/
 ├── aml_runner.py                       # AML scenario runner
+├── aml_sim/
+│   ├── launcher.py                     # AML-owned StockSim component launcher
+│   ├── reporting.py                    # AML-owned report orchestration
+│   └── agents/                         # AML-specific trader agents
 ├── scenarios/
 │   └── aml_orderbook_replay.yaml       # Current AML smoke scenario
 └── simulators/
     └── StockSim/                       # StockSim submodule
         ├── main_launcher.py            # StockSim entrypoint
-        ├── docker-compose.yml          # RabbitMQ + StockSim services
-        └── agents/aml/                 # AML-specific trader agents
+        └── docker-compose.yml          # RabbitMQ + StockSim services
 ```
 
 ## Architecture
@@ -44,10 +47,11 @@ AML-Sim currently has a thin orchestration layer around StockSim:
 3. AML-Sim also archives the original scenario as
    `.aml_runs/<run-id>/scenario.yaml` and writes run metadata to
    `.aml_runs/<run-id>/metadata.json`.
-4. AML-Sim imports StockSim exchange, trader, and simulation-clock classes and
-   starts those component processes itself. `simulators/StockSim/main_launcher.py`
-   remains StockSim's standalone CLI entrypoint.
-5. StockSim starts the exchange agents, trader agents, and simulation clock.
+4. AML-Sim imports StockSim exchange/base-trader/simulation-clock classes and
+   starts those component processes itself. The AML agent behavior classes live
+   under `aml_sim/agents/`. `simulators/StockSim/main_launcher.py` remains
+   StockSim's standalone CLI entrypoint.
+5. AML-Sim starts the exchange agents, trader agents, and simulation clock.
 6. Components communicate through RabbitMQ.
 7. Logs for AML-launched runs are written under `.aml_runs/<run-id>/logs`.
 
@@ -71,8 +75,9 @@ participants:
 - `aml_orderbook_replay.yaml`: runs a short synthetic AAPL order book scenario
   with one market maker, five retail traders, and one institutional trader.
 
-These AML agents live in `simulators/StockSim/agents/aml/` and are registered in
-StockSim's `AGENT_TYPE_MAPPING` inside `simulators/StockSim/main_launcher.py`.
+These AML agents live in `aml_sim/agents/`. They still inherit StockSim's
+`TraderAgent` and use StockSim's order/message primitives, but AML-Sim owns
+their behavior and maps YAML types such as `AML_Market_Maker` to these classes.
 
 ## Setup
 
