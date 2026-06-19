@@ -9,6 +9,7 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, Optional
 
 from aml_sim.agents.state import BaseStrategyState
+from aml_sim.agents.strategy_validator import validate_strategy_state
 from agents.benchmark_traders.trader import TraderAgent
 from utils.orders import OrderType, Side
 
@@ -62,11 +63,13 @@ class AMLInstitutionalTrader(TraderAgent):
             **trader_kwargs,
         )
 
-        self.strategy_state = InstitutionalStrategyState(
-            target_positions=dict(target_positions or {}),
-            child_order_size=max(1, child_order_size),
-            order_type=order_type.upper(),
-            limit_price=limit_price,
+        self.strategy_state = validate_strategy_state(
+            InstitutionalStrategyState(
+                target_positions=dict(target_positions or {}),
+                child_order_size=child_order_size,
+                order_type=order_type.upper(),
+                limit_price=limit_price,
+            )
         )
 
         self.logger.info(

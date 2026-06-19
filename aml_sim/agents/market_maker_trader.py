@@ -9,6 +9,7 @@ from dataclasses import dataclass
 from typing import Any, Dict, Optional
 
 from aml_sim.agents.state import BaseStrategyState
+from aml_sim.agents.strategy_validator import validate_strategy_state
 from agents.benchmark_traders.trader import TraderAgent
 from utils.orders import OrderType, Side
 
@@ -66,12 +67,14 @@ class AMLMarketMakerTrader(TraderAgent):
             **trader_kwargs,
         )
 
-        self.strategy_state = MarketMakerStrategyState(
-            fair_price=fair_price,
-            spread=spread,
-            quote_size=max(1, quote_size),
-            target_inventory=target_inventory,
-            inventory_skew=inventory_skew,
+        self.strategy_state = validate_strategy_state(
+            MarketMakerStrategyState(
+                fair_price=fair_price,
+                spread=spread,
+                quote_size=quote_size,
+                target_inventory=target_inventory,
+                inventory_skew=inventory_skew,
+            )
         )
         self.allow_short_selling = allow_short_selling
         self.quote_order_ids: set[str] = set()

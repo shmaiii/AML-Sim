@@ -10,6 +10,7 @@ from dataclasses import dataclass
 from typing import Any, Dict, Optional
 
 from aml_sim.agents.state import BaseStrategyState
+from aml_sim.agents.strategy_validator import validate_strategy_state
 from agents.benchmark_traders.trader import TraderAgent
 from utils.orders import OrderType, Side
 
@@ -62,10 +63,12 @@ class AMLRetailTrader(TraderAgent):
             **trader_kwargs,
         )
 
-        self.strategy_state = RetailStrategyState(
-            trade_probability=max(0.0, min(1.0, trade_probability)),
-            max_order_size=max(1, max_order_size),
-            buy_bias=max(0.0, min(1.0, buy_bias)),
+        self.strategy_state = validate_strategy_state(
+            RetailStrategyState(
+                trade_probability=trade_probability,
+                max_order_size=max(1, max_order_size),
+                buy_bias=buy_bias,
+            )
         )
         self.random = random.Random(random_seed)
 
