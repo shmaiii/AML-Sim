@@ -9,7 +9,12 @@ from typing import Any, Mapping, Protocol
 class SlowStrategist(Protocol):
     """Interface for rule-based and future LLM slow strategists."""
 
-    def propose(self, observation: Mapping[str, Any], current_strategy: Any) -> Any:
+    def propose(
+        self,
+        observation: Mapping[str, Any],
+        current_strategy: Any,
+        **kwargs: Any,
+    ) -> Any:
         """Return a proposed strategy state for validation and application."""
 
 
@@ -26,7 +31,12 @@ class RuleBasedSlowStrategist:
     spread_multiplier: float = 1.25
     max_spread: float = 5.0
 
-    def propose(self, observation: Mapping[str, Any], current_strategy: Any) -> Any:
+    def propose(
+        self,
+        observation: Mapping[str, Any],
+        current_strategy: Any,
+        **_: Any,
+    ) -> Any:
         if not hasattr(current_strategy, "spread"):
             return current_strategy
 

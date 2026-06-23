@@ -6,14 +6,13 @@ child orders over time. Later this can become the LLM-directed strategy agent.
 """
 
 from dataclasses import dataclass, field
-from datetime import timedelta
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Mapping, Optional
 
-from aml_sim.agents.observation import build_observation_context
-from aml_sim.agents.slow_strategist import RuleBasedSlowStrategist, SlowStrategist
+from aml_sim.agents.base import BaseAMLAgent
+from aml_sim.agents.context.memory import MemoryBackend
+from aml_sim.agents.context.observation import ObservationProcessor
+from aml_sim.agents.strategy.slow import SlowStrategist
 from aml_sim.agents.state import BaseStrategyState
-from aml_sim.agents.strategy_validator import validate_strategy_state
-from agents.benchmark_traders.trader import TraderAgent
 from utils.orders import OrderType, Side
 
 
@@ -30,7 +29,7 @@ class InstitutionalStrategyState(BaseStrategyState):
     urgency: float = 0.5
 
 
-class AMLInstitutionalTrader(TraderAgent):
+class AMLInstitutionalTrader(BaseAMLAgent):
     """
     Basic institutional-style participant for synthetic AML markets.
 
@@ -45,6 +44,9 @@ class AMLInstitutionalTrader(TraderAgent):
         child_order_size: int = 100,
         order_type: str = OrderType.MARKET.value,
         limit_price: Optional[float] = None,
+        profile: Optional[Mapping[str, Any]] = None,
+        memory: Optional[MemoryBackend] = None,
+        observation_processor: Optional[ObservationProcessor] = None,
         slow_loop_interval_seconds: Optional[int] = None,
         slow_strategist: Optional[SlowStrategist] = None,
         agent_id: Optional[str] = None,
@@ -63,56 +65,30 @@ class AMLInstitutionalTrader(TraderAgent):
 
         super().__init__(
             instrument_exchange_map=instrument_exchange_map,
-            agent_id=agent_id,
-            rabbitmq_host=rabbitmq_host,
-            **trader_kwargs,
-        )
-
-        self.strategy_state = validate_strategy_state(
-            InstitutionalStrategyState(
+            strategy_state=InstitutionalStrategyState(
                 target_positions=dict(target_positions or {}),
                 child_order_size=child_order_size,
                 order_type=order_type.upper(),
                 limit_price=limit_price,
-            )
+            ),
+            profile=profile,
+            memory=memory,
+            observation_processor=observation_processor,
+            slow_strategist=slow_strategist,
+            slow_loop_interval_seconds=slow_loop_interval_seconds,
+            agent_id=agent_id,
+            rabbitmq_host=rabbitmq_host,
+            **trader_kwargs,
         )
-        self.slow_strategist = slow_strategist or RuleBasedSlowStrategist()
-        self.slow_loop_interval = timedelta(
-            seconds=slow_loop_interval_seconds or self.action_interval.total_seconds()
-        )
-        self.next_slow_loop_time = None
 
         self.logger.info(
             f"AMLInstitutionalTrader {self.agent_id} initialized: "
             f"strategy_state={self.strategy_state}"
         )
 
-    async def handle_time_tick(self, payload: Dict[str, Any]) -> None:
-        await super().handle_time_tick(payload)
-
-        current_time = self.current_time
-        if self.next_action_time is None:
-            self.next_action_time = current_time
-
-        if self.next_slow_loop_time is None:
-            self.next_slow_loop_time = current_time
-
-        if current_time >= self.next_slow_loop_time:
-            self._run_slow_loop()
-            self.next_slow_loop_time = current_time + self.slow_loop_interval
-
-        if current_time >= self.next_action_time:
-            for instrument in self.instrument_exchange_map.keys():
-                await self._execute_toward_target(instrument)
-            self.next_action_time = current_time + self.action_interval
-
-    def _run_slow_loop(self) -> None:
-        observation = build_observation_context(self)
-        proposed_strategy = self.slow_strategist.propose(
-            observation,
-            self.strategy_state,
-        )
-        self.strategy_state = validate_strategy_state(proposed_strategy)
+    async def run_fast_loop(self, observation: Mapping[str, Any]) -> None:
+        for instrument in self.instrument_exchange_map.keys():
+            await self._execute_toward_target(instrument)
 
     async def _execute_toward_target(self, instrument: str) -> None:
         strategy = self.strategy_state
