@@ -7,6 +7,8 @@ import json
 from dataclasses import asdict, fields, is_dataclass, replace
 from typing import Any, Mapping, Optional, Protocol
 
+from aml_sim.agents.models.profile import profile_to_dict
+
 
 class SlowStrategist(Protocol):
     """Interface for AML slow-loop strategists."""
@@ -111,7 +113,7 @@ class LLMStrategist:
                 "confidence": "optional float",
                 "reason": "optional short explanation",
             },
-            "profile": dict(profile or {}),
+            "profile": profile_to_dict(profile),
             "memory": dict(memory or observation.get("memory", {}) or {}),
             "observation": dict(observation),
             "current_strategy": self._strategy_to_dict(current_strategy),

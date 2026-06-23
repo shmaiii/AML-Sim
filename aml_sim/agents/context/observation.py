@@ -6,6 +6,8 @@ from dataclasses import asdict, is_dataclass
 from datetime import datetime
 from typing import Any, Mapping, Optional
 
+from aml_sim.agents.models.profile import profile_to_dict
+
 
 DEFAULT_RECENT_FILL_LIMIT = 10
 
@@ -73,11 +75,11 @@ class ObservationProcessor:
 
 def _build_agent_context(
     agent: Any,
-    profile: Optional[Mapping[str, Any]],
+    profile: Optional[Any],
 ) -> dict[str, Any]:
     return {
         "agent_id": getattr(agent, "agent_id", None),
-        "profile": _serialize_mapping(profile or {}),
+        "profile": _serialize_mapping(profile_to_dict(profile)),
     }
 
 

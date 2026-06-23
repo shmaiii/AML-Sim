@@ -1,13 +1,36 @@
 """AML-specific trading agents owned by AML-Sim."""
 
 __all__ = [
+    "AgentProfile",
     "AMLInstitutionalTrader",
     "AMLMarketMakerTrader",
     "AMLRetailTrader",
+    "InstitutionalProfile",
+    "MarketMakerProfile",
+    "RetailProfile",
 ]
 
 
 def __getattr__(name: str):
+    if name in {
+        "AgentProfile",
+        "InstitutionalProfile",
+        "MarketMakerProfile",
+        "RetailProfile",
+    }:
+        from aml_sim.agents.models.profile import (
+            AgentProfile,
+            InstitutionalProfile,
+            MarketMakerProfile,
+            RetailProfile,
+        )
+
+        return {
+            "AgentProfile": AgentProfile,
+            "InstitutionalProfile": InstitutionalProfile,
+            "MarketMakerProfile": MarketMakerProfile,
+            "RetailProfile": RetailProfile,
+        }[name]
     if name == "AMLInstitutionalTrader":
         from aml_sim.agents.institutional_trader import AMLInstitutionalTrader
 

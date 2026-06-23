@@ -10,6 +10,7 @@ from typing import Any, Callable, Mapping, Optional
 
 from aml_sim.agents.context.memory import LocalAgentMemory, MemoryBackend
 from aml_sim.agents.context.observation import ObservationProcessor
+from aml_sim.agents.models.profile import AgentProfile
 from aml_sim.agents.strategy.llm_slow_strategy import SlowStrategist
 from aml_sim.agents.strategy.validator import StrategyValidationError, validate_strategy_state
 from agents.benchmark_traders.trader import TraderAgent
@@ -29,7 +30,7 @@ class BaseAMLAgent(TraderAgent):
         instrument_exchange_map: dict[str, str],
         strategy_state: Any,
         *,
-        profile: Optional[Mapping[str, Any]] = None,
+        profile: Optional[AgentProfile | Mapping[str, Any]] = None,
         memory: Optional[MemoryBackend] = None,
         observation_processor: Optional[ObservationProcessor] = None,
         slow_strategist: Optional[SlowStrategist] = None,
@@ -46,7 +47,7 @@ class BaseAMLAgent(TraderAgent):
             **trader_kwargs,
         )
 
-        self.profile = dict(profile or {})
+        self.profile = profile or {}
         self.memory = memory or LocalAgentMemory()
         self.observation_processor = observation_processor or ObservationProcessor()
         if slow_strategist is None:

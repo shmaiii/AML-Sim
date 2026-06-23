@@ -6,30 +6,18 @@ orders. Later this agent can react to synthetic news and herding signals.
 """
 
 import random
-from dataclasses import dataclass
 from typing import Any, Dict, Mapping, Optional
 
 from aml_sim.agents.base import BaseAMLAgent
 from aml_sim.agents.context.memory import MemoryBackend
 from aml_sim.agents.context.observation import ObservationProcessor
+from aml_sim.agents.models.profile import RetailProfile, coerce_profile
 from aml_sim.agents.strategy.llm_slow_strategy import (
     SlowStrategist,
     create_static_retail_llm_strategist,
 )
-from aml_sim.agents.state import BaseStrategyState
+from aml_sim.agents.models.state import RetailStrategyState
 from utils.orders import OrderType, Side
-
-
-@dataclass
-class RetailStrategyState(BaseStrategyState):
-    """Role-specific strategy state for an AML retail trader."""
-
-    strategy_type: str = "retail_noise"
-    trade_probability: float = 0.3
-    buy_bias: float = 0.5
-    max_order_size: int = 25
-    herding_tendency: float = 0.0
-    panic_level: float = 0.0
 
 
 class AMLRetailTrader(BaseAMLAgent):
@@ -47,7 +35,7 @@ class AMLRetailTrader(BaseAMLAgent):
         max_order_size: int = 25,
         buy_bias: float = 0.5,
         random_seed: Optional[int] = None,
-        profile: Optional[Mapping[str, Any]] = None,
+        profile: Optional[RetailProfile | Mapping[str, Any]] = None,
         memory: Optional[MemoryBackend] = None,
         observation_processor: Optional[ObservationProcessor] = None,
         slow_loop_interval_seconds: Optional[int] = None,
@@ -73,7 +61,7 @@ class AMLRetailTrader(BaseAMLAgent):
                 max_order_size=max(1, max_order_size),
                 buy_bias=buy_bias,
             ),
-            profile=profile,
+            profile=coerce_profile(profile, RetailProfile),
             memory=memory,
             observation_processor=observation_processor,
             slow_strategist=slow_strategist or create_static_retail_llm_strategist(),

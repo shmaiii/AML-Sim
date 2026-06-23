@@ -32,10 +32,12 @@ AML-Sim/
 │   ├── scenario.py                     # AML scenario loading/validation
 │   └── agents/                         # AML-specific trader agents
 │       ├── base.py                     # Shared fast/slow-loop AML agent base
-│       ├── state.py                    # Role-specific strategy state models
 │       ├── market_maker_trader.py      # AML market-maker agent
 │       ├── retail_trader.py            # AML retail trader agent
 │       ├── institutional_trader.py     # AML institutional trader agent
+│       ├── models/
+│       │   ├── profile.py              # Stable role/personality profile models
+│       │   └── state.py                # Role-specific strategy state models
 │       ├── context/
 │       │   ├── observation.py          # LLM/slow-loop observation context
 │       │   └── memory.py               # Local memory + future Zep hook
@@ -131,7 +133,7 @@ receive different strategy updates.
 
 ### Strategy State And Validation
 
-Role-specific strategy states live in `aml_sim/agents/state.py`:
+Role-specific strategy states live in `aml_sim/agents/models/state.py`:
 
 - `MarketMakerStrategyState`
 - `RetailStrategyState`

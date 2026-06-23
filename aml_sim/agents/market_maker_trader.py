@@ -5,30 +5,18 @@ Posts both bid and ask limit orders around a configurable fair price so an
 orderbook scenario has synthetic liquidity without historical replay data.
 """
 
-from dataclasses import dataclass
 from typing import Any, Dict, Mapping, Optional
 
 from aml_sim.agents.base import BaseAMLAgent
 from aml_sim.agents.context.memory import MemoryBackend
 from aml_sim.agents.context.observation import ObservationProcessor
+from aml_sim.agents.models.profile import MarketMakerProfile, coerce_profile
 from aml_sim.agents.strategy.llm_slow_strategy import (
     SlowStrategist,
     create_static_market_maker_llm_strategist,
 )
-from aml_sim.agents.state import BaseStrategyState
+from aml_sim.agents.models.state import MarketMakerStrategyState
 from utils.orders import OrderType, Side
-
-
-@dataclass
-class MarketMakerStrategyState(BaseStrategyState):
-    """Role-specific strategy state for an AML market maker."""
-
-    strategy_type: str = "market_making"
-    fair_price: float = 100.0
-    spread: float = 0.2
-    quote_size: int = 100
-    target_inventory: int = 0
-    inventory_skew: float = 0.001
 
 
 class AMLMarketMakerTrader(BaseAMLAgent):
@@ -51,7 +39,7 @@ class AMLMarketMakerTrader(BaseAMLAgent):
         inventory_skew: float = 0.001,
         target_inventory: int = 0,
         allow_short_selling: bool = False,
-        profile: Optional[Mapping[str, Any]] = None,
+        profile: Optional[MarketMakerProfile | Mapping[str, Any]] = None,
         memory: Optional[MemoryBackend] = None,
         observation_processor: Optional[ObservationProcessor] = None,
         slow_loop_interval_seconds: Optional[int] = None,
@@ -79,7 +67,7 @@ class AMLMarketMakerTrader(BaseAMLAgent):
                 target_inventory=target_inventory,
                 inventory_skew=inventory_skew,
             ),
-            profile=profile,
+            profile=coerce_profile(profile, MarketMakerProfile),
             memory=memory,
             observation_processor=observation_processor,
             slow_strategist=slow_strategist or create_static_market_maker_llm_strategist(),

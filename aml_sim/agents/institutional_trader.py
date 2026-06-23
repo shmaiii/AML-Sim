@@ -5,31 +5,18 @@ Models a larger participant that tries to build or reduce a target position in
 child orders over time. Later this can become the LLM-directed strategy agent.
 """
 
-from dataclasses import dataclass, field
 from typing import Any, Dict, Mapping, Optional
 
 from aml_sim.agents.base import BaseAMLAgent
 from aml_sim.agents.context.memory import MemoryBackend
 from aml_sim.agents.context.observation import ObservationProcessor
+from aml_sim.agents.models.profile import InstitutionalProfile, coerce_profile
 from aml_sim.agents.strategy.llm_slow_strategy import (
     SlowStrategist,
     create_static_institutional_llm_strategist,
 )
-from aml_sim.agents.state import BaseStrategyState
+from aml_sim.agents.models.state import InstitutionalStrategyState
 from utils.orders import OrderType, Side
-
-
-@dataclass
-class InstitutionalStrategyState(BaseStrategyState):
-    """Role-specific strategy state for an AML institutional trader."""
-
-    strategy_type: str = "target_execution"
-    target_positions: Dict[str, int] = field(default_factory=dict)
-    child_order_size: int = 100
-    order_type: str = OrderType.MARKET.value
-    limit_price: Optional[float] = None
-    execution_style: str = "sliced"
-    urgency: float = 0.5
 
 
 class AMLInstitutionalTrader(BaseAMLAgent):
@@ -47,7 +34,7 @@ class AMLInstitutionalTrader(BaseAMLAgent):
         child_order_size: int = 100,
         order_type: str = OrderType.MARKET.value,
         limit_price: Optional[float] = None,
-        profile: Optional[Mapping[str, Any]] = None,
+        profile: Optional[InstitutionalProfile | Mapping[str, Any]] = None,
         memory: Optional[MemoryBackend] = None,
         observation_processor: Optional[ObservationProcessor] = None,
         slow_loop_interval_seconds: Optional[int] = None,
@@ -74,7 +61,7 @@ class AMLInstitutionalTrader(BaseAMLAgent):
                 order_type=order_type.upper(),
                 limit_price=limit_price,
             ),
-            profile=profile,
+            profile=coerce_profile(profile, InstitutionalProfile),
             memory=memory,
             observation_processor=observation_processor,
             slow_strategist=slow_strategist or create_static_institutional_llm_strategist(),
