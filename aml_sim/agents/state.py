@@ -7,11 +7,10 @@ from dataclasses import dataclass
 
 @dataclass
 class BaseStrategyState:
-    """Common strategy metadata updated by rule-based or LLM strategists."""
+    """Common strategy metadata updated by AML slow strategists."""
 
     strategy_type: str
     risk_mode: str = "normal"
     confidence: float = 1.0
     reason: str | None = None
     updated_at: str | None = None
-

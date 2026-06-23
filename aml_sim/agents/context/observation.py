@@ -23,7 +23,7 @@ def build_observation_context(
 
     This is the input package the future slow LLM loop will read before updating
     strategy state. The function is intentionally tolerant of missing fields so
-    it can work with rule-based agents now and richer AML agents later.
+    it can work with simple agents now and richer AML agents later.
     """
 
     instruments = list(getattr(agent, "instrument_exchange_map", {}).keys())

@@ -1,13 +1,19 @@
 """Strategy updaters and validators for AML agents."""
 
-from aml_sim.agents.strategy.llm import (
+from aml_sim.agents.strategy.llm_slow_strategy import (
     JSONLLMClient,
     LLMStrategist,
     LLMStrategistConfigurationError,
     LLMStrategyResponseError,
+    STATIC_INSTITUTIONAL_RESPONSE,
+    STATIC_MARKET_MAKER_RESPONSE,
+    STATIC_RETAIL_RESPONSE,
+    SlowStrategist,
     StaticJSONLLMClient,
+    create_static_institutional_llm_strategist,
+    create_static_market_maker_llm_strategist,
+    create_static_retail_llm_strategist,
 )
-from aml_sim.agents.strategy.slow import RuleBasedSlowStrategist, SlowStrategist
 from aml_sim.agents.strategy.validator import (
     DEFAULT_STRATEGY_LIMITS,
     StrategyValidationError,
@@ -21,10 +27,15 @@ __all__ = [
     "LLMStrategist",
     "LLMStrategistConfigurationError",
     "LLMStrategyResponseError",
-    "RuleBasedSlowStrategist",
+    "STATIC_INSTITUTIONAL_RESPONSE",
+    "STATIC_MARKET_MAKER_RESPONSE",
+    "STATIC_RETAIL_RESPONSE",
     "SlowStrategist",
     "StaticJSONLLMClient",
     "StrategyValidationError",
     "StrategyValidationLimits",
+    "create_static_institutional_llm_strategist",
+    "create_static_market_maker_llm_strategist",
+    "create_static_retail_llm_strategist",
     "validate_strategy_state",
 ]

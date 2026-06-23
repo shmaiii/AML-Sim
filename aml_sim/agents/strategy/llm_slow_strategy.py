@@ -8,6 +8,18 @@ from dataclasses import asdict, fields, is_dataclass, replace
 from typing import Any, Mapping, Optional, Protocol
 
 
+class SlowStrategist(Protocol):
+    """Interface for AML slow-loop strategists."""
+
+    def propose(
+        self,
+        observation: Mapping[str, Any],
+        current_strategy: Any,
+        **kwargs: Any,
+    ) -> Any:
+        """Return a proposed strategy state for validation and application."""
+
+
 class LLMStrategistConfigurationError(RuntimeError):
     """Raised when the LLM strategist is used without a configured client."""
 
@@ -173,8 +185,7 @@ class LLMStrategist:
 
 
 class StaticJSONLLMClient:
-    """Tiny test client that returns a fixed JSON response.
-       To be deleted and replaced iwth actual LLM API calls"""
+    """Tiny test client that returns a fixed JSON response."""
 
     def __init__(self, response: Mapping[str, Any] | str) -> None:
         self.response = response
@@ -185,3 +196,58 @@ class StaticJSONLLMClient:
         if inspect.isawaitable(self.response):
             return await self.response
         return self.response
+
+
+STATIC_MARKET_MAKER_RESPONSE = {
+    "strategy_updates": {
+        "risk_mode": "normal",
+        "spread": 0.25,
+        "quote_size": 100,
+        "inventory_skew": 0.0015,
+    },
+    "confidence": 0.75,
+    "reason": "Static market-maker LLM test response: quote slightly wider and manage inventory conservatively.",
+}
+
+
+STATIC_RETAIL_RESPONSE = {
+    "strategy_updates": {
+        "risk_mode": "normal",
+        "trade_probability": 0.35,
+        "buy_bias": 0.52,
+        "herding_tendency": 0.15,
+        "panic_level": 0.05,
+    },
+    "confidence": 0.7,
+    "reason": "Static retail LLM test response: slightly active, mildly bullish, low panic.",
+}
+
+
+STATIC_INSTITUTIONAL_RESPONSE = {
+    "strategy_updates": {
+        "risk_mode": "normal",
+        "child_order_size": 100,
+        "execution_style": "sliced",
+        "urgency": 0.6,
+    },
+    "confidence": 0.78,
+    "reason": "Static institutional LLM test response: keep sliced execution with moderate urgency.",
+}
+
+
+def create_static_market_maker_llm_strategist() -> LLMStrategist:
+    """Create a fixed-response LLM strategist for market-maker path tests."""
+
+    return LLMStrategist(client=StaticJSONLLMClient(STATIC_MARKET_MAKER_RESPONSE))
+
+
+def create_static_retail_llm_strategist() -> LLMStrategist:
+    """Create a fixed-response LLM strategist for retail path tests."""
+
+    return LLMStrategist(client=StaticJSONLLMClient(STATIC_RETAIL_RESPONSE))
+
+
+def create_static_institutional_llm_strategist() -> LLMStrategist:
+    """Create a fixed-response LLM strategist for institutional path tests."""
+
+    return LLMStrategist(client=StaticJSONLLMClient(STATIC_INSTITUTIONAL_RESPONSE))

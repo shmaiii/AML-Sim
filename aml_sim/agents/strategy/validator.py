@@ -12,7 +12,7 @@ class StrategyValidationError(ValueError):
 
 @dataclass(frozen=True)
 class StrategyValidationLimits:
-    """Boundaries for rule-based and LLM-updated strategy state."""
+    """Boundaries for slow-loop-updated strategy state."""
 
     max_quote_size: int = 10_000
     max_child_order_size: int = 100_000

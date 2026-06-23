@@ -11,7 +11,10 @@ from typing import Any, Dict, Mapping, Optional
 from aml_sim.agents.base import BaseAMLAgent
 from aml_sim.agents.context.memory import MemoryBackend
 from aml_sim.agents.context.observation import ObservationProcessor
-from aml_sim.agents.strategy.slow import SlowStrategist
+from aml_sim.agents.strategy.llm_slow_strategy import (
+    SlowStrategist,
+    create_static_institutional_llm_strategist,
+)
 from aml_sim.agents.state import BaseStrategyState
 from utils.orders import OrderType, Side
 
@@ -74,7 +77,7 @@ class AMLInstitutionalTrader(BaseAMLAgent):
             profile=profile,
             memory=memory,
             observation_processor=observation_processor,
-            slow_strategist=slow_strategist,
+            slow_strategist=slow_strategist or create_static_institutional_llm_strategist(),
             slow_loop_interval_seconds=slow_loop_interval_seconds,
             agent_id=agent_id,
             rabbitmq_host=rabbitmq_host,

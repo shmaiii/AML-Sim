@@ -9,7 +9,7 @@ from typing import Any, Callable, Mapping, Optional
 
 from aml_sim.agents.context.memory import LocalAgentMemory, MemoryBackend
 from aml_sim.agents.context.observation import ObservationProcessor
-from aml_sim.agents.strategy.slow import RuleBasedSlowStrategist, SlowStrategist
+from aml_sim.agents.strategy.llm_slow_strategy import SlowStrategist
 from aml_sim.agents.strategy.validator import StrategyValidationError, validate_strategy_state
 from agents.benchmark_traders.trader import TraderAgent
 
@@ -48,7 +48,9 @@ class BaseAMLAgent(TraderAgent):
         self.profile = dict(profile or {})
         self.memory = memory or LocalAgentMemory()
         self.observation_processor = observation_processor or ObservationProcessor()
-        self.slow_strategist = slow_strategist or RuleBasedSlowStrategist()
+        if slow_strategist is None:
+            raise ValueError("BaseAMLAgent requires a slow_strategist.")
+        self.slow_strategist = slow_strategist
         self.strategy_validator = strategy_validator or validate_strategy_state
         self.strategy_state = self._validate_or_keep(strategy_state)
 
