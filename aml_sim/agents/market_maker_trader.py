@@ -5,6 +5,8 @@ Posts both bid and ask limit orders around a configurable fair price so an
 orderbook scenario has synthetic liquidity without historical replay data.
 """
 
+from __future__ import annotations
+
 from typing import Any, Dict, Mapping, Optional
 
 from aml_sim.agents.base import BaseAMLAgent

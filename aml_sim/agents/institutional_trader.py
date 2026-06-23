@@ -5,6 +5,8 @@ Models a larger participant that tries to build or reduce a target position in
 child orders over time. Later this can become the LLM-directed strategy agent.
 """
 
+from __future__ import annotations
+
 from typing import Any, Dict, Mapping, Optional
 
 from aml_sim.agents.base import BaseAMLAgent

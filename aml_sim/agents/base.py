@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 import inspect
+import json
+import os
 from abc import abstractmethod
 from dataclasses import asdict, is_dataclass
-from datetime import timedelta
+from datetime import datetime, timedelta
 from typing import Any, Callable, Mapping, Optional
 
 from aml_sim.agents.context.memory import LocalAgentMemory, MemoryBackend
@@ -60,6 +62,7 @@ class BaseAMLAgent(TraderAgent):
             seconds=slow_loop_interval_seconds or self.action_interval.total_seconds()
         )
         self.next_slow_loop_time = None
+        self.action_events: list[dict[str, Any]] = []
         self.logger.info(
             f"{self.agent_id} slow loop configured: "
             f"strategist={type(self.slow_strategist).__name__}, "
@@ -148,6 +151,118 @@ class BaseAMLAgent(TraderAgent):
         if isinstance(strategy_state, Mapping):
             return dict(strategy_state)
         return dict(vars(strategy_state))
+
+    async def place_order(
+        self,
+        instrument: str,
+        side: str,
+        quantity: int,
+        order_type: str,
+        price: Optional[float] = None,
+        oco_group: Optional[str] = None,
+        explanation: Optional[str] = None,
+        is_short: bool = False,
+        is_short_cover: bool = False,
+    ) -> Optional[str]:
+        before = self._portfolio_snapshot()
+        order_id = await super().place_order(
+            instrument=instrument,
+            side=side,
+            quantity=quantity,
+            order_type=order_type,
+            price=price,
+            oco_group=oco_group,
+            explanation=explanation,
+            is_short=is_short,
+            is_short_cover=is_short_cover,
+        )
+        self._record_action_event(
+            {
+                "event_type": "order_submitted" if order_id else "order_rejected",
+                "order_id": order_id,
+                "instrument": instrument,
+                "side": side,
+                "quantity": quantity,
+                "order_type": order_type,
+                "price": price,
+                "explanation": explanation,
+                "strategy_state": self._strategy_snapshot(self.strategy_state),
+                "portfolio_before": before,
+                "portfolio_after": self._portfolio_snapshot(),
+            }
+        )
+        return order_id
+
+    async def on_trade_execution(self, trade_data: dict[str, Any]) -> None:
+        before = self._portfolio_snapshot()
+        await super().on_trade_execution(trade_data)
+        self._record_action_event(
+            {
+                "event_type": "trade_executed",
+                "order_id": trade_data.get("order_id"),
+                "instrument": trade_data.get("instrument"),
+                "role": trade_data.get("role"),
+                "quantity": trade_data.get("quantity"),
+                "price": trade_data.get("price"),
+                "order_type": trade_data.get("order_type"),
+                "order_status": trade_data.get("order_status"),
+                "explanation": trade_data.get("explanation"),
+                "raw_trade": dict(trade_data),
+                "strategy_state": self._strategy_snapshot(self.strategy_state),
+                "portfolio_before": before,
+                "portfolio_after": self._portfolio_snapshot(),
+            }
+        )
+
+    def _record_action_event(self, event: dict[str, Any]) -> None:
+        event.setdefault("agent_id", self.agent_id)
+        event.setdefault("timestamp", self.current_time.isoformat() if self.current_time else None)
+        self.action_events.append(self._serialize_value(event))
+
+    def _portfolio_snapshot(self) -> dict[str, Any]:
+        instruments = list(self.instrument_exchange_map.keys())
+        return {
+            "cash": self.cash,
+            "portfolio_value": self.portfolio_value,
+            "positions": {
+                instrument: {
+                    "long": self.long_qty[instrument],
+                    "short": self.short_qty[instrument],
+                    "net": self.long_qty[instrument] - self.short_qty[instrument],
+                    "last_price": self.prices[instrument],
+                    "realized_pnl": self.realized_pnl[instrument],
+                }
+                for instrument in instruments
+            },
+        }
+
+    def stop(self) -> None:
+        self._export_action_events()
+        super().stop()
+
+    def _export_action_events(self) -> None:
+        output_dir = os.getenv("METRICS_OUTPUT_DIR", "metrics")
+        os.makedirs(output_dir, exist_ok=True)
+        output_file = os.path.join(output_dir, f"trader_actions_{self.agent_id}.json")
+        try:
+            with open(output_file, "w", encoding="utf-8") as handle:
+                json.dump(self.action_events, handle, indent=2)
+            self.logger.info(f"AML trader actions exported to {output_file}")
+        except Exception as exc:
+            self.logger.error(f"Failed to export AML trader actions: {exc}")
+
+    def _serialize_value(self, value: Any) -> Any:
+        if isinstance(value, datetime):
+            return value.isoformat()
+        if is_dataclass(value):
+            return self._serialize_value(asdict(value))
+        if isinstance(value, Mapping):
+            return {str(key): self._serialize_value(item) for key, item in value.items()}
+        if isinstance(value, list):
+            return [self._serialize_value(item) for item in value]
+        if isinstance(value, tuple):
+            return [self._serialize_value(item) for item in value]
+        return value
 
     @abstractmethod
     async def run_fast_loop(self, observation: Mapping[str, Any]) -> None:

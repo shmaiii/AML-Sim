@@ -239,6 +239,17 @@ This creates a run directory under `.aml_runs/` and writes:
 .aml_runs/<run-id>/reports/
 ```
 
+Completed AML runs also write trader action artifacts under:
+
+```text
+.aml_runs/<run-id>/reports/agents/
+.aml_runs/<run-id>/reports/trader_actions.json
+```
+
+The combined `trader_actions.json` report contains submitted orders, rejected
+orders, trade executions, strategy state at the time of the action, and
+portfolio/share state before and after the action.
+
 Then run the full scenario with RabbitMQ running:
 
 ```bash

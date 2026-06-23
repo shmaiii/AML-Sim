@@ -5,6 +5,8 @@ Models a small, noisy participant that trades occasionally with small market
 orders. Later this agent can react to synthetic news and herding signals.
 """
 
+from __future__ import annotations
+
 import random
 from typing import Any, Dict, Mapping, Optional
 
