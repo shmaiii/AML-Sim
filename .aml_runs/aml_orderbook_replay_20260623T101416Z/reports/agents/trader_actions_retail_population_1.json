@@ -1,0 +1,1000 @@
+[
+  {
+    "event_type": "order_submitted",
+    "order_id": "b5a9f1f3-0dcc-4841-9162-b3aa11b3647b",
+    "instrument": "AAPL",
+    "side": "BUY",
+    "quantity": 4,
+    "order_type": "MARKET",
+    "price": null,
+    "explanation": "AML retail noisy market order",
+    "strategy_state": {
+      "strategy_type": "retail_noise",
+      "risk_mode": "normal",
+      "confidence": 0.7,
+      "reason": "Static retail LLM test response: slightly active, mildly bullish, low panic.",
+      "updated_at": "2025-03-01T09:30:00+00:00",
+      "trade_probability": 0.35,
+      "buy_bias": 0.52,
+      "max_order_size": 10,
+      "herding_tendency": 0.15,
+      "panic_level": 0.05
+    },
+    "portfolio_before": {
+      "cash": 25000,
+      "portfolio_value": 25000,
+      "positions": {
+        "AAPL": {
+          "long": 0,
+          "short": 0,
+          "net": 0,
+          "last_price": 0.0,
+          "realized_pnl": 0.0
+        }
+      }
+    },
+    "portfolio_after": {
+      "cash": 25000,
+      "portfolio_value": 25000,
+      "positions": {
+        "AAPL": {
+          "long": 0,
+          "short": 0,
+          "net": 0,
+          "last_price": 0.0,
+          "realized_pnl": 0.0
+        }
+      }
+    },
+    "agent_id": "retail_population_1",
+    "timestamp": "2025-03-01T09:32:00+00:00"
+  },
+  {
+    "event_type": "order_submitted",
+    "order_id": "164bfa31-86a8-41a8-9150-28d8d04f8131",
+    "instrument": "AAPL",
+    "side": "BUY",
+    "quantity": 4,
+    "order_type": "MARKET",
+    "price": null,
+    "explanation": "AML retail noisy market order",
+    "strategy_state": {
+      "strategy_type": "retail_noise",
+      "risk_mode": "normal",
+      "confidence": 0.7,
+      "reason": "Static retail LLM test response: slightly active, mildly bullish, low panic.",
+      "updated_at": "2025-03-01T09:35:00+00:00",
+      "trade_probability": 0.35,
+      "buy_bias": 0.52,
+      "max_order_size": 10,
+      "herding_tendency": 0.15,
+      "panic_level": 0.05
+    },
+    "portfolio_before": {
+      "cash": 25000,
+      "portfolio_value": 25000.0,
+      "positions": {
+        "AAPL": {
+          "long": 0,
+          "short": 0,
+          "net": 0,
+          "last_price": 100.12,
+          "realized_pnl": 0.0
+        }
+      }
+    },
+    "portfolio_after": {
+      "cash": 25000,
+      "portfolio_value": 25000.0,
+      "positions": {
+        "AAPL": {
+          "long": 0,
+          "short": 0,
+          "net": 0,
+          "last_price": 100.12,
+          "realized_pnl": 0.0
+        }
+      }
+    },
+    "agent_id": "retail_population_1",
+    "timestamp": "2025-03-01T09:35:00+00:00"
+  },
+  {
+    "event_type": "trade_executed",
+    "order_id": "164bfa31-86a8-41a8-9150-28d8d04f8131",
+    "instrument": "AAPL",
+    "role": "BUYER",
+    "quantity": 4,
+    "price": 100.28,
+    "order_type": null,
+    "order_status": "FILLED",
+    "explanation": "AML retail noisy market order",
+    "raw_trade": {
+      "instrument": "AAPL",
+      "price": 100.28,
+      "quantity": 4,
+      "timestamp": "2025-03-01T09:35:00+00:00",
+      "seq": 1,
+      "role": "BUYER",
+      "order_id": "164bfa31-86a8-41a8-9150-28d8d04f8131",
+      "order_status": "FILLED",
+      "explanation": "AML retail noisy market order",
+      "is_short": false,
+      "is_short_cover": false
+    },
+    "strategy_state": {
+      "strategy_type": "retail_noise",
+      "risk_mode": "normal",
+      "confidence": 0.7,
+      "reason": "Static retail LLM test response: slightly active, mildly bullish, low panic.",
+      "updated_at": "2025-03-01T09:35:00+00:00",
+      "trade_probability": 0.35,
+      "buy_bias": 0.52,
+      "max_order_size": 10,
+      "herding_tendency": 0.15,
+      "panic_level": 0.05
+    },
+    "portfolio_before": {
+      "cash": 25000,
+      "portfolio_value": 25000.0,
+      "positions": {
+        "AAPL": {
+          "long": 0,
+          "short": 0,
+          "net": 0,
+          "last_price": 100.12,
+          "realized_pnl": 0.0
+        }
+      }
+    },
+    "portfolio_after": {
+      "cash": 24598.88,
+      "portfolio_value": 25000.0,
+      "positions": {
+        "AAPL": {
+          "long": 4,
+          "short": 0,
+          "net": 4,
+          "last_price": 100.12,
+          "realized_pnl": 0.0
+        }
+      }
+    },
+    "agent_id": "retail_population_1",
+    "timestamp": "2025-03-01T09:35:00+00:00"
+  },
+  {
+    "event_type": "order_submitted",
+    "order_id": "4ccf5514-7367-4dc0-87dd-46f098f98546",
+    "instrument": "AAPL",
+    "side": "BUY",
+    "quantity": 8,
+    "order_type": "MARKET",
+    "price": null,
+    "explanation": "AML retail noisy market order",
+    "strategy_state": {
+      "strategy_type": "retail_noise",
+      "risk_mode": "normal",
+      "confidence": 0.7,
+      "reason": "Static retail LLM test response: slightly active, mildly bullish, low panic.",
+      "updated_at": "2025-03-01T09:35:00+00:00",
+      "trade_probability": 0.35,
+      "buy_bias": 0.52,
+      "max_order_size": 10,
+      "herding_tendency": 0.15,
+      "panic_level": 0.05
+    },
+    "portfolio_before": {
+      "cash": 24598.88,
+      "portfolio_value": 24999.0,
+      "positions": {
+        "AAPL": {
+          "long": 4,
+          "short": 0,
+          "net": 4,
+          "last_price": 100.03,
+          "realized_pnl": 0.0
+        }
+      }
+    },
+    "portfolio_after": {
+      "cash": 24598.88,
+      "portfolio_value": 24999.0,
+      "positions": {
+        "AAPL": {
+          "long": 4,
+          "short": 0,
+          "net": 4,
+          "last_price": 100.03,
+          "realized_pnl": 0.0
+        }
+      }
+    },
+    "agent_id": "retail_population_1",
+    "timestamp": "2025-03-01T09:39:00+00:00"
+  },
+  {
+    "event_type": "trade_executed",
+    "order_id": "4ccf5514-7367-4dc0-87dd-46f098f98546",
+    "instrument": "AAPL",
+    "role": "BUYER",
+    "quantity": 8,
+    "price": 100.28,
+    "order_type": null,
+    "order_status": "FILLED",
+    "explanation": "AML retail noisy market order",
+    "raw_trade": {
+      "instrument": "AAPL",
+      "price": 100.28,
+      "quantity": 8,
+      "timestamp": "2025-03-01T09:39:00+00:00",
+      "seq": 5,
+      "role": "BUYER",
+      "order_id": "4ccf5514-7367-4dc0-87dd-46f098f98546",
+      "order_status": "FILLED",
+      "explanation": "AML retail noisy market order",
+      "is_short": false,
+      "is_short_cover": false
+    },
+    "strategy_state": {
+      "strategy_type": "retail_noise",
+      "risk_mode": "normal",
+      "confidence": 0.7,
+      "reason": "Static retail LLM test response: slightly active, mildly bullish, low panic.",
+      "updated_at": "2025-03-01T09:35:00+00:00",
+      "trade_probability": 0.35,
+      "buy_bias": 0.52,
+      "max_order_size": 10,
+      "herding_tendency": 0.15,
+      "panic_level": 0.05
+    },
+    "portfolio_before": {
+      "cash": 24598.88,
+      "portfolio_value": 24999.0,
+      "positions": {
+        "AAPL": {
+          "long": 4,
+          "short": 0,
+          "net": 4,
+          "last_price": 100.03,
+          "realized_pnl": 0.0
+        }
+      }
+    },
+    "portfolio_after": {
+      "cash": 23796.64,
+      "portfolio_value": 24999.0,
+      "positions": {
+        "AAPL": {
+          "long": 12,
+          "short": 0,
+          "net": 12,
+          "last_price": 100.03,
+          "realized_pnl": 0.0
+        }
+      }
+    },
+    "agent_id": "retail_population_1",
+    "timestamp": "2025-03-01T09:39:00+00:00"
+  },
+  {
+    "event_type": "order_submitted",
+    "order_id": "ac8e22ce-4bd0-48d0-bd20-3414c296cb3a",
+    "instrument": "AAPL",
+    "side": "SELL",
+    "quantity": 10,
+    "order_type": "MARKET",
+    "price": null,
+    "explanation": "AML retail noisy market order",
+    "strategy_state": {
+      "strategy_type": "retail_noise",
+      "risk_mode": "normal",
+      "confidence": 0.7,
+      "reason": "Static retail LLM test response: slightly active, mildly bullish, low panic.",
+      "updated_at": "2025-03-01T09:40:00+00:00",
+      "trade_probability": 0.35,
+      "buy_bias": 0.52,
+      "max_order_size": 10,
+      "herding_tendency": 0.15,
+      "panic_level": 0.05
+    },
+    "portfolio_before": {
+      "cash": 23796.64,
+      "portfolio_value": 25000.0,
+      "positions": {
+        "AAPL": {
+          "long": 12,
+          "short": 0,
+          "net": 12,
+          "last_price": 100.28,
+          "realized_pnl": 0.0
+        }
+      }
+    },
+    "portfolio_after": {
+      "cash": 23796.64,
+      "portfolio_value": 25000.0,
+      "positions": {
+        "AAPL": {
+          "long": 12,
+          "short": 0,
+          "net": 12,
+          "last_price": 100.28,
+          "realized_pnl": 0.0
+        }
+      }
+    },
+    "agent_id": "retail_population_1",
+    "timestamp": "2025-03-01T09:40:00+00:00"
+  },
+  {
+    "event_type": "trade_executed",
+    "order_id": "ac8e22ce-4bd0-48d0-bd20-3414c296cb3a",
+    "instrument": "AAPL",
+    "role": "SELLER",
+    "quantity": 10,
+    "price": 100.06,
+    "order_type": null,
+    "order_status": "FILLED",
+    "explanation": "AML retail noisy market order",
+    "raw_trade": {
+      "instrument": "AAPL",
+      "price": 100.06,
+      "quantity": 10,
+      "timestamp": "2025-03-01T09:40:00+00:00",
+      "seq": 7,
+      "role": "SELLER",
+      "order_id": "ac8e22ce-4bd0-48d0-bd20-3414c296cb3a",
+      "order_status": "FILLED",
+      "explanation": "AML retail noisy market order",
+      "is_short": false,
+      "is_short_cover": false
+    },
+    "strategy_state": {
+      "strategy_type": "retail_noise",
+      "risk_mode": "normal",
+      "confidence": 0.7,
+      "reason": "Static retail LLM test response: slightly active, mildly bullish, low panic.",
+      "updated_at": "2025-03-01T09:40:00+00:00",
+      "trade_probability": 0.35,
+      "buy_bias": 0.52,
+      "max_order_size": 10,
+      "herding_tendency": 0.15,
+      "panic_level": 0.05
+    },
+    "portfolio_before": {
+      "cash": 23796.64,
+      "portfolio_value": 25000.0,
+      "positions": {
+        "AAPL": {
+          "long": 12,
+          "short": 0,
+          "net": 12,
+          "last_price": 100.28,
+          "realized_pnl": 0.0
+        }
+      }
+    },
+    "portfolio_after": {
+      "cash": 24797.239999999998,
+      "portfolio_value": 25000.0,
+      "positions": {
+        "AAPL": {
+          "long": 2,
+          "short": 0,
+          "net": 2,
+          "last_price": 100.28,
+          "realized_pnl": -2.1999999999999886
+        }
+      }
+    },
+    "agent_id": "retail_population_1",
+    "timestamp": "2025-03-01T09:40:00+00:00"
+  },
+  {
+    "event_type": "order_submitted",
+    "order_id": "753d5dc6-2bc5-4151-94c0-bcaa1e6769bb",
+    "instrument": "AAPL",
+    "side": "BUY",
+    "quantity": 3,
+    "order_type": "MARKET",
+    "price": null,
+    "explanation": "AML retail noisy market order",
+    "strategy_state": {
+      "strategy_type": "retail_noise",
+      "risk_mode": "normal",
+      "confidence": 0.7,
+      "reason": "Static retail LLM test response: slightly active, mildly bullish, low panic.",
+      "updated_at": "2025-03-01T09:40:00+00:00",
+      "trade_probability": 0.35,
+      "buy_bias": 0.52,
+      "max_order_size": 10,
+      "herding_tendency": 0.15,
+      "panic_level": 0.05
+    },
+    "portfolio_before": {
+      "cash": 24797.239999999998,
+      "portfolio_value": 24997.359999999997,
+      "positions": {
+        "AAPL": {
+          "long": 2,
+          "short": 0,
+          "net": 2,
+          "last_price": 100.06,
+          "realized_pnl": -2.1999999999999886
+        }
+      }
+    },
+    "portfolio_after": {
+      "cash": 24797.239999999998,
+      "portfolio_value": 24997.359999999997,
+      "positions": {
+        "AAPL": {
+          "long": 2,
+          "short": 0,
+          "net": 2,
+          "last_price": 100.06,
+          "realized_pnl": -2.1999999999999886
+        }
+      }
+    },
+    "agent_id": "retail_population_1",
+    "timestamp": "2025-03-01T09:41:00+00:00"
+  },
+  {
+    "event_type": "trade_executed",
+    "order_id": "753d5dc6-2bc5-4151-94c0-bcaa1e6769bb",
+    "instrument": "AAPL",
+    "role": "BUYER",
+    "quantity": 3,
+    "price": 100.44,
+    "order_type": null,
+    "order_status": "FILLED",
+    "explanation": "AML retail noisy market order",
+    "raw_trade": {
+      "instrument": "AAPL",
+      "price": 100.44,
+      "quantity": 3,
+      "timestamp": "2025-03-01T09:41:00+00:00",
+      "seq": 8,
+      "role": "BUYER",
+      "order_id": "753d5dc6-2bc5-4151-94c0-bcaa1e6769bb",
+      "order_status": "FILLED",
+      "explanation": "AML retail noisy market order",
+      "is_short": false,
+      "is_short_cover": false
+    },
+    "strategy_state": {
+      "strategy_type": "retail_noise",
+      "risk_mode": "normal",
+      "confidence": 0.7,
+      "reason": "Static retail LLM test response: slightly active, mildly bullish, low panic.",
+      "updated_at": "2025-03-01T09:40:00+00:00",
+      "trade_probability": 0.35,
+      "buy_bias": 0.52,
+      "max_order_size": 10,
+      "herding_tendency": 0.15,
+      "panic_level": 0.05
+    },
+    "portfolio_before": {
+      "cash": 24797.239999999998,
+      "portfolio_value": 24997.359999999997,
+      "positions": {
+        "AAPL": {
+          "long": 2,
+          "short": 0,
+          "net": 2,
+          "last_price": 100.06,
+          "realized_pnl": -2.1999999999999886
+        }
+      }
+    },
+    "portfolio_after": {
+      "cash": 24495.92,
+      "portfolio_value": 24997.359999999997,
+      "positions": {
+        "AAPL": {
+          "long": 5,
+          "short": 0,
+          "net": 5,
+          "last_price": 100.06,
+          "realized_pnl": -2.1999999999999886
+        }
+      }
+    },
+    "agent_id": "retail_population_1",
+    "timestamp": "2025-03-01T09:41:00+00:00"
+  },
+  {
+    "event_type": "order_submitted",
+    "order_id": "16c5caa3-1870-47ea-9630-ce3432746180",
+    "instrument": "AAPL",
+    "side": "SELL",
+    "quantity": 1,
+    "order_type": "MARKET",
+    "price": null,
+    "explanation": "AML retail noisy market order",
+    "strategy_state": {
+      "strategy_type": "retail_noise",
+      "risk_mode": "normal",
+      "confidence": 0.7,
+      "reason": "Static retail LLM test response: slightly active, mildly bullish, low panic.",
+      "updated_at": "2025-03-01T09:40:00+00:00",
+      "trade_probability": 0.35,
+      "buy_bias": 0.52,
+      "max_order_size": 10,
+      "herding_tendency": 0.15,
+      "panic_level": 0.05
+    },
+    "portfolio_before": {
+      "cash": 24495.92,
+      "portfolio_value": 24998.12,
+      "positions": {
+        "AAPL": {
+          "long": 5,
+          "short": 0,
+          "net": 5,
+          "last_price": 100.44,
+          "realized_pnl": -2.1999999999999886
+        }
+      }
+    },
+    "portfolio_after": {
+      "cash": 24495.92,
+      "portfolio_value": 24998.12,
+      "positions": {
+        "AAPL": {
+          "long": 5,
+          "short": 0,
+          "net": 5,
+          "last_price": 100.44,
+          "realized_pnl": -2.1999999999999886
+        }
+      }
+    },
+    "agent_id": "retail_population_1",
+    "timestamp": "2025-03-01T09:42:00+00:00"
+  },
+  {
+    "event_type": "trade_executed",
+    "order_id": "16c5caa3-1870-47ea-9630-ce3432746180",
+    "instrument": "AAPL",
+    "role": "SELLER",
+    "quantity": 1,
+    "price": 100.2,
+    "order_type": null,
+    "order_status": "FILLED",
+    "explanation": "AML retail noisy market order",
+    "raw_trade": {
+      "instrument": "AAPL",
+      "price": 100.2,
+      "quantity": 1,
+      "timestamp": "2025-03-01T09:42:00+00:00",
+      "seq": 10,
+      "role": "SELLER",
+      "order_id": "16c5caa3-1870-47ea-9630-ce3432746180",
+      "order_status": "FILLED",
+      "explanation": "AML retail noisy market order",
+      "is_short": false,
+      "is_short_cover": false
+    },
+    "strategy_state": {
+      "strategy_type": "retail_noise",
+      "risk_mode": "normal",
+      "confidence": 0.7,
+      "reason": "Static retail LLM test response: slightly active, mildly bullish, low panic.",
+      "updated_at": "2025-03-01T09:40:00+00:00",
+      "trade_probability": 0.35,
+      "buy_bias": 0.52,
+      "max_order_size": 10,
+      "herding_tendency": 0.15,
+      "panic_level": 0.05
+    },
+    "portfolio_before": {
+      "cash": 24495.92,
+      "portfolio_value": 24998.12,
+      "positions": {
+        "AAPL": {
+          "long": 5,
+          "short": 0,
+          "net": 5,
+          "last_price": 100.44,
+          "realized_pnl": -2.1999999999999886
+        }
+      }
+    },
+    "portfolio_after": {
+      "cash": 24596.12,
+      "portfolio_value": 24998.12,
+      "positions": {
+        "AAPL": {
+          "long": 4,
+          "short": 0,
+          "net": 4,
+          "last_price": 100.44,
+          "realized_pnl": -2.279999999999987
+        }
+      }
+    },
+    "agent_id": "retail_population_1",
+    "timestamp": "2025-03-01T09:42:00+00:00"
+  },
+  {
+    "event_type": "order_submitted",
+    "order_id": "4de58527-71cf-4dc4-829d-28243ae2210d",
+    "instrument": "AAPL",
+    "side": "BUY",
+    "quantity": 8,
+    "order_type": "MARKET",
+    "price": null,
+    "explanation": "AML retail noisy market order",
+    "strategy_state": {
+      "strategy_type": "retail_noise",
+      "risk_mode": "normal",
+      "confidence": 0.7,
+      "reason": "Static retail LLM test response: slightly active, mildly bullish, low panic.",
+      "updated_at": "2025-03-01T09:45:00+00:00",
+      "trade_probability": 0.35,
+      "buy_bias": 0.52,
+      "max_order_size": 10,
+      "herding_tendency": 0.15,
+      "panic_level": 0.05
+    },
+    "portfolio_before": {
+      "cash": 24596.12,
+      "portfolio_value": 24998.52,
+      "positions": {
+        "AAPL": {
+          "long": 4,
+          "short": 0,
+          "net": 4,
+          "last_price": 100.6,
+          "realized_pnl": -2.279999999999987
+        }
+      }
+    },
+    "portfolio_after": {
+      "cash": 24596.12,
+      "portfolio_value": 24998.52,
+      "positions": {
+        "AAPL": {
+          "long": 4,
+          "short": 0,
+          "net": 4,
+          "last_price": 100.6,
+          "realized_pnl": -2.279999999999987
+        }
+      }
+    },
+    "agent_id": "retail_population_1",
+    "timestamp": "2025-03-01T09:46:00+00:00"
+  },
+  {
+    "event_type": "order_submitted",
+    "order_id": "8827c327-39f8-431e-8b61-ab8316f558cc",
+    "instrument": "AAPL",
+    "side": "BUY",
+    "quantity": 7,
+    "order_type": "MARKET",
+    "price": null,
+    "explanation": "AML retail noisy market order",
+    "strategy_state": {
+      "strategy_type": "retail_noise",
+      "risk_mode": "normal",
+      "confidence": 0.7,
+      "reason": "Static retail LLM test response: slightly active, mildly bullish, low panic.",
+      "updated_at": "2025-03-01T09:45:00+00:00",
+      "trade_probability": 0.35,
+      "buy_bias": 0.52,
+      "max_order_size": 10,
+      "herding_tendency": 0.15,
+      "panic_level": 0.05
+    },
+    "portfolio_before": {
+      "cash": 24596.12,
+      "portfolio_value": 24998.16,
+      "positions": {
+        "AAPL": {
+          "long": 4,
+          "short": 0,
+          "net": 4,
+          "last_price": 100.51,
+          "realized_pnl": -2.279999999999987
+        }
+      }
+    },
+    "portfolio_after": {
+      "cash": 24596.12,
+      "portfolio_value": 24998.16,
+      "positions": {
+        "AAPL": {
+          "long": 4,
+          "short": 0,
+          "net": 4,
+          "last_price": 100.51,
+          "realized_pnl": -2.279999999999987
+        }
+      }
+    },
+    "agent_id": "retail_population_1",
+    "timestamp": "2025-03-01T09:48:00+00:00"
+  },
+  {
+    "event_type": "order_submitted",
+    "order_id": "601c5e5f-c98a-459e-9109-cefb806146a5",
+    "instrument": "AAPL",
+    "side": "SELL",
+    "quantity": 1,
+    "order_type": "MARKET",
+    "price": null,
+    "explanation": "AML retail noisy market order",
+    "strategy_state": {
+      "strategy_type": "retail_noise",
+      "risk_mode": "normal",
+      "confidence": 0.7,
+      "reason": "Static retail LLM test response: slightly active, mildly bullish, low panic.",
+      "updated_at": "2025-03-01T09:45:00+00:00",
+      "trade_probability": 0.35,
+      "buy_bias": 0.52,
+      "max_order_size": 10,
+      "herding_tendency": 0.15,
+      "panic_level": 0.05
+    },
+    "portfolio_before": {
+      "cash": 24596.12,
+      "portfolio_value": 24998.16,
+      "positions": {
+        "AAPL": {
+          "long": 4,
+          "short": 0,
+          "net": 4,
+          "last_price": 100.51,
+          "realized_pnl": -2.279999999999987
+        }
+      }
+    },
+    "portfolio_after": {
+      "cash": 24596.12,
+      "portfolio_value": 24998.16,
+      "positions": {
+        "AAPL": {
+          "long": 4,
+          "short": 0,
+          "net": 4,
+          "last_price": 100.51,
+          "realized_pnl": -2.279999999999987
+        }
+      }
+    },
+    "agent_id": "retail_population_1",
+    "timestamp": "2025-03-01T09:49:00+00:00"
+  },
+  {
+    "event_type": "order_submitted",
+    "order_id": "bfb5fa04-e723-45be-b36c-8c3d4cfe4058",
+    "instrument": "AAPL",
+    "side": "SELL",
+    "quantity": 4,
+    "order_type": "MARKET",
+    "price": null,
+    "explanation": "AML retail noisy market order",
+    "strategy_state": {
+      "strategy_type": "retail_noise",
+      "risk_mode": "normal",
+      "confidence": 0.7,
+      "reason": "Static retail LLM test response: slightly active, mildly bullish, low panic.",
+      "updated_at": "2025-03-01T09:50:00+00:00",
+      "trade_probability": 0.35,
+      "buy_bias": 0.52,
+      "max_order_size": 10,
+      "herding_tendency": 0.15,
+      "panic_level": 0.05
+    },
+    "portfolio_before": {
+      "cash": 24596.12,
+      "portfolio_value": 24999.239999999998,
+      "positions": {
+        "AAPL": {
+          "long": 4,
+          "short": 0,
+          "net": 4,
+          "last_price": 100.78,
+          "realized_pnl": -2.279999999999987
+        }
+      }
+    },
+    "portfolio_after": {
+      "cash": 24596.12,
+      "portfolio_value": 24999.239999999998,
+      "positions": {
+        "AAPL": {
+          "long": 4,
+          "short": 0,
+          "net": 4,
+          "last_price": 100.78,
+          "realized_pnl": -2.279999999999987
+        }
+      }
+    },
+    "agent_id": "retail_population_1",
+    "timestamp": "2025-03-01T09:52:00+00:00"
+  },
+  {
+    "event_type": "trade_executed",
+    "order_id": "bfb5fa04-e723-45be-b36c-8c3d4cfe4058",
+    "instrument": "AAPL",
+    "role": "SELLER",
+    "quantity": 4,
+    "price": 100.68,
+    "order_type": null,
+    "order_status": "FILLED",
+    "explanation": "AML retail noisy market order",
+    "raw_trade": {
+      "instrument": "AAPL",
+      "price": 100.68,
+      "quantity": 4,
+      "timestamp": "2025-03-01T09:52:00+00:00",
+      "seq": 20,
+      "role": "SELLER",
+      "order_id": "bfb5fa04-e723-45be-b36c-8c3d4cfe4058",
+      "order_status": "FILLED",
+      "explanation": "AML retail noisy market order",
+      "is_short": false,
+      "is_short_cover": false
+    },
+    "strategy_state": {
+      "strategy_type": "retail_noise",
+      "risk_mode": "normal",
+      "confidence": 0.7,
+      "reason": "Static retail LLM test response: slightly active, mildly bullish, low panic.",
+      "updated_at": "2025-03-01T09:50:00+00:00",
+      "trade_probability": 0.35,
+      "buy_bias": 0.52,
+      "max_order_size": 10,
+      "herding_tendency": 0.15,
+      "panic_level": 0.05
+    },
+    "portfolio_before": {
+      "cash": 24596.12,
+      "portfolio_value": 24999.239999999998,
+      "positions": {
+        "AAPL": {
+          "long": 4,
+          "short": 0,
+          "net": 4,
+          "last_price": 100.78,
+          "realized_pnl": -2.279999999999987
+        }
+      }
+    },
+    "portfolio_after": {
+      "cash": 24998.84,
+      "portfolio_value": 24999.239999999998,
+      "positions": {
+        "AAPL": {
+          "long": 0,
+          "short": 0,
+          "net": 0,
+          "last_price": 100.78,
+          "realized_pnl": -1.159999999999954
+        }
+      }
+    },
+    "agent_id": "retail_population_1",
+    "timestamp": "2025-03-01T09:52:00+00:00"
+  },
+  {
+    "event_type": "order_submitted",
+    "order_id": "34df8eac-5153-421f-969c-2406a9e6d7bc",
+    "instrument": "AAPL",
+    "side": "BUY",
+    "quantity": 2,
+    "order_type": "MARKET",
+    "price": null,
+    "explanation": "AML retail noisy market order",
+    "strategy_state": {
+      "strategy_type": "retail_noise",
+      "risk_mode": "normal",
+      "confidence": 0.7,
+      "reason": "Static retail LLM test response: slightly active, mildly bullish, low panic.",
+      "updated_at": "2025-03-01T09:55:00+00:00",
+      "trade_probability": 0.35,
+      "buy_bias": 0.52,
+      "max_order_size": 10,
+      "herding_tendency": 0.15,
+      "panic_level": 0.05
+    },
+    "portfolio_before": {
+      "cash": 24998.84,
+      "portfolio_value": 24998.84,
+      "positions": {
+        "AAPL": {
+          "long": 0,
+          "short": 0,
+          "net": 0,
+          "last_price": 100.91,
+          "realized_pnl": -1.159999999999954
+        }
+      }
+    },
+    "portfolio_after": {
+      "cash": 24998.84,
+      "portfolio_value": 24998.84,
+      "positions": {
+        "AAPL": {
+          "long": 0,
+          "short": 0,
+          "net": 0,
+          "last_price": 100.91,
+          "realized_pnl": -1.159999999999954
+        }
+      }
+    },
+    "agent_id": "retail_population_1",
+    "timestamp": "2025-03-01T09:59:00+00:00"
+  },
+  {
+    "event_type": "trade_executed",
+    "order_id": "34df8eac-5153-421f-969c-2406a9e6d7bc",
+    "instrument": "AAPL",
+    "role": "BUYER",
+    "quantity": 2,
+    "price": 100.92,
+    "order_type": null,
+    "order_status": "FILLED",
+    "explanation": "AML retail noisy market order",
+    "raw_trade": {
+      "instrument": "AAPL",
+      "price": 100.92,
+      "quantity": 2,
+      "timestamp": "2025-03-01T09:59:00+00:00",
+      "seq": 26,
+      "role": "BUYER",
+      "order_id": "34df8eac-5153-421f-969c-2406a9e6d7bc",
+      "order_status": "FILLED",
+      "explanation": "AML retail noisy market order",
+      "is_short": false,
+      "is_short_cover": false
+    },
+    "strategy_state": {
+      "strategy_type": "retail_noise",
+      "risk_mode": "normal",
+      "confidence": 0.7,
+      "reason": "Static retail LLM test response: slightly active, mildly bullish, low panic.",
+      "updated_at": "2025-03-01T09:55:00+00:00",
+      "trade_probability": 0.35,
+      "buy_bias": 0.52,
+      "max_order_size": 10,
+      "herding_tendency": 0.15,
+      "panic_level": 0.05
+    },
+    "portfolio_before": {
+      "cash": 24998.84,
+      "portfolio_value": 24998.84,
+      "positions": {
+        "AAPL": {
+          "long": 0,
+          "short": 0,
+          "net": 0,
+          "last_price": 100.91,
+          "realized_pnl": -1.159999999999954
+        }
+      }
+    },
+    "portfolio_after": {
+      "cash": 24797.0,
+      "portfolio_value": 24998.84,
+      "positions": {
+        "AAPL": {
+          "long": 2,
+          "short": 0,
+          "net": 2,
+          "last_price": 100.91,
+          "realized_pnl": -1.159999999999954
+        }
+      }
+    },
+    "agent_id": "retail_population_1",
+    "timestamp": "2025-03-01T09:59:00+00:00"
+  }
+]

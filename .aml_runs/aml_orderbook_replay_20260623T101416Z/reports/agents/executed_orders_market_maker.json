@@ -1,0 +1,263 @@
+[
+  {
+    "timestamp": "2025-03-01T09:34:00+00:00",
+    "instrument": "AAPL",
+    "action": "SELL",
+    "orderType": null,
+    "price": 100.12,
+    "quantity": 100,
+    "explanation": null
+  },
+  {
+    "timestamp": "2025-03-01T09:35:00+00:00",
+    "instrument": "AAPL",
+    "action": "SELL",
+    "orderType": null,
+    "price": 100.28,
+    "quantity": 4,
+    "explanation": null
+  },
+  {
+    "timestamp": "2025-03-01T09:36:00+00:00",
+    "instrument": "AAPL",
+    "action": "SELL",
+    "orderType": null,
+    "price": 100.28,
+    "quantity": 2,
+    "explanation": null
+  },
+  {
+    "timestamp": "2025-03-01T09:37:00+00:00",
+    "instrument": "AAPL",
+    "action": "BUY",
+    "orderType": null,
+    "price": 100.03,
+    "quantity": 2,
+    "explanation": null
+  },
+  {
+    "timestamp": "2025-03-01T09:39:00+00:00",
+    "instrument": "AAPL",
+    "action": "SELL",
+    "orderType": null,
+    "price": 100.28,
+    "quantity": 9,
+    "explanation": null
+  },
+  {
+    "timestamp": "2025-03-01T09:39:00+00:00",
+    "instrument": "AAPL",
+    "action": "SELL",
+    "orderType": null,
+    "price": 100.28,
+    "quantity": 8,
+    "explanation": null
+  },
+  {
+    "timestamp": "2025-03-01T09:40:00+00:00",
+    "instrument": "AAPL",
+    "action": "SELL",
+    "orderType": null,
+    "price": 100.31,
+    "quantity": 100,
+    "explanation": null
+  },
+  {
+    "timestamp": "2025-03-01T09:40:00+00:00",
+    "instrument": "AAPL",
+    "action": "BUY",
+    "orderType": null,
+    "price": 100.06,
+    "quantity": 10,
+    "explanation": null
+  },
+  {
+    "timestamp": "2025-03-01T09:41:00+00:00",
+    "instrument": "AAPL",
+    "action": "SELL",
+    "orderType": null,
+    "price": 100.44,
+    "quantity": 3,
+    "explanation": null
+  },
+  {
+    "timestamp": "2025-03-01T09:42:00+00:00",
+    "instrument": "AAPL",
+    "action": "SELL",
+    "orderType": null,
+    "price": 100.45,
+    "quantity": 100,
+    "explanation": null
+  },
+  {
+    "timestamp": "2025-03-01T09:42:00+00:00",
+    "instrument": "AAPL",
+    "action": "BUY",
+    "orderType": null,
+    "price": 100.2,
+    "quantity": 1,
+    "explanation": null
+  },
+  {
+    "timestamp": "2025-03-01T09:43:00+00:00",
+    "instrument": "AAPL",
+    "action": "SELL",
+    "orderType": null,
+    "price": 100.59,
+    "quantity": 4,
+    "explanation": null
+  },
+  {
+    "timestamp": "2025-03-01T09:45:00+00:00",
+    "instrument": "AAPL",
+    "action": "SELL",
+    "orderType": null,
+    "price": 100.6,
+    "quantity": 9,
+    "explanation": null
+  },
+  {
+    "timestamp": "2025-03-01T09:46:00+00:00",
+    "instrument": "AAPL",
+    "action": "SELL",
+    "orderType": null,
+    "price": 100.61,
+    "quantity": 100,
+    "explanation": null
+  },
+  {
+    "timestamp": "2025-03-01T09:47:00+00:00",
+    "instrument": "AAPL",
+    "action": "SELL",
+    "orderType": null,
+    "price": 100.76,
+    "quantity": 1,
+    "explanation": null
+  },
+  {
+    "timestamp": "2025-03-01T09:47:00+00:00",
+    "instrument": "AAPL",
+    "action": "BUY",
+    "orderType": null,
+    "price": 100.51,
+    "quantity": 8,
+    "explanation": null
+  },
+  {
+    "timestamp": "2025-03-01T09:49:00+00:00",
+    "instrument": "AAPL",
+    "action": "SELL",
+    "orderType": null,
+    "price": 100.75,
+    "quantity": 6,
+    "explanation": null
+  },
+  {
+    "timestamp": "2025-03-01T09:49:00+00:00",
+    "instrument": "AAPL",
+    "action": "SELL",
+    "orderType": null,
+    "price": 100.75,
+    "quantity": 6,
+    "explanation": null
+  },
+  {
+    "timestamp": "2025-03-01T09:49:00+00:00",
+    "instrument": "AAPL",
+    "action": "SELL",
+    "orderType": null,
+    "price": 100.75,
+    "quantity": 8,
+    "explanation": null
+  },
+  {
+    "timestamp": "2025-03-01T09:50:00+00:00",
+    "instrument": "AAPL",
+    "action": "SELL",
+    "orderType": null,
+    "price": 100.78,
+    "quantity": 100,
+    "explanation": null
+  },
+  {
+    "timestamp": "2025-03-01T09:52:00+00:00",
+    "instrument": "AAPL",
+    "action": "BUY",
+    "orderType": null,
+    "price": 100.68,
+    "quantity": 4,
+    "explanation": null
+  },
+  {
+    "timestamp": "2025-03-01T09:52:00+00:00",
+    "instrument": "AAPL",
+    "action": "BUY",
+    "orderType": null,
+    "price": 100.68,
+    "quantity": 1,
+    "explanation": null
+  },
+  {
+    "timestamp": "2025-03-01T09:53:00+00:00",
+    "instrument": "AAPL",
+    "action": "BUY",
+    "orderType": null,
+    "price": 100.68,
+    "quantity": 5,
+    "explanation": null
+  },
+  {
+    "timestamp": "2025-03-01T09:54:00+00:00",
+    "instrument": "AAPL",
+    "action": "BUY",
+    "orderType": null,
+    "price": 100.67,
+    "quantity": 3,
+    "explanation": null
+  },
+  {
+    "timestamp": "2025-03-01T09:55:00+00:00",
+    "instrument": "AAPL",
+    "action": "BUY",
+    "orderType": null,
+    "price": 100.66,
+    "quantity": 2,
+    "explanation": null
+  },
+  {
+    "timestamp": "2025-03-01T09:58:00+00:00",
+    "instrument": "AAPL",
+    "action": "SELL",
+    "orderType": null,
+    "price": 100.91,
+    "quantity": 9,
+    "explanation": null
+  },
+  {
+    "timestamp": "2025-03-01T09:59:00+00:00",
+    "instrument": "AAPL",
+    "action": "SELL",
+    "orderType": null,
+    "price": 100.92,
+    "quantity": 2,
+    "explanation": null
+  },
+  {
+    "timestamp": "2025-03-01T09:59:00+00:00",
+    "instrument": "AAPL",
+    "action": "SELL",
+    "orderType": null,
+    "price": 100.92,
+    "quantity": 2,
+    "explanation": null
+  },
+  {
+    "timestamp": "2025-03-01T09:59:00+00:00",
+    "instrument": "AAPL",
+    "action": "SELL",
+    "orderType": null,
+    "price": 100.92,
+    "quantity": 6,
+    "explanation": null
+  }
+]

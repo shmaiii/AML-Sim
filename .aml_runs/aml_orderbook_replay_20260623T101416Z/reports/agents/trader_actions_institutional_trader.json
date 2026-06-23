@@ -1,0 +1,920 @@
+[
+  {
+    "event_type": "order_submitted",
+    "order_id": "e3ad6ef1-5989-408d-85d9-8747cd3f8be1",
+    "instrument": "AAPL",
+    "side": "BUY",
+    "quantity": 100,
+    "order_type": "MARKET",
+    "price": null,
+    "explanation": "AML institutional child order toward target 500",
+    "strategy_state": {
+      "strategy_type": "target_execution",
+      "risk_mode": "normal",
+      "confidence": 0.78,
+      "reason": "Static institutional LLM test response: keep sliced execution with moderate urgency.",
+      "updated_at": "2025-03-01T09:30:00+00:00",
+      "target_positions": {
+        "AAPL": 500
+      },
+      "child_order_size": 100,
+      "order_type": "MARKET",
+      "limit_price": null,
+      "execution_style": "sliced",
+      "urgency": 0.6
+    },
+    "portfolio_before": {
+      "cash": 500000,
+      "portfolio_value": 500000,
+      "positions": {
+        "AAPL": {
+          "long": 0,
+          "short": 0,
+          "net": 0,
+          "last_price": 0.0,
+          "realized_pnl": 0.0
+        }
+      }
+    },
+    "portfolio_after": {
+      "cash": 500000,
+      "portfolio_value": 500000,
+      "positions": {
+        "AAPL": {
+          "long": 0,
+          "short": 0,
+          "net": 0,
+          "last_price": 0.0,
+          "realized_pnl": 0.0
+        }
+      }
+    },
+    "agent_id": "institutional_trader",
+    "timestamp": "2025-03-01T09:30:00+00:00"
+  },
+  {
+    "event_type": "order_submitted",
+    "order_id": "55dc03e7-3a6d-43d1-9f55-1ebba2d2cfc1",
+    "instrument": "AAPL",
+    "side": "BUY",
+    "quantity": 100,
+    "order_type": "MARKET",
+    "price": null,
+    "explanation": "AML institutional child order toward target 500",
+    "strategy_state": {
+      "strategy_type": "target_execution",
+      "risk_mode": "normal",
+      "confidence": 0.78,
+      "reason": "Static institutional LLM test response: keep sliced execution with moderate urgency.",
+      "updated_at": "2025-03-01T09:30:00+00:00",
+      "target_positions": {
+        "AAPL": 500
+      },
+      "child_order_size": 100,
+      "order_type": "MARKET",
+      "limit_price": null,
+      "execution_style": "sliced",
+      "urgency": 0.6
+    },
+    "portfolio_before": {
+      "cash": 500000,
+      "portfolio_value": 500000,
+      "positions": {
+        "AAPL": {
+          "long": 0,
+          "short": 0,
+          "net": 0,
+          "last_price": 0.0,
+          "realized_pnl": 0.0
+        }
+      }
+    },
+    "portfolio_after": {
+      "cash": 500000,
+      "portfolio_value": 500000,
+      "positions": {
+        "AAPL": {
+          "long": 0,
+          "short": 0,
+          "net": 0,
+          "last_price": 0.0,
+          "realized_pnl": 0.0
+        }
+      }
+    },
+    "agent_id": "institutional_trader",
+    "timestamp": "2025-03-01T09:32:00+00:00"
+  },
+  {
+    "event_type": "order_submitted",
+    "order_id": "39c9e152-55af-4064-bcdc-44b3073c1260",
+    "instrument": "AAPL",
+    "side": "BUY",
+    "quantity": 100,
+    "order_type": "MARKET",
+    "price": null,
+    "explanation": "AML institutional child order toward target 500",
+    "strategy_state": {
+      "strategy_type": "target_execution",
+      "risk_mode": "normal",
+      "confidence": 0.78,
+      "reason": "Static institutional LLM test response: keep sliced execution with moderate urgency.",
+      "updated_at": "2025-03-01T09:30:00+00:00",
+      "target_positions": {
+        "AAPL": 500
+      },
+      "child_order_size": 100,
+      "order_type": "MARKET",
+      "limit_price": null,
+      "execution_style": "sliced",
+      "urgency": 0.6
+    },
+    "portfolio_before": {
+      "cash": 500000,
+      "portfolio_value": 500000,
+      "positions": {
+        "AAPL": {
+          "long": 0,
+          "short": 0,
+          "net": 0,
+          "last_price": 0.0,
+          "realized_pnl": 0.0
+        }
+      }
+    },
+    "portfolio_after": {
+      "cash": 500000,
+      "portfolio_value": 500000,
+      "positions": {
+        "AAPL": {
+          "long": 0,
+          "short": 0,
+          "net": 0,
+          "last_price": 0.0,
+          "realized_pnl": 0.0
+        }
+      }
+    },
+    "agent_id": "institutional_trader",
+    "timestamp": "2025-03-01T09:34:00+00:00"
+  },
+  {
+    "event_type": "trade_executed",
+    "order_id": "39c9e152-55af-4064-bcdc-44b3073c1260",
+    "instrument": "AAPL",
+    "role": "BUYER",
+    "quantity": 100,
+    "price": 100.12,
+    "order_type": null,
+    "order_status": "FILLED",
+    "explanation": "AML institutional child order toward target 500",
+    "raw_trade": {
+      "instrument": "AAPL",
+      "price": 100.12,
+      "quantity": 100,
+      "timestamp": "2025-03-01T09:34:00+00:00",
+      "seq": 0,
+      "role": "BUYER",
+      "order_id": "39c9e152-55af-4064-bcdc-44b3073c1260",
+      "order_status": "FILLED",
+      "explanation": "AML institutional child order toward target 500",
+      "is_short": false,
+      "is_short_cover": false
+    },
+    "strategy_state": {
+      "strategy_type": "target_execution",
+      "risk_mode": "normal",
+      "confidence": 0.78,
+      "reason": "Static institutional LLM test response: keep sliced execution with moderate urgency.",
+      "updated_at": "2025-03-01T09:30:00+00:00",
+      "target_positions": {
+        "AAPL": 500
+      },
+      "child_order_size": 100,
+      "order_type": "MARKET",
+      "limit_price": null,
+      "execution_style": "sliced",
+      "urgency": 0.6
+    },
+    "portfolio_before": {
+      "cash": 500000,
+      "portfolio_value": 500000,
+      "positions": {
+        "AAPL": {
+          "long": 0,
+          "short": 0,
+          "net": 0,
+          "last_price": 0.0,
+          "realized_pnl": 0.0
+        }
+      }
+    },
+    "portfolio_after": {
+      "cash": 489988.0,
+      "portfolio_value": 500000,
+      "positions": {
+        "AAPL": {
+          "long": 100,
+          "short": 0,
+          "net": 100,
+          "last_price": 0.0,
+          "realized_pnl": 0.0
+        }
+      }
+    },
+    "agent_id": "institutional_trader",
+    "timestamp": "2025-03-01T09:34:00+00:00"
+  },
+  {
+    "event_type": "order_submitted",
+    "order_id": "5553ae75-4dfd-4b74-acfd-0e2445c5b5b7",
+    "instrument": "AAPL",
+    "side": "BUY",
+    "quantity": 100,
+    "order_type": "MARKET",
+    "price": null,
+    "explanation": "AML institutional child order toward target 500",
+    "strategy_state": {
+      "strategy_type": "target_execution",
+      "risk_mode": "normal",
+      "confidence": 0.78,
+      "reason": "Static institutional LLM test response: keep sliced execution with moderate urgency.",
+      "updated_at": "2025-03-01T09:30:00+00:00",
+      "target_positions": {
+        "AAPL": 500
+      },
+      "child_order_size": 100,
+      "order_type": "MARKET",
+      "limit_price": null,
+      "execution_style": "sliced",
+      "urgency": 0.6
+    },
+    "portfolio_before": {
+      "cash": 489988.0,
+      "portfolio_value": 500016.0,
+      "positions": {
+        "AAPL": {
+          "long": 100,
+          "short": 0,
+          "net": 100,
+          "last_price": 100.28,
+          "realized_pnl": 0.0
+        }
+      }
+    },
+    "portfolio_after": {
+      "cash": 489988.0,
+      "portfolio_value": 500016.0,
+      "positions": {
+        "AAPL": {
+          "long": 100,
+          "short": 0,
+          "net": 100,
+          "last_price": 100.28,
+          "realized_pnl": 0.0
+        }
+      }
+    },
+    "agent_id": "institutional_trader",
+    "timestamp": "2025-03-01T09:36:00+00:00"
+  },
+  {
+    "event_type": "order_submitted",
+    "order_id": "6b29af7d-23cc-43c3-b2c2-70effcd27849",
+    "instrument": "AAPL",
+    "side": "BUY",
+    "quantity": 100,
+    "order_type": "MARKET",
+    "price": null,
+    "explanation": "AML institutional child order toward target 500",
+    "strategy_state": {
+      "strategy_type": "target_execution",
+      "risk_mode": "normal",
+      "confidence": 0.78,
+      "reason": "Static institutional LLM test response: keep sliced execution with moderate urgency.",
+      "updated_at": "2025-03-01T09:30:00+00:00",
+      "target_positions": {
+        "AAPL": 500
+      },
+      "child_order_size": 100,
+      "order_type": "MARKET",
+      "limit_price": null,
+      "execution_style": "sliced",
+      "urgency": 0.6
+    },
+    "portfolio_before": {
+      "cash": 489988.0,
+      "portfolio_value": 499991.0,
+      "positions": {
+        "AAPL": {
+          "long": 100,
+          "short": 0,
+          "net": 100,
+          "last_price": 100.03,
+          "realized_pnl": 0.0
+        }
+      }
+    },
+    "portfolio_after": {
+      "cash": 489988.0,
+      "portfolio_value": 499991.0,
+      "positions": {
+        "AAPL": {
+          "long": 100,
+          "short": 0,
+          "net": 100,
+          "last_price": 100.03,
+          "realized_pnl": 0.0
+        }
+      }
+    },
+    "agent_id": "institutional_trader",
+    "timestamp": "2025-03-01T09:38:00+00:00"
+  },
+  {
+    "event_type": "order_submitted",
+    "order_id": "ba5a9af3-4140-4357-81ec-de2287209cef",
+    "instrument": "AAPL",
+    "side": "BUY",
+    "quantity": 100,
+    "order_type": "MARKET",
+    "price": null,
+    "explanation": "AML institutional child order toward target 500",
+    "strategy_state": {
+      "strategy_type": "target_execution",
+      "risk_mode": "normal",
+      "confidence": 0.78,
+      "reason": "Static institutional LLM test response: keep sliced execution with moderate urgency.",
+      "updated_at": "2025-03-01T09:40:00+00:00",
+      "target_positions": {
+        "AAPL": 500
+      },
+      "child_order_size": 100,
+      "order_type": "MARKET",
+      "limit_price": null,
+      "execution_style": "sliced",
+      "urgency": 0.6
+    },
+    "portfolio_before": {
+      "cash": 489988.0,
+      "portfolio_value": 500016.0,
+      "positions": {
+        "AAPL": {
+          "long": 100,
+          "short": 0,
+          "net": 100,
+          "last_price": 100.28,
+          "realized_pnl": 0.0
+        }
+      }
+    },
+    "portfolio_after": {
+      "cash": 489988.0,
+      "portfolio_value": 500016.0,
+      "positions": {
+        "AAPL": {
+          "long": 100,
+          "short": 0,
+          "net": 100,
+          "last_price": 100.28,
+          "realized_pnl": 0.0
+        }
+      }
+    },
+    "agent_id": "institutional_trader",
+    "timestamp": "2025-03-01T09:40:00+00:00"
+  },
+  {
+    "event_type": "trade_executed",
+    "order_id": "ba5a9af3-4140-4357-81ec-de2287209cef",
+    "instrument": "AAPL",
+    "role": "BUYER",
+    "quantity": 100,
+    "price": 100.31,
+    "order_type": null,
+    "order_status": "FILLED",
+    "explanation": "AML institutional child order toward target 500",
+    "raw_trade": {
+      "instrument": "AAPL",
+      "price": 100.31,
+      "quantity": 100,
+      "timestamp": "2025-03-01T09:40:00+00:00",
+      "seq": 6,
+      "role": "BUYER",
+      "order_id": "ba5a9af3-4140-4357-81ec-de2287209cef",
+      "order_status": "FILLED",
+      "explanation": "AML institutional child order toward target 500",
+      "is_short": false,
+      "is_short_cover": false
+    },
+    "strategy_state": {
+      "strategy_type": "target_execution",
+      "risk_mode": "normal",
+      "confidence": 0.78,
+      "reason": "Static institutional LLM test response: keep sliced execution with moderate urgency.",
+      "updated_at": "2025-03-01T09:40:00+00:00",
+      "target_positions": {
+        "AAPL": 500
+      },
+      "child_order_size": 100,
+      "order_type": "MARKET",
+      "limit_price": null,
+      "execution_style": "sliced",
+      "urgency": 0.6
+    },
+    "portfolio_before": {
+      "cash": 489988.0,
+      "portfolio_value": 500016.0,
+      "positions": {
+        "AAPL": {
+          "long": 100,
+          "short": 0,
+          "net": 100,
+          "last_price": 100.28,
+          "realized_pnl": 0.0
+        }
+      }
+    },
+    "portfolio_after": {
+      "cash": 479957.0,
+      "portfolio_value": 500016.0,
+      "positions": {
+        "AAPL": {
+          "long": 200,
+          "short": 0,
+          "net": 200,
+          "last_price": 100.28,
+          "realized_pnl": 0.0
+        }
+      }
+    },
+    "agent_id": "institutional_trader",
+    "timestamp": "2025-03-01T09:40:00+00:00"
+  },
+  {
+    "event_type": "order_submitted",
+    "order_id": "fa7e4b0c-1fc1-4492-8005-0a0852233523",
+    "instrument": "AAPL",
+    "side": "BUY",
+    "quantity": 100,
+    "order_type": "MARKET",
+    "price": null,
+    "explanation": "AML institutional child order toward target 500",
+    "strategy_state": {
+      "strategy_type": "target_execution",
+      "risk_mode": "normal",
+      "confidence": 0.78,
+      "reason": "Static institutional LLM test response: keep sliced execution with moderate urgency.",
+      "updated_at": "2025-03-01T09:40:00+00:00",
+      "target_positions": {
+        "AAPL": 500
+      },
+      "child_order_size": 100,
+      "order_type": "MARKET",
+      "limit_price": null,
+      "execution_style": "sliced",
+      "urgency": 0.6
+    },
+    "portfolio_before": {
+      "cash": 479957.0,
+      "portfolio_value": 500045.0,
+      "positions": {
+        "AAPL": {
+          "long": 200,
+          "short": 0,
+          "net": 200,
+          "last_price": 100.44,
+          "realized_pnl": 0.0
+        }
+      }
+    },
+    "portfolio_after": {
+      "cash": 479957.0,
+      "portfolio_value": 500045.0,
+      "positions": {
+        "AAPL": {
+          "long": 200,
+          "short": 0,
+          "net": 200,
+          "last_price": 100.44,
+          "realized_pnl": 0.0
+        }
+      }
+    },
+    "agent_id": "institutional_trader",
+    "timestamp": "2025-03-01T09:42:00+00:00"
+  },
+  {
+    "event_type": "trade_executed",
+    "order_id": "fa7e4b0c-1fc1-4492-8005-0a0852233523",
+    "instrument": "AAPL",
+    "role": "BUYER",
+    "quantity": 100,
+    "price": 100.45,
+    "order_type": null,
+    "order_status": "FILLED",
+    "explanation": "AML institutional child order toward target 500",
+    "raw_trade": {
+      "instrument": "AAPL",
+      "price": 100.45,
+      "quantity": 100,
+      "timestamp": "2025-03-01T09:42:00+00:00",
+      "seq": 9,
+      "role": "BUYER",
+      "order_id": "fa7e4b0c-1fc1-4492-8005-0a0852233523",
+      "order_status": "FILLED",
+      "explanation": "AML institutional child order toward target 500",
+      "is_short": false,
+      "is_short_cover": false
+    },
+    "strategy_state": {
+      "strategy_type": "target_execution",
+      "risk_mode": "normal",
+      "confidence": 0.78,
+      "reason": "Static institutional LLM test response: keep sliced execution with moderate urgency.",
+      "updated_at": "2025-03-01T09:40:00+00:00",
+      "target_positions": {
+        "AAPL": 500
+      },
+      "child_order_size": 100,
+      "order_type": "MARKET",
+      "limit_price": null,
+      "execution_style": "sliced",
+      "urgency": 0.6
+    },
+    "portfolio_before": {
+      "cash": 479957.0,
+      "portfolio_value": 500045.0,
+      "positions": {
+        "AAPL": {
+          "long": 200,
+          "short": 0,
+          "net": 200,
+          "last_price": 100.44,
+          "realized_pnl": 0.0
+        }
+      }
+    },
+    "portfolio_after": {
+      "cash": 469912.0,
+      "portfolio_value": 500045.0,
+      "positions": {
+        "AAPL": {
+          "long": 300,
+          "short": 0,
+          "net": 300,
+          "last_price": 100.44,
+          "realized_pnl": 0.0
+        }
+      }
+    },
+    "agent_id": "institutional_trader",
+    "timestamp": "2025-03-01T09:42:00+00:00"
+  },
+  {
+    "event_type": "order_submitted",
+    "order_id": "9dd0c266-108e-4ac3-accf-9cb56556a003",
+    "instrument": "AAPL",
+    "side": "BUY",
+    "quantity": 100,
+    "order_type": "MARKET",
+    "price": null,
+    "explanation": "AML institutional child order toward target 500",
+    "strategy_state": {
+      "strategy_type": "target_execution",
+      "risk_mode": "normal",
+      "confidence": 0.78,
+      "reason": "Static institutional LLM test response: keep sliced execution with moderate urgency.",
+      "updated_at": "2025-03-01T09:40:00+00:00",
+      "target_positions": {
+        "AAPL": 500
+      },
+      "child_order_size": 100,
+      "order_type": "MARKET",
+      "limit_price": null,
+      "execution_style": "sliced",
+      "urgency": 0.6
+    },
+    "portfolio_before": {
+      "cash": 469912.0,
+      "portfolio_value": 500089.0,
+      "positions": {
+        "AAPL": {
+          "long": 300,
+          "short": 0,
+          "net": 300,
+          "last_price": 100.59,
+          "realized_pnl": 0.0
+        }
+      }
+    },
+    "portfolio_after": {
+      "cash": 469912.0,
+      "portfolio_value": 500089.0,
+      "positions": {
+        "AAPL": {
+          "long": 300,
+          "short": 0,
+          "net": 300,
+          "last_price": 100.59,
+          "realized_pnl": 0.0
+        }
+      }
+    },
+    "agent_id": "institutional_trader",
+    "timestamp": "2025-03-01T09:44:00+00:00"
+  },
+  {
+    "event_type": "order_submitted",
+    "order_id": "6b3da67f-8267-4c3e-a4cd-2dc1f9d80229",
+    "instrument": "AAPL",
+    "side": "BUY",
+    "quantity": 100,
+    "order_type": "MARKET",
+    "price": null,
+    "explanation": "AML institutional child order toward target 500",
+    "strategy_state": {
+      "strategy_type": "target_execution",
+      "risk_mode": "normal",
+      "confidence": 0.78,
+      "reason": "Static institutional LLM test response: keep sliced execution with moderate urgency.",
+      "updated_at": "2025-03-01T09:40:00+00:00",
+      "target_positions": {
+        "AAPL": 500
+      },
+      "child_order_size": 100,
+      "order_type": "MARKET",
+      "limit_price": null,
+      "execution_style": "sliced",
+      "urgency": 0.6
+    },
+    "portfolio_before": {
+      "cash": 469912.0,
+      "portfolio_value": 500092.0,
+      "positions": {
+        "AAPL": {
+          "long": 300,
+          "short": 0,
+          "net": 300,
+          "last_price": 100.6,
+          "realized_pnl": 0.0
+        }
+      }
+    },
+    "portfolio_after": {
+      "cash": 469912.0,
+      "portfolio_value": 500092.0,
+      "positions": {
+        "AAPL": {
+          "long": 300,
+          "short": 0,
+          "net": 300,
+          "last_price": 100.6,
+          "realized_pnl": 0.0
+        }
+      }
+    },
+    "agent_id": "institutional_trader",
+    "timestamp": "2025-03-01T09:46:00+00:00"
+  },
+  {
+    "event_type": "trade_executed",
+    "order_id": "6b3da67f-8267-4c3e-a4cd-2dc1f9d80229",
+    "instrument": "AAPL",
+    "role": "BUYER",
+    "quantity": 100,
+    "price": 100.61,
+    "order_type": null,
+    "order_status": "FILLED",
+    "explanation": "AML institutional child order toward target 500",
+    "raw_trade": {
+      "instrument": "AAPL",
+      "price": 100.61,
+      "quantity": 100,
+      "timestamp": "2025-03-01T09:46:00+00:00",
+      "seq": 13,
+      "role": "BUYER",
+      "order_id": "6b3da67f-8267-4c3e-a4cd-2dc1f9d80229",
+      "order_status": "FILLED",
+      "explanation": "AML institutional child order toward target 500",
+      "is_short": false,
+      "is_short_cover": false
+    },
+    "strategy_state": {
+      "strategy_type": "target_execution",
+      "risk_mode": "normal",
+      "confidence": 0.78,
+      "reason": "Static institutional LLM test response: keep sliced execution with moderate urgency.",
+      "updated_at": "2025-03-01T09:40:00+00:00",
+      "target_positions": {
+        "AAPL": 500
+      },
+      "child_order_size": 100,
+      "order_type": "MARKET",
+      "limit_price": null,
+      "execution_style": "sliced",
+      "urgency": 0.6
+    },
+    "portfolio_before": {
+      "cash": 469912.0,
+      "portfolio_value": 500092.0,
+      "positions": {
+        "AAPL": {
+          "long": 300,
+          "short": 0,
+          "net": 300,
+          "last_price": 100.6,
+          "realized_pnl": 0.0
+        }
+      }
+    },
+    "portfolio_after": {
+      "cash": 459851.0,
+      "portfolio_value": 500092.0,
+      "positions": {
+        "AAPL": {
+          "long": 400,
+          "short": 0,
+          "net": 400,
+          "last_price": 100.6,
+          "realized_pnl": 0.0
+        }
+      }
+    },
+    "agent_id": "institutional_trader",
+    "timestamp": "2025-03-01T09:46:00+00:00"
+  },
+  {
+    "event_type": "order_submitted",
+    "order_id": "75a9d341-9dbb-4575-a442-592126d21694",
+    "instrument": "AAPL",
+    "side": "BUY",
+    "quantity": 100,
+    "order_type": "MARKET",
+    "price": null,
+    "explanation": "AML institutional child order toward target 500",
+    "strategy_state": {
+      "strategy_type": "target_execution",
+      "risk_mode": "normal",
+      "confidence": 0.78,
+      "reason": "Static institutional LLM test response: keep sliced execution with moderate urgency.",
+      "updated_at": "2025-03-01T09:40:00+00:00",
+      "target_positions": {
+        "AAPL": 500
+      },
+      "child_order_size": 100,
+      "order_type": "MARKET",
+      "limit_price": null,
+      "execution_style": "sliced",
+      "urgency": 0.6
+    },
+    "portfolio_before": {
+      "cash": 459851.0,
+      "portfolio_value": 500055.0,
+      "positions": {
+        "AAPL": {
+          "long": 400,
+          "short": 0,
+          "net": 400,
+          "last_price": 100.51,
+          "realized_pnl": 0.0
+        }
+      }
+    },
+    "portfolio_after": {
+      "cash": 459851.0,
+      "portfolio_value": 500055.0,
+      "positions": {
+        "AAPL": {
+          "long": 400,
+          "short": 0,
+          "net": 400,
+          "last_price": 100.51,
+          "realized_pnl": 0.0
+        }
+      }
+    },
+    "agent_id": "institutional_trader",
+    "timestamp": "2025-03-01T09:48:00+00:00"
+  },
+  {
+    "event_type": "order_submitted",
+    "order_id": "56ba9400-adeb-4f3d-87e9-493bf0c71d47",
+    "instrument": "AAPL",
+    "side": "BUY",
+    "quantity": 100,
+    "order_type": "MARKET",
+    "price": null,
+    "explanation": "AML institutional child order toward target 500",
+    "strategy_state": {
+      "strategy_type": "target_execution",
+      "risk_mode": "normal",
+      "confidence": 0.78,
+      "reason": "Static institutional LLM test response: keep sliced execution with moderate urgency.",
+      "updated_at": "2025-03-01T09:50:00+00:00",
+      "target_positions": {
+        "AAPL": 500
+      },
+      "child_order_size": 100,
+      "order_type": "MARKET",
+      "limit_price": null,
+      "execution_style": "sliced",
+      "urgency": 0.6
+    },
+    "portfolio_before": {
+      "cash": 459851.0,
+      "portfolio_value": 500151.0,
+      "positions": {
+        "AAPL": {
+          "long": 400,
+          "short": 0,
+          "net": 400,
+          "last_price": 100.75,
+          "realized_pnl": 0.0
+        }
+      }
+    },
+    "portfolio_after": {
+      "cash": 459851.0,
+      "portfolio_value": 500151.0,
+      "positions": {
+        "AAPL": {
+          "long": 400,
+          "short": 0,
+          "net": 400,
+          "last_price": 100.75,
+          "realized_pnl": 0.0
+        }
+      }
+    },
+    "agent_id": "institutional_trader",
+    "timestamp": "2025-03-01T09:50:00+00:00"
+  },
+  {
+    "event_type": "trade_executed",
+    "order_id": "56ba9400-adeb-4f3d-87e9-493bf0c71d47",
+    "instrument": "AAPL",
+    "role": "BUYER",
+    "quantity": 100,
+    "price": 100.78,
+    "order_type": null,
+    "order_status": "FILLED",
+    "explanation": "AML institutional child order toward target 500",
+    "raw_trade": {
+      "instrument": "AAPL",
+      "price": 100.78,
+      "quantity": 100,
+      "timestamp": "2025-03-01T09:50:00+00:00",
+      "seq": 19,
+      "role": "BUYER",
+      "order_id": "56ba9400-adeb-4f3d-87e9-493bf0c71d47",
+      "order_status": "FILLED",
+      "explanation": "AML institutional child order toward target 500",
+      "is_short": false,
+      "is_short_cover": false
+    },
+    "strategy_state": {
+      "strategy_type": "target_execution",
+      "risk_mode": "normal",
+      "confidence": 0.78,
+      "reason": "Static institutional LLM test response: keep sliced execution with moderate urgency.",
+      "updated_at": "2025-03-01T09:50:00+00:00",
+      "target_positions": {
+        "AAPL": 500
+      },
+      "child_order_size": 100,
+      "order_type": "MARKET",
+      "limit_price": null,
+      "execution_style": "sliced",
+      "urgency": 0.6
+    },
+    "portfolio_before": {
+      "cash": 459851.0,
+      "portfolio_value": 500151.0,
+      "positions": {
+        "AAPL": {
+          "long": 400,
+          "short": 0,
+          "net": 400,
+          "last_price": 100.75,
+          "realized_pnl": 0.0
+        }
+      }
+    },
+    "portfolio_after": {
+      "cash": 449773.0,
+      "portfolio_value": 500151.0,
+      "positions": {
+        "AAPL": {
+          "long": 500,
+          "short": 0,
+          "net": 500,
+          "last_price": 100.75,
+          "realized_pnl": 0.0
+        }
+      }
+    },
+    "agent_id": "institutional_trader",
+    "timestamp": "2025-03-01T09:50:00+00:00"
+  }
+]

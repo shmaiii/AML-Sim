@@ -1,0 +1,141 @@
+2026-06-23 18:14:31 | INFO     | institutional_trader | Initializing Agent institutional_trader with RabbitMQ host localhost.
+2026-06-23 18:14:31 | INFO     | institutional_trader | TraderAgent institutional_trader initialized with cash balance $500,000.00
+2026-06-23 18:14:31 | INFO     | institutional_trader | institutional_trader slow loop configured: strategist=LLMStrategist, interval=0:10:00
+2026-06-23 18:14:31 | INFO     | institutional_trader | AMLInstitutionalTrader institutional_trader initialized: strategy_state=InstitutionalStrategyState(strategy_type='target_execution', risk_mode='normal', confidence=1.0, reason=None, updated_at=None, target_positions={'AAPL': 500}, child_order_size=50, order_type='MARKET', limit_price=None, execution_style='sliced', urgency=0.5)
+2026-06-23 18:14:31 | INFO     | institutional_trader | Attempting to connect to RabbitMQ at localhost...
+2026-06-23 18:14:31 | INFO     | institutional_trader | Time routing key: trader.#
+2026-06-23 18:14:31 | INFO     | institutional_trader | Agent institutional_trader bound to time exchange 'time_exchange'.
+2026-06-23 18:14:31 | INFO     | institutional_trader | Started consuming messages.
+2026-06-23 18:14:31 | INFO     | institutional_trader | Started consuming TIME_TICK messages.
+2026-06-23 18:14:31 | INFO     | institutional_trader | Subscription confirmation for AAPL: subscribed
+2026-06-23 18:14:51 | INFO     | institutional_trader | Received TIME_TICK message: 2025-03-01T09:30:00+00:00
+2026-06-23 18:14:51 | INFO     | institutional_trader | institutional_trader slow loop completed: strategist=LLMStrategist, before={'strategy_type': 'target_execution', 'risk_mode': 'normal', 'confidence': 1.0, 'reason': None, 'updated_at': None, 'target_positions': {'AAPL': 500}, 'child_order_size': 50, 'order_type': 'MARKET', 'limit_price': None, 'execution_style': 'sliced', 'urgency': 0.5}, after={'strategy_type': 'target_execution', 'risk_mode': 'normal', 'confidence': 0.78, 'reason': 'Static institutional LLM test response: keep sliced execution with moderate urgency.', 'updated_at': '2025-03-01T09:30:00+00:00', 'target_positions': {'AAPL': 500}, 'child_order_size': 100, 'order_type': 'MARKET', 'limit_price': None, 'execution_style': 'sliced', 'urgency': 0.6}
+2026-06-23 18:14:51 | INFO     | institutional_trader | Order e3ad6ef1-5989-408d-85d9-8747cd3f8be1 submitted: BUY 100 AAPL @ MARKET
+2026-06-23 18:14:51 | INFO     | institutional_trader | AMLInstitutionalTrader institutional_trader placed BUY MARKET order for 100 AAPL (current=0, target=500)
+2026-06-23 18:14:51 | INFO     | institutional_trader | Order e3ad6ef1-5989-408d-85d9-8747cd3f8be1 confirmed with status: ACTIVE
+2026-06-23 18:14:56 | INFO     | institutional_trader | Received TIME_TICK message: 2025-03-01T09:30:30+00:00
+2026-06-23 18:15:01 | INFO     | institutional_trader | Received TIME_TICK message: 2025-03-01T09:31:00+00:00
+2026-06-23 18:15:06 | INFO     | institutional_trader | Received TIME_TICK message: 2025-03-01T09:31:30+00:00
+2026-06-23 18:15:11 | INFO     | institutional_trader | Received TIME_TICK message: 2025-03-01T09:32:00+00:00
+2026-06-23 18:15:11 | INFO     | institutional_trader | Order 55dc03e7-3a6d-43d1-9f55-1ebba2d2cfc1 submitted: BUY 100 AAPL @ MARKET
+2026-06-23 18:15:11 | INFO     | institutional_trader | AMLInstitutionalTrader institutional_trader placed BUY MARKET order for 100 AAPL (current=0, target=500)
+2026-06-23 18:15:11 | INFO     | institutional_trader | Order 55dc03e7-3a6d-43d1-9f55-1ebba2d2cfc1 confirmed with status: ACTIVE
+2026-06-23 18:15:16 | INFO     | institutional_trader | Received TIME_TICK message: 2025-03-01T09:32:30+00:00
+2026-06-23 18:15:21 | INFO     | institutional_trader | Received TIME_TICK message: 2025-03-01T09:33:00+00:00
+2026-06-23 18:15:26 | INFO     | institutional_trader | Received TIME_TICK message: 2025-03-01T09:33:30+00:00
+2026-06-23 18:15:31 | INFO     | institutional_trader | Received TIME_TICK message: 2025-03-01T09:34:00+00:00
+2026-06-23 18:15:31 | INFO     | institutional_trader | Order 39c9e152-55af-4064-bcdc-44b3073c1260 submitted: BUY 100 AAPL @ MARKET
+2026-06-23 18:15:31 | INFO     | institutional_trader | AMLInstitutionalTrader institutional_trader placed BUY MARKET order for 100 AAPL (current=0, target=500)
+2026-06-23 18:15:31 | INFO     | institutional_trader | Order 39c9e152-55af-4064-bcdc-44b3073c1260 confirmed with status: ACTIVE
+2026-06-23 18:15:36 | INFO     | institutional_trader | Received TIME_TICK message: 2025-03-01T09:34:30+00:00
+2026-06-23 18:15:41 | INFO     | institutional_trader | Received TIME_TICK message: 2025-03-01T09:35:00+00:00
+2026-06-23 18:15:46 | INFO     | institutional_trader | Received TIME_TICK message: 2025-03-01T09:35:30+00:00
+2026-06-23 18:15:51 | INFO     | institutional_trader | Received TIME_TICK message: 2025-03-01T09:36:00+00:00
+2026-06-23 18:15:51 | INFO     | institutional_trader | Order 5553ae75-4dfd-4b74-acfd-0e2445c5b5b7 submitted: BUY 100 AAPL @ MARKET
+2026-06-23 18:15:51 | INFO     | institutional_trader | AMLInstitutionalTrader institutional_trader placed BUY MARKET order for 100 AAPL (current=100, target=500)
+2026-06-23 18:15:51 | INFO     | institutional_trader | Order 5553ae75-4dfd-4b74-acfd-0e2445c5b5b7 confirmed with status: ACTIVE
+2026-06-23 18:15:56 | INFO     | institutional_trader | Received TIME_TICK message: 2025-03-01T09:36:30+00:00
+2026-06-23 18:16:01 | INFO     | institutional_trader | Received TIME_TICK message: 2025-03-01T09:37:00+00:00
+2026-06-23 18:16:06 | INFO     | institutional_trader | Received TIME_TICK message: 2025-03-01T09:37:30+00:00
+2026-06-23 18:16:11 | INFO     | institutional_trader | Received TIME_TICK message: 2025-03-01T09:38:00+00:00
+2026-06-23 18:16:11 | INFO     | institutional_trader | Order 6b29af7d-23cc-43c3-b2c2-70effcd27849 submitted: BUY 100 AAPL @ MARKET
+2026-06-23 18:16:11 | INFO     | institutional_trader | AMLInstitutionalTrader institutional_trader placed BUY MARKET order for 100 AAPL (current=100, target=500)
+2026-06-23 18:16:11 | INFO     | institutional_trader | Order 6b29af7d-23cc-43c3-b2c2-70effcd27849 confirmed with status: ACTIVE
+2026-06-23 18:16:17 | INFO     | institutional_trader | Received TIME_TICK message: 2025-03-01T09:38:30+00:00
+2026-06-23 18:16:22 | INFO     | institutional_trader | Received TIME_TICK message: 2025-03-01T09:39:00+00:00
+2026-06-23 18:16:27 | INFO     | institutional_trader | Received TIME_TICK message: 2025-03-01T09:39:30+00:00
+2026-06-23 18:16:32 | INFO     | institutional_trader | Received TIME_TICK message: 2025-03-01T09:40:00+00:00
+2026-06-23 18:16:32 | INFO     | institutional_trader | institutional_trader slow loop completed: strategist=LLMStrategist, before={'strategy_type': 'target_execution', 'risk_mode': 'normal', 'confidence': 0.78, 'reason': 'Static institutional LLM test response: keep sliced execution with moderate urgency.', 'updated_at': '2025-03-01T09:30:00+00:00', 'target_positions': {'AAPL': 500}, 'child_order_size': 100, 'order_type': 'MARKET', 'limit_price': None, 'execution_style': 'sliced', 'urgency': 0.6}, after={'strategy_type': 'target_execution', 'risk_mode': 'normal', 'confidence': 0.78, 'reason': 'Static institutional LLM test response: keep sliced execution with moderate urgency.', 'updated_at': '2025-03-01T09:40:00+00:00', 'target_positions': {'AAPL': 500}, 'child_order_size': 100, 'order_type': 'MARKET', 'limit_price': None, 'execution_style': 'sliced', 'urgency': 0.6}
+2026-06-23 18:16:32 | INFO     | institutional_trader | Order ba5a9af3-4140-4357-81ec-de2287209cef submitted: BUY 100 AAPL @ MARKET
+2026-06-23 18:16:32 | INFO     | institutional_trader | AMLInstitutionalTrader institutional_trader placed BUY MARKET order for 100 AAPL (current=100, target=500)
+2026-06-23 18:16:32 | INFO     | institutional_trader | Order ba5a9af3-4140-4357-81ec-de2287209cef confirmed with status: ACTIVE
+2026-06-23 18:16:37 | INFO     | institutional_trader | Received TIME_TICK message: 2025-03-01T09:40:30+00:00
+2026-06-23 18:16:42 | INFO     | institutional_trader | Received TIME_TICK message: 2025-03-01T09:41:00+00:00
+2026-06-23 18:16:47 | INFO     | institutional_trader | Received TIME_TICK message: 2025-03-01T09:41:30+00:00
+2026-06-23 18:16:52 | INFO     | institutional_trader | Received TIME_TICK message: 2025-03-01T09:42:00+00:00
+2026-06-23 18:16:52 | INFO     | institutional_trader | Order fa7e4b0c-1fc1-4492-8005-0a0852233523 submitted: BUY 100 AAPL @ MARKET
+2026-06-23 18:16:52 | INFO     | institutional_trader | AMLInstitutionalTrader institutional_trader placed BUY MARKET order for 100 AAPL (current=200, target=500)
+2026-06-23 18:16:52 | INFO     | institutional_trader | Order fa7e4b0c-1fc1-4492-8005-0a0852233523 confirmed with status: ACTIVE
+2026-06-23 18:16:57 | INFO     | institutional_trader | Received TIME_TICK message: 2025-03-01T09:42:30+00:00
+2026-06-23 18:17:02 | INFO     | institutional_trader | Received TIME_TICK message: 2025-03-01T09:43:00+00:00
+2026-06-23 18:17:07 | INFO     | institutional_trader | Received TIME_TICK message: 2025-03-01T09:43:30+00:00
+2026-06-23 18:17:12 | INFO     | institutional_trader | Received TIME_TICK message: 2025-03-01T09:44:00+00:00
+2026-06-23 18:17:12 | INFO     | institutional_trader | Order 9dd0c266-108e-4ac3-accf-9cb56556a003 submitted: BUY 100 AAPL @ MARKET
+2026-06-23 18:17:12 | INFO     | institutional_trader | AMLInstitutionalTrader institutional_trader placed BUY MARKET order for 100 AAPL (current=300, target=500)
+2026-06-23 18:17:12 | INFO     | institutional_trader | Order 9dd0c266-108e-4ac3-accf-9cb56556a003 confirmed with status: ACTIVE
+2026-06-23 18:17:17 | INFO     | institutional_trader | Received TIME_TICK message: 2025-03-01T09:44:30+00:00
+2026-06-23 18:17:22 | INFO     | institutional_trader | Received TIME_TICK message: 2025-03-01T09:45:00+00:00
+2026-06-23 18:17:27 | INFO     | institutional_trader | Received TIME_TICK message: 2025-03-01T09:45:30+00:00
+2026-06-23 18:17:32 | INFO     | institutional_trader | Received TIME_TICK message: 2025-03-01T09:46:00+00:00
+2026-06-23 18:17:32 | INFO     | institutional_trader | Order 6b3da67f-8267-4c3e-a4cd-2dc1f9d80229 submitted: BUY 100 AAPL @ MARKET
+2026-06-23 18:17:32 | INFO     | institutional_trader | AMLInstitutionalTrader institutional_trader placed BUY MARKET order for 100 AAPL (current=300, target=500)
+2026-06-23 18:17:32 | INFO     | institutional_trader | Order 6b3da67f-8267-4c3e-a4cd-2dc1f9d80229 confirmed with status: ACTIVE
+2026-06-23 18:17:37 | INFO     | institutional_trader | Received TIME_TICK message: 2025-03-01T09:46:30+00:00
+2026-06-23 18:17:42 | INFO     | institutional_trader | Received TIME_TICK message: 2025-03-01T09:47:00+00:00
+2026-06-23 18:17:47 | INFO     | institutional_trader | Received TIME_TICK message: 2025-03-01T09:47:30+00:00
+2026-06-23 18:17:52 | INFO     | institutional_trader | Received TIME_TICK message: 2025-03-01T09:48:00+00:00
+2026-06-23 18:17:52 | INFO     | institutional_trader | Order 75a9d341-9dbb-4575-a442-592126d21694 submitted: BUY 100 AAPL @ MARKET
+2026-06-23 18:17:52 | INFO     | institutional_trader | AMLInstitutionalTrader institutional_trader placed BUY MARKET order for 100 AAPL (current=400, target=500)
+2026-06-23 18:17:52 | INFO     | institutional_trader | Order 75a9d341-9dbb-4575-a442-592126d21694 confirmed with status: ACTIVE
+2026-06-23 18:17:57 | INFO     | institutional_trader | Received TIME_TICK message: 2025-03-01T09:48:30+00:00
+2026-06-23 18:18:02 | INFO     | institutional_trader | Received TIME_TICK message: 2025-03-01T09:49:00+00:00
+2026-06-23 18:18:07 | INFO     | institutional_trader | Received TIME_TICK message: 2025-03-01T09:49:30+00:00
+2026-06-23 18:18:12 | INFO     | institutional_trader | Received TIME_TICK message: 2025-03-01T09:50:00+00:00
+2026-06-23 18:18:12 | INFO     | institutional_trader | institutional_trader slow loop completed: strategist=LLMStrategist, before={'strategy_type': 'target_execution', 'risk_mode': 'normal', 'confidence': 0.78, 'reason': 'Static institutional LLM test response: keep sliced execution with moderate urgency.', 'updated_at': '2025-03-01T09:40:00+00:00', 'target_positions': {'AAPL': 500}, 'child_order_size': 100, 'order_type': 'MARKET', 'limit_price': None, 'execution_style': 'sliced', 'urgency': 0.6}, after={'strategy_type': 'target_execution', 'risk_mode': 'normal', 'confidence': 0.78, 'reason': 'Static institutional LLM test response: keep sliced execution with moderate urgency.', 'updated_at': '2025-03-01T09:50:00+00:00', 'target_positions': {'AAPL': 500}, 'child_order_size': 100, 'order_type': 'MARKET', 'limit_price': None, 'execution_style': 'sliced', 'urgency': 0.6}
+2026-06-23 18:18:12 | INFO     | institutional_trader | Order 56ba9400-adeb-4f3d-87e9-493bf0c71d47 submitted: BUY 100 AAPL @ MARKET
+2026-06-23 18:18:12 | INFO     | institutional_trader | AMLInstitutionalTrader institutional_trader placed BUY MARKET order for 100 AAPL (current=400, target=500)
+2026-06-23 18:18:12 | INFO     | institutional_trader | Order 56ba9400-adeb-4f3d-87e9-493bf0c71d47 confirmed with status: ACTIVE
+2026-06-23 18:18:17 | INFO     | institutional_trader | Received TIME_TICK message: 2025-03-01T09:50:30+00:00
+2026-06-23 18:18:22 | INFO     | institutional_trader | Received TIME_TICK message: 2025-03-01T09:51:00+00:00
+2026-06-23 18:18:27 | INFO     | institutional_trader | Received TIME_TICK message: 2025-03-01T09:51:30+00:00
+2026-06-23 18:18:32 | INFO     | institutional_trader | Received TIME_TICK message: 2025-03-01T09:52:00+00:00
+2026-06-23 18:18:37 | INFO     | institutional_trader | Received TIME_TICK message: 2025-03-01T09:52:30+00:00
+2026-06-23 18:18:42 | INFO     | institutional_trader | Received TIME_TICK message: 2025-03-01T09:53:00+00:00
+2026-06-23 18:18:47 | INFO     | institutional_trader | Received TIME_TICK message: 2025-03-01T09:53:30+00:00
+2026-06-23 18:18:52 | INFO     | institutional_trader | Received TIME_TICK message: 2025-03-01T09:54:00+00:00
+2026-06-23 18:18:57 | INFO     | institutional_trader | Received TIME_TICK message: 2025-03-01T09:54:30+00:00
+2026-06-23 18:19:02 | INFO     | institutional_trader | Received TIME_TICK message: 2025-03-01T09:55:00+00:00
+2026-06-23 18:19:07 | INFO     | institutional_trader | Received TIME_TICK message: 2025-03-01T09:55:30+00:00
+2026-06-23 18:19:12 | INFO     | institutional_trader | Received TIME_TICK message: 2025-03-01T09:56:00+00:00
+2026-06-23 18:19:17 | INFO     | institutional_trader | Received TIME_TICK message: 2025-03-01T09:56:30+00:00
+2026-06-23 18:19:22 | INFO     | institutional_trader | Received TIME_TICK message: 2025-03-01T09:57:00+00:00
+2026-06-23 18:19:27 | INFO     | institutional_trader | Received TIME_TICK message: 2025-03-01T09:57:30+00:00
+2026-06-23 18:19:33 | INFO     | institutional_trader | Received TIME_TICK message: 2025-03-01T09:58:00+00:00
+2026-06-23 18:19:38 | INFO     | institutional_trader | Received TIME_TICK message: 2025-03-01T09:58:30+00:00
+2026-06-23 18:19:43 | INFO     | institutional_trader | Received TIME_TICK message: 2025-03-01T09:59:00+00:00
+2026-06-23 18:19:48 | INFO     | institutional_trader | Received TIME_TICK message: 2025-03-01T09:59:30+00:00
+2026-06-23 18:19:55 | INFO     | institutional_trader | Agent institutional_trader received STOP_SIMULATION. Shutting down.
+2026-06-23 18:19:55 | INFO     | institutional_trader | AML trader actions exported to /Users/mailuong/internships/nus/AML-Sim/.aml_runs/aml_orderbook_replay_20260623T101416Z/reports/agents/trader_actions_institutional_trader.json
+2026-06-23 18:19:55 | INFO     | institutional_trader | Final portfolio value: $500,233.00
+2026-06-23 18:19:55 | INFO     | institutional_trader | Realized P&L: {'AAPL': 0.0}
+2026-06-23 18:19:55 | INFO     | institutional_trader | Final Performance Metrics:
+{
+  "ROI": 0.0005,
+  "Sharpe Ratio": 0.1344,
+  "Annualized Sharpe Ratio": 2.1329,
+  "Sortino Ratio": 0.2607,
+  "Win Rate": 0.0,
+  "Profit Factor": 0.0,
+  "Max Drawdown": 0.0001,
+  "Num Trades": 5,
+  "Num Closed Trades": 0,
+  "Total Traded Volume": 50227.0,
+  "Average Trade Size": 10045.4,
+  "ROIC": 0.0046,
+  "Profit per Trade": 0.0,
+  "Last Portfolio Value": 500233.0,
+  "Risk Free Rate Used": 9.506426344208686e-08,
+  "Realized P&L": {
+    "AAPL": 0.0
+  }
+}
+2026-06-23 18:19:55 | INFO     | institutional_trader | Performance metrics exported to /Users/mailuong/internships/nus/AML-Sim/.aml_runs/aml_orderbook_replay_20260623T101416Z/reports/agents/metrics_institutional_trader.json
+2026-06-23 18:19:55 | INFO     | institutional_trader | Executed orders exported to /Users/mailuong/internships/nus/AML-Sim/.aml_runs/aml_orderbook_replay_20260623T101416Z/reports/agents/executed_orders_institutional_trader.json
+2026-06-23 18:19:55 | INFO     | institutional_trader | Portfolio time series exported to /Users/mailuong/internships/nus/AML-Sim/.aml_runs/aml_orderbook_replay_20260623T101416Z/reports/agents/portfolio_timeseries_institutional_trader.json
+2026-06-23 18:19:55 | INFO     | institutional_trader | Pending orders exported to /Users/mailuong/internships/nus/AML-Sim/.aml_runs/aml_orderbook_replay_20260623T101416Z/reports/agents/pending_orders_institutional_trader.json
+2026-06-23 18:19:55 | INFO     | institutional_trader | Cancelled message consumption.
+2026-06-23 18:19:55 | INFO     | institutional_trader | Cancelled TIME_TICK message consumption.
+2026-06-23 18:19:56 | INFO     | institutional_trader | Waited briefly for pending publisher confirmations.
+2026-06-23 18:19:56 | INFO     | institutional_trader | Channel closed.
+2026-06-23 18:19:56 | INFO     | institutional_trader | Closed RabbitMQ connection.
+2026-06-23 18:19:56 | INFO     | institutional_trader | Agent institutional_trader shut down.

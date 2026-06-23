@@ -1,0 +1,587 @@
+2026-06-23 18:14:31 | INFO     | market_maker | Initializing Agent market_maker with RabbitMQ host localhost.
+2026-06-23 18:14:31 | INFO     | market_maker | TraderAgent market_maker initialized with cash balance $1,000,000.00
+2026-06-23 18:14:31 | INFO     | market_maker | market_maker slow loop configured: strategist=LLMStrategist, interval=0:05:00
+2026-06-23 18:14:31 | INFO     | market_maker | AMLMarketMakerTrader market_maker initialized: strategy_state=MarketMakerStrategyState(strategy_type='market_making', risk_mode='normal', confidence=1.0, reason=None, updated_at=None, fair_price=100.0, spread=0.2, quote_size=100, target_inventory=10000, inventory_skew=0.001)
+2026-06-23 18:14:31 | INFO     | market_maker | Attempting to connect to RabbitMQ at localhost...
+2026-06-23 18:14:31 | INFO     | market_maker | Time routing key: trader.#
+2026-06-23 18:14:31 | INFO     | market_maker | Agent market_maker bound to time exchange 'time_exchange'.
+2026-06-23 18:14:31 | INFO     | market_maker | Started consuming messages.
+2026-06-23 18:14:31 | INFO     | market_maker | Started consuming TIME_TICK messages.
+2026-06-23 18:14:31 | INFO     | market_maker | Subscription confirmation for AAPL: subscribed
+2026-06-23 18:14:51 | INFO     | market_maker | Received TIME_TICK message: 2025-03-01T09:30:00+00:00
+2026-06-23 18:14:51 | INFO     | market_maker | market_maker slow loop completed: strategist=LLMStrategist, before={'strategy_type': 'market_making', 'risk_mode': 'normal', 'confidence': 1.0, 'reason': None, 'updated_at': None, 'fair_price': 100.0, 'spread': 0.2, 'quote_size': 100, 'target_inventory': 10000, 'inventory_skew': 0.001}, after={'strategy_type': 'market_making', 'risk_mode': 'normal', 'confidence': 0.75, 'reason': 'Static market-maker LLM test response: quote slightly wider and manage inventory conservatively.', 'updated_at': '2025-03-01T09:30:00+00:00', 'fair_price': 100.0, 'spread': 0.25, 'quote_size': 100, 'target_inventory': 10000, 'inventory_skew': 0.0015}
+2026-06-23 18:14:51 | INFO     | market_maker | Order 12668d92-088b-43b3-af1f-aae27ee2670d submitted: BUY 100 AAPL @ 99.88
+2026-06-23 18:14:51 | INFO     | market_maker | Order f5e6d5f2-e74f-4264-9c15-42ccf3bfa13c submitted: SELL 100 AAPL @ 100.12
+2026-06-23 18:14:51 | INFO     | market_maker | Order 12668d92-088b-43b3-af1f-aae27ee2670d confirmed with status: ACTIVE
+2026-06-23 18:14:51 | INFO     | market_maker | Order f5e6d5f2-e74f-4264-9c15-42ccf3bfa13c confirmed with status: ACTIVE
+2026-06-23 18:14:56 | INFO     | market_maker | Received TIME_TICK message: 2025-03-01T09:30:30+00:00
+2026-06-23 18:14:56 | INFO     | market_maker | Cancellation request sent for order 12668d92-088b-43b3-af1f-aae27ee2670d
+2026-06-23 18:14:56 | INFO     | market_maker | Cancellation request sent for order f5e6d5f2-e74f-4264-9c15-42ccf3bfa13c
+2026-06-23 18:14:56 | INFO     | market_maker | Order 12668d92-088b-43b3-af1f-aae27ee2670d canceled: AAPL BUY 100
+2026-06-23 18:14:56 | INFO     | market_maker | Order 828a4aa5-5e43-456e-a133-61b7a8f3bf46 submitted: BUY 100 AAPL @ 99.88
+2026-06-23 18:14:56 | INFO     | market_maker | Order aa035a45-e529-4d08-8897-76400111934d submitted: SELL 100 AAPL @ 100.12
+2026-06-23 18:14:56 | INFO     | market_maker | Order f5e6d5f2-e74f-4264-9c15-42ccf3bfa13c canceled: AAPL SELL 100
+2026-06-23 18:14:56 | INFO     | market_maker | Order 828a4aa5-5e43-456e-a133-61b7a8f3bf46 confirmed with status: ACTIVE
+2026-06-23 18:14:56 | INFO     | market_maker | Order aa035a45-e529-4d08-8897-76400111934d confirmed with status: ACTIVE
+2026-06-23 18:15:01 | INFO     | market_maker | Received TIME_TICK message: 2025-03-01T09:31:00+00:00
+2026-06-23 18:15:01 | INFO     | market_maker | Cancellation request sent for order aa035a45-e529-4d08-8897-76400111934d
+2026-06-23 18:15:01 | INFO     | market_maker | Cancellation request sent for order 828a4aa5-5e43-456e-a133-61b7a8f3bf46
+2026-06-23 18:15:01 | INFO     | market_maker | Order aa035a45-e529-4d08-8897-76400111934d canceled: AAPL SELL 100
+2026-06-23 18:15:01 | INFO     | market_maker | Order d117f0e6-6456-43e3-ba42-29bf93589e23 submitted: BUY 100 AAPL @ 99.88
+2026-06-23 18:15:01 | INFO     | market_maker | Order 661084d0-ab74-4319-b507-318ec87cf324 submitted: SELL 100 AAPL @ 100.12
+2026-06-23 18:15:01 | INFO     | market_maker | Order 828a4aa5-5e43-456e-a133-61b7a8f3bf46 canceled: AAPL BUY 100
+2026-06-23 18:15:01 | INFO     | market_maker | Order d117f0e6-6456-43e3-ba42-29bf93589e23 confirmed with status: ACTIVE
+2026-06-23 18:15:01 | INFO     | market_maker | Order 661084d0-ab74-4319-b507-318ec87cf324 confirmed with status: ACTIVE
+2026-06-23 18:15:06 | INFO     | market_maker | Received TIME_TICK message: 2025-03-01T09:31:30+00:00
+2026-06-23 18:15:06 | INFO     | market_maker | Cancellation request sent for order 661084d0-ab74-4319-b507-318ec87cf324
+2026-06-23 18:15:06 | INFO     | market_maker | Cancellation request sent for order d117f0e6-6456-43e3-ba42-29bf93589e23
+2026-06-23 18:15:06 | INFO     | market_maker | Order 661084d0-ab74-4319-b507-318ec87cf324 canceled: AAPL SELL 100
+2026-06-23 18:15:06 | INFO     | market_maker | Order f32c23b8-4e55-4c2b-93e4-53cef378224f submitted: BUY 100 AAPL @ 99.88
+2026-06-23 18:15:06 | INFO     | market_maker | Order 2082bb4c-82ee-4976-98bf-8350feeb76b9 submitted: SELL 100 AAPL @ 100.12
+2026-06-23 18:15:06 | INFO     | market_maker | Order d117f0e6-6456-43e3-ba42-29bf93589e23 canceled: AAPL BUY 100
+2026-06-23 18:15:06 | INFO     | market_maker | Order f32c23b8-4e55-4c2b-93e4-53cef378224f confirmed with status: ACTIVE
+2026-06-23 18:15:06 | INFO     | market_maker | Order 2082bb4c-82ee-4976-98bf-8350feeb76b9 confirmed with status: ACTIVE
+2026-06-23 18:15:11 | INFO     | market_maker | Received TIME_TICK message: 2025-03-01T09:32:00+00:00
+2026-06-23 18:15:11 | INFO     | market_maker | Cancellation request sent for order 2082bb4c-82ee-4976-98bf-8350feeb76b9
+2026-06-23 18:15:11 | INFO     | market_maker | Cancellation request sent for order f32c23b8-4e55-4c2b-93e4-53cef378224f
+2026-06-23 18:15:11 | INFO     | market_maker | Order 2082bb4c-82ee-4976-98bf-8350feeb76b9 canceled: AAPL SELL 100
+2026-06-23 18:15:11 | INFO     | market_maker | Order 3fdaa2e4-9c86-4ca5-9de2-cd24c623439a submitted: BUY 100 AAPL @ 99.88
+2026-06-23 18:15:11 | INFO     | market_maker | Order be0a35bf-a4f9-4d44-82de-d8862028f7dd submitted: SELL 100 AAPL @ 100.12
+2026-06-23 18:15:11 | INFO     | market_maker | Order f32c23b8-4e55-4c2b-93e4-53cef378224f canceled: AAPL BUY 100
+2026-06-23 18:15:11 | INFO     | market_maker | Order 3fdaa2e4-9c86-4ca5-9de2-cd24c623439a confirmed with status: ACTIVE
+2026-06-23 18:15:11 | INFO     | market_maker | Order be0a35bf-a4f9-4d44-82de-d8862028f7dd confirmed with status: ACTIVE
+2026-06-23 18:15:16 | INFO     | market_maker | Received TIME_TICK message: 2025-03-01T09:32:30+00:00
+2026-06-23 18:15:16 | INFO     | market_maker | Cancellation request sent for order 3fdaa2e4-9c86-4ca5-9de2-cd24c623439a
+2026-06-23 18:15:16 | INFO     | market_maker | Cancellation request sent for order be0a35bf-a4f9-4d44-82de-d8862028f7dd
+2026-06-23 18:15:16 | INFO     | market_maker | Order 3fdaa2e4-9c86-4ca5-9de2-cd24c623439a canceled: AAPL BUY 100
+2026-06-23 18:15:16 | INFO     | market_maker | Order d27726fb-e4ef-42b9-bcef-4c01780c589b submitted: BUY 100 AAPL @ 99.88
+2026-06-23 18:15:16 | INFO     | market_maker | Order 5698b3e4-11fc-4dac-a0ed-eebc87c6cd16 submitted: SELL 100 AAPL @ 100.12
+2026-06-23 18:15:16 | INFO     | market_maker | Order be0a35bf-a4f9-4d44-82de-d8862028f7dd canceled: AAPL SELL 100
+2026-06-23 18:15:16 | INFO     | market_maker | Order d27726fb-e4ef-42b9-bcef-4c01780c589b confirmed with status: ACTIVE
+2026-06-23 18:15:16 | INFO     | market_maker | Order 5698b3e4-11fc-4dac-a0ed-eebc87c6cd16 confirmed with status: ACTIVE
+2026-06-23 18:15:21 | INFO     | market_maker | Received TIME_TICK message: 2025-03-01T09:33:00+00:00
+2026-06-23 18:15:21 | INFO     | market_maker | Cancellation request sent for order d27726fb-e4ef-42b9-bcef-4c01780c589b
+2026-06-23 18:15:21 | INFO     | market_maker | Cancellation request sent for order 5698b3e4-11fc-4dac-a0ed-eebc87c6cd16
+2026-06-23 18:15:21 | INFO     | market_maker | Order d27726fb-e4ef-42b9-bcef-4c01780c589b canceled: AAPL BUY 100
+2026-06-23 18:15:21 | INFO     | market_maker | Order 76238f52-85c8-4ec0-baff-8bac51427c22 submitted: BUY 100 AAPL @ 99.88
+2026-06-23 18:15:21 | INFO     | market_maker | Order 40ecb205-d38e-43f8-92b4-39450055d914 submitted: SELL 100 AAPL @ 100.12
+2026-06-23 18:15:21 | INFO     | market_maker | Order 5698b3e4-11fc-4dac-a0ed-eebc87c6cd16 canceled: AAPL SELL 100
+2026-06-23 18:15:21 | INFO     | market_maker | Order 76238f52-85c8-4ec0-baff-8bac51427c22 confirmed with status: ACTIVE
+2026-06-23 18:15:21 | INFO     | market_maker | Order 40ecb205-d38e-43f8-92b4-39450055d914 confirmed with status: ACTIVE
+2026-06-23 18:15:26 | INFO     | market_maker | Received TIME_TICK message: 2025-03-01T09:33:30+00:00
+2026-06-23 18:15:26 | INFO     | market_maker | Cancellation request sent for order 76238f52-85c8-4ec0-baff-8bac51427c22
+2026-06-23 18:15:26 | INFO     | market_maker | Cancellation request sent for order 40ecb205-d38e-43f8-92b4-39450055d914
+2026-06-23 18:15:26 | INFO     | market_maker | Order 76238f52-85c8-4ec0-baff-8bac51427c22 canceled: AAPL BUY 100
+2026-06-23 18:15:26 | INFO     | market_maker | Order cb7a235f-a5b0-4fb8-a8d7-7fa37e97e6eb submitted: BUY 100 AAPL @ 99.88
+2026-06-23 18:15:26 | INFO     | market_maker | Order 40ecb205-d38e-43f8-92b4-39450055d914 canceled: AAPL SELL 100
+2026-06-23 18:15:26 | INFO     | market_maker | Order 6a9db2c1-ff01-465f-8fbf-c88225bc0848 submitted: SELL 100 AAPL @ 100.12
+2026-06-23 18:15:26 | INFO     | market_maker | Order cb7a235f-a5b0-4fb8-a8d7-7fa37e97e6eb confirmed with status: ACTIVE
+2026-06-23 18:15:26 | INFO     | market_maker | Order 6a9db2c1-ff01-465f-8fbf-c88225bc0848 confirmed with status: ACTIVE
+2026-06-23 18:15:31 | INFO     | market_maker | Received TIME_TICK message: 2025-03-01T09:34:00+00:00
+2026-06-23 18:15:31 | INFO     | market_maker | Cancellation request sent for order cb7a235f-a5b0-4fb8-a8d7-7fa37e97e6eb
+2026-06-23 18:15:31 | INFO     | market_maker | Cancellation request sent for order 6a9db2c1-ff01-465f-8fbf-c88225bc0848
+2026-06-23 18:15:31 | INFO     | market_maker | Order f517b645-8c9b-429f-b423-84e98738affb submitted: BUY 100 AAPL @ 99.88
+2026-06-23 18:15:31 | INFO     | market_maker | Order b0368f51-72d2-459c-a75a-55614756becd submitted: SELL 100 AAPL @ 100.12
+2026-06-23 18:15:31 | INFO     | market_maker | Order cb7a235f-a5b0-4fb8-a8d7-7fa37e97e6eb canceled: AAPL BUY 100
+2026-06-23 18:15:31 | ERROR    | market_maker | Agent encountered error: Unable to cancel order. It may already be filled or canceled.
+2026-06-23 18:15:31 | INFO     | market_maker | Order f517b645-8c9b-429f-b423-84e98738affb confirmed with status: ACTIVE
+2026-06-23 18:15:31 | INFO     | market_maker | Order b0368f51-72d2-459c-a75a-55614756becd confirmed with status: ACTIVE
+2026-06-23 18:15:36 | INFO     | market_maker | Received TIME_TICK message: 2025-03-01T09:34:30+00:00
+2026-06-23 18:15:36 | INFO     | market_maker | Cancellation request sent for order f517b645-8c9b-429f-b423-84e98738affb
+2026-06-23 18:15:36 | INFO     | market_maker | Cancellation request sent for order b0368f51-72d2-459c-a75a-55614756becd
+2026-06-23 18:15:36 | INFO     | market_maker | Order f517b645-8c9b-429f-b423-84e98738affb canceled: AAPL BUY 100
+2026-06-23 18:15:36 | INFO     | market_maker | Order 4e9a7149-96a2-463f-a86b-64b0e3190e88 submitted: BUY 100 AAPL @ 100.03
+2026-06-23 18:15:36 | INFO     | market_maker | Order 51a81a91-189c-411a-ac18-52c2e09f5bdc submitted: SELL 100 AAPL @ 100.28
+2026-06-23 18:15:36 | INFO     | market_maker | Order b0368f51-72d2-459c-a75a-55614756becd canceled: AAPL SELL 100
+2026-06-23 18:15:36 | INFO     | market_maker | Order 4e9a7149-96a2-463f-a86b-64b0e3190e88 confirmed with status: ACTIVE
+2026-06-23 18:15:36 | INFO     | market_maker | Order 51a81a91-189c-411a-ac18-52c2e09f5bdc confirmed with status: ACTIVE
+2026-06-23 18:15:41 | INFO     | market_maker | Received TIME_TICK message: 2025-03-01T09:35:00+00:00
+2026-06-23 18:15:41 | INFO     | market_maker | market_maker slow loop completed: strategist=LLMStrategist, before={'strategy_type': 'market_making', 'risk_mode': 'normal', 'confidence': 0.75, 'reason': 'Static market-maker LLM test response: quote slightly wider and manage inventory conservatively.', 'updated_at': '2025-03-01T09:30:00+00:00', 'fair_price': 100.0, 'spread': 0.25, 'quote_size': 100, 'target_inventory': 10000, 'inventory_skew': 0.0015}, after={'strategy_type': 'market_making', 'risk_mode': 'normal', 'confidence': 0.75, 'reason': 'Static market-maker LLM test response: quote slightly wider and manage inventory conservatively.', 'updated_at': '2025-03-01T09:35:00+00:00', 'fair_price': 100.0, 'spread': 0.25, 'quote_size': 100, 'target_inventory': 10000, 'inventory_skew': 0.0015}
+2026-06-23 18:15:41 | INFO     | market_maker | Cancellation request sent for order 4e9a7149-96a2-463f-a86b-64b0e3190e88
+2026-06-23 18:15:41 | INFO     | market_maker | Cancellation request sent for order 51a81a91-189c-411a-ac18-52c2e09f5bdc
+2026-06-23 18:15:41 | INFO     | market_maker | Order 4e9a7149-96a2-463f-a86b-64b0e3190e88 canceled: AAPL BUY 100
+2026-06-23 18:15:41 | INFO     | market_maker | Order 3f016d18-561e-471a-816f-a8eabce47529 submitted: BUY 100 AAPL @ 100.03
+2026-06-23 18:15:41 | INFO     | market_maker | Order d5eed7b5-dd3e-4148-ad24-1b537df35210 submitted: SELL 100 AAPL @ 100.28
+2026-06-23 18:15:41 | INFO     | market_maker | Order 51a81a91-189c-411a-ac18-52c2e09f5bdc canceled: AAPL SELL 100
+2026-06-23 18:15:41 | INFO     | market_maker | Order 3f016d18-561e-471a-816f-a8eabce47529 confirmed with status: ACTIVE
+2026-06-23 18:15:41 | INFO     | market_maker | Order d5eed7b5-dd3e-4148-ad24-1b537df35210 confirmed with status: ACTIVE
+2026-06-23 18:15:46 | INFO     | market_maker | Received TIME_TICK message: 2025-03-01T09:35:30+00:00
+2026-06-23 18:15:46 | INFO     | market_maker | Cancellation request sent for order 3f016d18-561e-471a-816f-a8eabce47529
+2026-06-23 18:15:46 | INFO     | market_maker | Cancellation request sent for order d5eed7b5-dd3e-4148-ad24-1b537df35210
+2026-06-23 18:15:46 | INFO     | market_maker | Order 3f016d18-561e-471a-816f-a8eabce47529 canceled: AAPL BUY 100
+2026-06-23 18:15:46 | INFO     | market_maker | Order c5831f93-da1d-440e-80b4-2e898aaae643 submitted: BUY 100 AAPL @ 100.03
+2026-06-23 18:15:46 | INFO     | market_maker | Order 314b706b-14ac-48a6-80e4-5cc506750fde submitted: SELL 100 AAPL @ 100.28
+2026-06-23 18:15:46 | INFO     | market_maker | Order d5eed7b5-dd3e-4148-ad24-1b537df35210 canceled: AAPL SELL 100
+2026-06-23 18:15:46 | INFO     | market_maker | Order c5831f93-da1d-440e-80b4-2e898aaae643 confirmed with status: ACTIVE
+2026-06-23 18:15:46 | INFO     | market_maker | Order 314b706b-14ac-48a6-80e4-5cc506750fde confirmed with status: ACTIVE
+2026-06-23 18:15:51 | INFO     | market_maker | Received TIME_TICK message: 2025-03-01T09:36:00+00:00
+2026-06-23 18:15:51 | INFO     | market_maker | Cancellation request sent for order 314b706b-14ac-48a6-80e4-5cc506750fde
+2026-06-23 18:15:51 | INFO     | market_maker | Cancellation request sent for order c5831f93-da1d-440e-80b4-2e898aaae643
+2026-06-23 18:15:51 | INFO     | market_maker | Order c6e8db61-1fe6-4903-b4a4-d82ebbcdf6dd submitted: BUY 100 AAPL @ 100.03
+2026-06-23 18:15:51 | INFO     | market_maker | Order 5e8cdb6e-cbd3-44fd-9222-23236277b1a0 submitted: SELL 100 AAPL @ 100.28
+2026-06-23 18:15:51 | INFO     | market_maker | Order 314b706b-14ac-48a6-80e4-5cc506750fde canceled: AAPL SELL 100
+2026-06-23 18:15:51 | INFO     | market_maker | Order c5831f93-da1d-440e-80b4-2e898aaae643 canceled: AAPL BUY 100
+2026-06-23 18:15:51 | INFO     | market_maker | Order c6e8db61-1fe6-4903-b4a4-d82ebbcdf6dd confirmed with status: ACTIVE
+2026-06-23 18:15:51 | INFO     | market_maker | Order 5e8cdb6e-cbd3-44fd-9222-23236277b1a0 confirmed with status: ACTIVE
+2026-06-23 18:15:56 | INFO     | market_maker | Received TIME_TICK message: 2025-03-01T09:36:30+00:00
+2026-06-23 18:15:56 | INFO     | market_maker | Cancellation request sent for order c6e8db61-1fe6-4903-b4a4-d82ebbcdf6dd
+2026-06-23 18:15:56 | INFO     | market_maker | Cancellation request sent for order 5e8cdb6e-cbd3-44fd-9222-23236277b1a0
+2026-06-23 18:15:56 | INFO     | market_maker | Order c6e8db61-1fe6-4903-b4a4-d82ebbcdf6dd canceled: AAPL BUY 100
+2026-06-23 18:15:56 | INFO     | market_maker | Order 4f0b8fca-cb0f-4d56-a993-bf75f841eacc submitted: BUY 100 AAPL @ 100.03
+2026-06-23 18:15:56 | INFO     | market_maker | Order 5e8cdb6e-cbd3-44fd-9222-23236277b1a0 canceled: AAPL SELL 100
+2026-06-23 18:15:56 | INFO     | market_maker | Order 3e1e9f57-5e8a-4dde-a7b7-664f72a5cefa submitted: SELL 100 AAPL @ 100.28
+2026-06-23 18:15:56 | INFO     | market_maker | Order 4f0b8fca-cb0f-4d56-a993-bf75f841eacc confirmed with status: ACTIVE
+2026-06-23 18:15:56 | INFO     | market_maker | Order 3e1e9f57-5e8a-4dde-a7b7-664f72a5cefa confirmed with status: ACTIVE
+2026-06-23 18:16:01 | INFO     | market_maker | Received TIME_TICK message: 2025-03-01T09:37:00+00:00
+2026-06-23 18:16:01 | INFO     | market_maker | Cancellation request sent for order 3e1e9f57-5e8a-4dde-a7b7-664f72a5cefa
+2026-06-23 18:16:01 | INFO     | market_maker | Cancellation request sent for order 4f0b8fca-cb0f-4d56-a993-bf75f841eacc
+2026-06-23 18:16:01 | INFO     | market_maker | Order 1d322628-9307-434a-a4e4-f26896a22ea6 submitted: BUY 100 AAPL @ 100.03
+2026-06-23 18:16:01 | INFO     | market_maker | Order 3e1e9f57-5e8a-4dde-a7b7-664f72a5cefa canceled: AAPL SELL 100
+2026-06-23 18:16:01 | INFO     | market_maker | Order 5e547cb3-e84e-4c51-ace0-86f1bad7e8af submitted: SELL 100 AAPL @ 100.28
+2026-06-23 18:16:01 | INFO     | market_maker | Order 4f0b8fca-cb0f-4d56-a993-bf75f841eacc canceled: AAPL BUY 100
+2026-06-23 18:16:01 | INFO     | market_maker | Order 1d322628-9307-434a-a4e4-f26896a22ea6 confirmed with status: ACTIVE
+2026-06-23 18:16:01 | INFO     | market_maker | Order 5e547cb3-e84e-4c51-ace0-86f1bad7e8af confirmed with status: ACTIVE
+2026-06-23 18:16:06 | INFO     | market_maker | Received TIME_TICK message: 2025-03-01T09:37:30+00:00
+2026-06-23 18:16:06 | INFO     | market_maker | Cancellation request sent for order 5e547cb3-e84e-4c51-ace0-86f1bad7e8af
+2026-06-23 18:16:06 | INFO     | market_maker | Cancellation request sent for order 1d322628-9307-434a-a4e4-f26896a22ea6
+2026-06-23 18:16:06 | INFO     | market_maker | Order 5e547cb3-e84e-4c51-ace0-86f1bad7e8af canceled: AAPL SELL 100
+2026-06-23 18:16:06 | INFO     | market_maker | Order 2df94a53-206a-4016-a2ae-1a46479878a7 submitted: BUY 100 AAPL @ 100.03
+2026-06-23 18:16:06 | INFO     | market_maker | Order 1d322628-9307-434a-a4e4-f26896a22ea6 canceled: AAPL BUY 100
+2026-06-23 18:16:06 | INFO     | market_maker | Order 9a38168e-c2d7-4ba2-bc40-788a60f2a5bb submitted: SELL 100 AAPL @ 100.28
+2026-06-23 18:16:06 | INFO     | market_maker | Order 2df94a53-206a-4016-a2ae-1a46479878a7 confirmed with status: ACTIVE
+2026-06-23 18:16:06 | INFO     | market_maker | Order 9a38168e-c2d7-4ba2-bc40-788a60f2a5bb confirmed with status: ACTIVE
+2026-06-23 18:16:11 | INFO     | market_maker | Received TIME_TICK message: 2025-03-01T09:38:00+00:00
+2026-06-23 18:16:11 | INFO     | market_maker | Cancellation request sent for order 9a38168e-c2d7-4ba2-bc40-788a60f2a5bb
+2026-06-23 18:16:11 | INFO     | market_maker | Cancellation request sent for order 2df94a53-206a-4016-a2ae-1a46479878a7
+2026-06-23 18:16:11 | INFO     | market_maker | Order 9a38168e-c2d7-4ba2-bc40-788a60f2a5bb canceled: AAPL SELL 100
+2026-06-23 18:16:11 | INFO     | market_maker | Order 499c346e-4111-4a83-bc61-23016eac61c6 submitted: BUY 100 AAPL @ 100.03
+2026-06-23 18:16:11 | INFO     | market_maker | Order 860e0be5-721e-4d53-bc32-38bc557167e7 submitted: SELL 100 AAPL @ 100.28
+2026-06-23 18:16:11 | INFO     | market_maker | Order 2df94a53-206a-4016-a2ae-1a46479878a7 canceled: AAPL BUY 100
+2026-06-23 18:16:12 | INFO     | market_maker | Order 499c346e-4111-4a83-bc61-23016eac61c6 confirmed with status: ACTIVE
+2026-06-23 18:16:12 | INFO     | market_maker | Order 860e0be5-721e-4d53-bc32-38bc557167e7 confirmed with status: ACTIVE
+2026-06-23 18:16:17 | INFO     | market_maker | Received TIME_TICK message: 2025-03-01T09:38:30+00:00
+2026-06-23 18:16:17 | INFO     | market_maker | Cancellation request sent for order 860e0be5-721e-4d53-bc32-38bc557167e7
+2026-06-23 18:16:17 | INFO     | market_maker | Cancellation request sent for order 499c346e-4111-4a83-bc61-23016eac61c6
+2026-06-23 18:16:17 | INFO     | market_maker | Order 860e0be5-721e-4d53-bc32-38bc557167e7 canceled: AAPL SELL 100
+2026-06-23 18:16:17 | INFO     | market_maker | Order 3af04f7b-40ef-4d99-96c0-944c0ed56b00 submitted: BUY 100 AAPL @ 100.03
+2026-06-23 18:16:17 | INFO     | market_maker | Order 9bc0138f-2410-402e-b4a6-0f863c673dc3 submitted: SELL 100 AAPL @ 100.28
+2026-06-23 18:16:17 | INFO     | market_maker | Order 499c346e-4111-4a83-bc61-23016eac61c6 canceled: AAPL BUY 100
+2026-06-23 18:16:17 | INFO     | market_maker | Order 3af04f7b-40ef-4d99-96c0-944c0ed56b00 confirmed with status: ACTIVE
+2026-06-23 18:16:17 | INFO     | market_maker | Order 9bc0138f-2410-402e-b4a6-0f863c673dc3 confirmed with status: ACTIVE
+2026-06-23 18:16:22 | INFO     | market_maker | Received TIME_TICK message: 2025-03-01T09:39:00+00:00
+2026-06-23 18:16:22 | INFO     | market_maker | Cancellation request sent for order 3af04f7b-40ef-4d99-96c0-944c0ed56b00
+2026-06-23 18:16:22 | INFO     | market_maker | Cancellation request sent for order 9bc0138f-2410-402e-b4a6-0f863c673dc3
+2026-06-23 18:16:22 | INFO     | market_maker | Order 3af04f7b-40ef-4d99-96c0-944c0ed56b00 canceled: AAPL BUY 100
+2026-06-23 18:16:22 | INFO     | market_maker | Order a60e6640-9c43-4041-87be-f5698117a7ed submitted: BUY 100 AAPL @ 100.03
+2026-06-23 18:16:22 | INFO     | market_maker | Order f82d00da-bc4b-4732-9c50-1e0554ff2b72 submitted: SELL 100 AAPL @ 100.28
+2026-06-23 18:16:22 | INFO     | market_maker | Order 9bc0138f-2410-402e-b4a6-0f863c673dc3 canceled: AAPL SELL 100
+2026-06-23 18:16:22 | INFO     | market_maker | Order a60e6640-9c43-4041-87be-f5698117a7ed confirmed with status: ACTIVE
+2026-06-23 18:16:22 | INFO     | market_maker | Order f82d00da-bc4b-4732-9c50-1e0554ff2b72 confirmed with status: ACTIVE
+2026-06-23 18:16:27 | INFO     | market_maker | Received TIME_TICK message: 2025-03-01T09:39:30+00:00
+2026-06-23 18:16:27 | INFO     | market_maker | Cancellation request sent for order f82d00da-bc4b-4732-9c50-1e0554ff2b72
+2026-06-23 18:16:27 | INFO     | market_maker | Cancellation request sent for order a60e6640-9c43-4041-87be-f5698117a7ed
+2026-06-23 18:16:27 | INFO     | market_maker | Order f82d00da-bc4b-4732-9c50-1e0554ff2b72 canceled: AAPL SELL 100
+2026-06-23 18:16:27 | INFO     | market_maker | Order b87bc398-cd7a-49ef-889e-32e048b01fd2 submitted: BUY 100 AAPL @ 100.06
+2026-06-23 18:16:27 | INFO     | market_maker | Order e73d4b15-74ea-4dbf-9315-861f49ee45fd submitted: SELL 100 AAPL @ 100.31
+2026-06-23 18:16:27 | INFO     | market_maker | Order a60e6640-9c43-4041-87be-f5698117a7ed canceled: AAPL BUY 100
+2026-06-23 18:16:27 | INFO     | market_maker | Order b87bc398-cd7a-49ef-889e-32e048b01fd2 confirmed with status: ACTIVE
+2026-06-23 18:16:27 | INFO     | market_maker | Order e73d4b15-74ea-4dbf-9315-861f49ee45fd confirmed with status: ACTIVE
+2026-06-23 18:16:32 | INFO     | market_maker | Received TIME_TICK message: 2025-03-01T09:40:00+00:00
+2026-06-23 18:16:32 | INFO     | market_maker | market_maker slow loop completed: strategist=LLMStrategist, before={'strategy_type': 'market_making', 'risk_mode': 'normal', 'confidence': 0.75, 'reason': 'Static market-maker LLM test response: quote slightly wider and manage inventory conservatively.', 'updated_at': '2025-03-01T09:35:00+00:00', 'fair_price': 100.0, 'spread': 0.25, 'quote_size': 100, 'target_inventory': 10000, 'inventory_skew': 0.0015}, after={'strategy_type': 'market_making', 'risk_mode': 'normal', 'confidence': 0.75, 'reason': 'Static market-maker LLM test response: quote slightly wider and manage inventory conservatively.', 'updated_at': '2025-03-01T09:40:00+00:00', 'fair_price': 100.0, 'spread': 0.25, 'quote_size': 100, 'target_inventory': 10000, 'inventory_skew': 0.0015}
+2026-06-23 18:16:32 | INFO     | market_maker | Cancellation request sent for order b87bc398-cd7a-49ef-889e-32e048b01fd2
+2026-06-23 18:16:32 | INFO     | market_maker | Cancellation request sent for order e73d4b15-74ea-4dbf-9315-861f49ee45fd
+2026-06-23 18:16:32 | INFO     | market_maker | Order c8dfc29c-a232-4f82-bd2c-cc5371cb3d84 submitted: BUY 100 AAPL @ 100.06
+2026-06-23 18:16:32 | INFO     | market_maker | Order e1f8b7ee-d530-401f-8a52-c328d8af02e9 submitted: SELL 100 AAPL @ 100.31
+2026-06-23 18:16:32 | INFO     | market_maker | Order b87bc398-cd7a-49ef-889e-32e048b01fd2 canceled: AAPL BUY 100
+2026-06-23 18:16:32 | ERROR    | market_maker | Agent encountered error: Unable to cancel order. It may already be filled or canceled.
+2026-06-23 18:16:32 | INFO     | market_maker | Order c8dfc29c-a232-4f82-bd2c-cc5371cb3d84 confirmed with status: ACTIVE
+2026-06-23 18:16:32 | INFO     | market_maker | Order e1f8b7ee-d530-401f-8a52-c328d8af02e9 confirmed with status: ACTIVE
+2026-06-23 18:16:37 | INFO     | market_maker | Received TIME_TICK message: 2025-03-01T09:40:30+00:00
+2026-06-23 18:16:37 | INFO     | market_maker | Cancellation request sent for order e1f8b7ee-d530-401f-8a52-c328d8af02e9
+2026-06-23 18:16:37 | INFO     | market_maker | Cancellation request sent for order c8dfc29c-a232-4f82-bd2c-cc5371cb3d84
+2026-06-23 18:16:37 | INFO     | market_maker | Order e1f8b7ee-d530-401f-8a52-c328d8af02e9 canceled: AAPL SELL 100
+2026-06-23 18:16:37 | INFO     | market_maker | Order d4999050-1ff5-4195-b5c7-94dba0102ea3 submitted: BUY 100 AAPL @ 100.19
+2026-06-23 18:16:37 | INFO     | market_maker | Order 78bac15b-057f-4200-9551-6400a25b1e34 submitted: SELL 100 AAPL @ 100.44
+2026-06-23 18:16:37 | INFO     | market_maker | Order c8dfc29c-a232-4f82-bd2c-cc5371cb3d84 canceled: AAPL BUY 100
+2026-06-23 18:16:37 | INFO     | market_maker | Order d4999050-1ff5-4195-b5c7-94dba0102ea3 confirmed with status: ACTIVE
+2026-06-23 18:16:37 | INFO     | market_maker | Order 78bac15b-057f-4200-9551-6400a25b1e34 confirmed with status: ACTIVE
+2026-06-23 18:16:42 | INFO     | market_maker | Received TIME_TICK message: 2025-03-01T09:41:00+00:00
+2026-06-23 18:16:42 | INFO     | market_maker | Cancellation request sent for order 78bac15b-057f-4200-9551-6400a25b1e34
+2026-06-23 18:16:42 | INFO     | market_maker | Cancellation request sent for order d4999050-1ff5-4195-b5c7-94dba0102ea3
+2026-06-23 18:16:42 | INFO     | market_maker | Order 591b3ad5-be0d-4a09-a8e0-096700f546e4 submitted: BUY 100 AAPL @ 100.19
+2026-06-23 18:16:42 | INFO     | market_maker | Order 714c32f4-6a0f-4dce-b639-e4c47da0f392 submitted: SELL 100 AAPL @ 100.44
+2026-06-23 18:16:42 | INFO     | market_maker | Order 78bac15b-057f-4200-9551-6400a25b1e34 canceled: AAPL SELL 100
+2026-06-23 18:16:42 | INFO     | market_maker | Order d4999050-1ff5-4195-b5c7-94dba0102ea3 canceled: AAPL BUY 100
+2026-06-23 18:16:42 | INFO     | market_maker | Order 591b3ad5-be0d-4a09-a8e0-096700f546e4 confirmed with status: ACTIVE
+2026-06-23 18:16:42 | INFO     | market_maker | Order 714c32f4-6a0f-4dce-b639-e4c47da0f392 confirmed with status: ACTIVE
+2026-06-23 18:16:47 | INFO     | market_maker | Received TIME_TICK message: 2025-03-01T09:41:30+00:00
+2026-06-23 18:16:47 | INFO     | market_maker | Cancellation request sent for order 714c32f4-6a0f-4dce-b639-e4c47da0f392
+2026-06-23 18:16:47 | INFO     | market_maker | Cancellation request sent for order 591b3ad5-be0d-4a09-a8e0-096700f546e4
+2026-06-23 18:16:47 | INFO     | market_maker | Order 714c32f4-6a0f-4dce-b639-e4c47da0f392 canceled: AAPL SELL 100
+2026-06-23 18:16:47 | INFO     | market_maker | Order a4d2459f-f580-438b-9279-9649ad0a1556 submitted: BUY 100 AAPL @ 100.2
+2026-06-23 18:16:47 | INFO     | market_maker | Order 05a5eddf-385a-4aa9-a49e-0e9160af985f submitted: SELL 100 AAPL @ 100.45
+2026-06-23 18:16:47 | INFO     | market_maker | Order 591b3ad5-be0d-4a09-a8e0-096700f546e4 canceled: AAPL BUY 100
+2026-06-23 18:16:47 | INFO     | market_maker | Order a4d2459f-f580-438b-9279-9649ad0a1556 confirmed with status: ACTIVE
+2026-06-23 18:16:47 | INFO     | market_maker | Order 05a5eddf-385a-4aa9-a49e-0e9160af985f confirmed with status: ACTIVE
+2026-06-23 18:16:52 | INFO     | market_maker | Received TIME_TICK message: 2025-03-01T09:42:00+00:00
+2026-06-23 18:16:52 | INFO     | market_maker | Cancellation request sent for order 05a5eddf-385a-4aa9-a49e-0e9160af985f
+2026-06-23 18:16:52 | INFO     | market_maker | Cancellation request sent for order a4d2459f-f580-438b-9279-9649ad0a1556
+2026-06-23 18:16:52 | INFO     | market_maker | Order e991a11d-7bec-45bb-8bf1-200ac27dea34 submitted: BUY 100 AAPL @ 100.2
+2026-06-23 18:16:52 | INFO     | market_maker | Order fb18e613-e15b-4079-bac5-e9d54f7c7ce6 submitted: SELL 100 AAPL @ 100.45
+2026-06-23 18:16:52 | ERROR    | market_maker | Agent encountered error: Unable to cancel order. It may already be filled or canceled.
+2026-06-23 18:16:52 | INFO     | market_maker | Order a4d2459f-f580-438b-9279-9649ad0a1556 canceled: AAPL BUY 100
+2026-06-23 18:16:52 | INFO     | market_maker | Order e991a11d-7bec-45bb-8bf1-200ac27dea34 confirmed with status: ACTIVE
+2026-06-23 18:16:52 | INFO     | market_maker | Order fb18e613-e15b-4079-bac5-e9d54f7c7ce6 confirmed with status: ACTIVE
+2026-06-23 18:16:57 | INFO     | market_maker | Received TIME_TICK message: 2025-03-01T09:42:30+00:00
+2026-06-23 18:16:57 | INFO     | market_maker | Cancellation request sent for order fb18e613-e15b-4079-bac5-e9d54f7c7ce6
+2026-06-23 18:16:57 | INFO     | market_maker | Cancellation request sent for order e991a11d-7bec-45bb-8bf1-200ac27dea34
+2026-06-23 18:16:57 | INFO     | market_maker | Order 33ee3956-85f7-4395-a695-53c00072dcee submitted: BUY 100 AAPL @ 100.34
+2026-06-23 18:16:57 | INFO     | market_maker | Order fb18e613-e15b-4079-bac5-e9d54f7c7ce6 canceled: AAPL SELL 100
+2026-06-23 18:16:57 | INFO     | market_maker | Order 06e2d91f-8e62-4bff-bd70-5498d54cfa66 submitted: SELL 100 AAPL @ 100.59
+2026-06-23 18:16:57 | INFO     | market_maker | Order e991a11d-7bec-45bb-8bf1-200ac27dea34 canceled: AAPL BUY 100
+2026-06-23 18:16:57 | INFO     | market_maker | Order 33ee3956-85f7-4395-a695-53c00072dcee confirmed with status: ACTIVE
+2026-06-23 18:16:57 | INFO     | market_maker | Order 06e2d91f-8e62-4bff-bd70-5498d54cfa66 confirmed with status: ACTIVE
+2026-06-23 18:17:02 | INFO     | market_maker | Received TIME_TICK message: 2025-03-01T09:43:00+00:00
+2026-06-23 18:17:02 | INFO     | market_maker | Cancellation request sent for order 33ee3956-85f7-4395-a695-53c00072dcee
+2026-06-23 18:17:02 | INFO     | market_maker | Cancellation request sent for order 06e2d91f-8e62-4bff-bd70-5498d54cfa66
+2026-06-23 18:17:02 | INFO     | market_maker | Order 33ee3956-85f7-4395-a695-53c00072dcee canceled: AAPL BUY 100
+2026-06-23 18:17:02 | INFO     | market_maker | Order bbd98c1f-62b2-4a52-aea7-82ffb9196b48 submitted: BUY 100 AAPL @ 100.34
+2026-06-23 18:17:02 | INFO     | market_maker | Order 656ef824-a359-4099-a1d2-298a5b46e483 submitted: SELL 100 AAPL @ 100.59
+2026-06-23 18:17:02 | INFO     | market_maker | Order 06e2d91f-8e62-4bff-bd70-5498d54cfa66 canceled: AAPL SELL 100
+2026-06-23 18:17:02 | INFO     | market_maker | Order bbd98c1f-62b2-4a52-aea7-82ffb9196b48 confirmed with status: ACTIVE
+2026-06-23 18:17:02 | INFO     | market_maker | Order 656ef824-a359-4099-a1d2-298a5b46e483 confirmed with status: ACTIVE
+2026-06-23 18:17:07 | INFO     | market_maker | Received TIME_TICK message: 2025-03-01T09:43:30+00:00
+2026-06-23 18:17:07 | INFO     | market_maker | Cancellation request sent for order 656ef824-a359-4099-a1d2-298a5b46e483
+2026-06-23 18:17:07 | INFO     | market_maker | Cancellation request sent for order bbd98c1f-62b2-4a52-aea7-82ffb9196b48
+2026-06-23 18:17:07 | INFO     | market_maker | Order 656ef824-a359-4099-a1d2-298a5b46e483 canceled: AAPL SELL 100
+2026-06-23 18:17:07 | INFO     | market_maker | Order bc96b71e-da01-4ec2-a89b-4f1c27cd84be submitted: BUY 100 AAPL @ 100.35
+2026-06-23 18:17:07 | INFO     | market_maker | Order 3f56d98a-6fea-4c22-b74f-383e648aed08 submitted: SELL 100 AAPL @ 100.6
+2026-06-23 18:17:07 | INFO     | market_maker | Order bbd98c1f-62b2-4a52-aea7-82ffb9196b48 canceled: AAPL BUY 100
+2026-06-23 18:17:07 | INFO     | market_maker | Order bc96b71e-da01-4ec2-a89b-4f1c27cd84be confirmed with status: ACTIVE
+2026-06-23 18:17:07 | INFO     | market_maker | Order 3f56d98a-6fea-4c22-b74f-383e648aed08 confirmed with status: ACTIVE
+2026-06-23 18:17:12 | INFO     | market_maker | Received TIME_TICK message: 2025-03-01T09:44:00+00:00
+2026-06-23 18:17:12 | INFO     | market_maker | Cancellation request sent for order 3f56d98a-6fea-4c22-b74f-383e648aed08
+2026-06-23 18:17:12 | INFO     | market_maker | Cancellation request sent for order bc96b71e-da01-4ec2-a89b-4f1c27cd84be
+2026-06-23 18:17:12 | INFO     | market_maker | Order 3f56d98a-6fea-4c22-b74f-383e648aed08 canceled: AAPL SELL 100
+2026-06-23 18:17:12 | INFO     | market_maker | Order 9245f40a-f227-43b1-8139-e66d6025ad33 submitted: BUY 100 AAPL @ 100.35
+2026-06-23 18:17:12 | INFO     | market_maker | Order 5ba70309-16b8-40e4-8597-a2ab4d2b78ac submitted: SELL 100 AAPL @ 100.6
+2026-06-23 18:17:12 | INFO     | market_maker | Order bc96b71e-da01-4ec2-a89b-4f1c27cd84be canceled: AAPL BUY 100
+2026-06-23 18:17:12 | INFO     | market_maker | Order 9245f40a-f227-43b1-8139-e66d6025ad33 confirmed with status: ACTIVE
+2026-06-23 18:17:12 | INFO     | market_maker | Order 5ba70309-16b8-40e4-8597-a2ab4d2b78ac confirmed with status: ACTIVE
+2026-06-23 18:17:17 | INFO     | market_maker | Received TIME_TICK message: 2025-03-01T09:44:30+00:00
+2026-06-23 18:17:17 | INFO     | market_maker | Cancellation request sent for order 9245f40a-f227-43b1-8139-e66d6025ad33
+2026-06-23 18:17:17 | INFO     | market_maker | Cancellation request sent for order 5ba70309-16b8-40e4-8597-a2ab4d2b78ac
+2026-06-23 18:17:17 | INFO     | market_maker | Order 9245f40a-f227-43b1-8139-e66d6025ad33 canceled: AAPL BUY 100
+2026-06-23 18:17:17 | INFO     | market_maker | Order a9c4cd49-1b81-4282-9551-8c628dab8dd0 submitted: BUY 100 AAPL @ 100.35
+2026-06-23 18:17:17 | INFO     | market_maker | Order 5ba70309-16b8-40e4-8597-a2ab4d2b78ac canceled: AAPL SELL 100
+2026-06-23 18:17:17 | INFO     | market_maker | Order 5649fe9c-693c-440c-843c-07a1471c2c37 submitted: SELL 100 AAPL @ 100.6
+2026-06-23 18:17:17 | INFO     | market_maker | Order a9c4cd49-1b81-4282-9551-8c628dab8dd0 confirmed with status: ACTIVE
+2026-06-23 18:17:17 | INFO     | market_maker | Order 5649fe9c-693c-440c-843c-07a1471c2c37 confirmed with status: ACTIVE
+2026-06-23 18:17:22 | INFO     | market_maker | Received TIME_TICK message: 2025-03-01T09:45:00+00:00
+2026-06-23 18:17:22 | INFO     | market_maker | market_maker slow loop completed: strategist=LLMStrategist, before={'strategy_type': 'market_making', 'risk_mode': 'normal', 'confidence': 0.75, 'reason': 'Static market-maker LLM test response: quote slightly wider and manage inventory conservatively.', 'updated_at': '2025-03-01T09:40:00+00:00', 'fair_price': 100.0, 'spread': 0.25, 'quote_size': 100, 'target_inventory': 10000, 'inventory_skew': 0.0015}, after={'strategy_type': 'market_making', 'risk_mode': 'normal', 'confidence': 0.75, 'reason': 'Static market-maker LLM test response: quote slightly wider and manage inventory conservatively.', 'updated_at': '2025-03-01T09:45:00+00:00', 'fair_price': 100.0, 'spread': 0.25, 'quote_size': 100, 'target_inventory': 10000, 'inventory_skew': 0.0015}
+2026-06-23 18:17:22 | INFO     | market_maker | Cancellation request sent for order a9c4cd49-1b81-4282-9551-8c628dab8dd0
+2026-06-23 18:17:22 | INFO     | market_maker | Cancellation request sent for order 5649fe9c-693c-440c-843c-07a1471c2c37
+2026-06-23 18:17:22 | INFO     | market_maker | Order a9c4cd49-1b81-4282-9551-8c628dab8dd0 canceled: AAPL BUY 100
+2026-06-23 18:17:22 | INFO     | market_maker | Order 14603de8-e35e-47c7-b07b-3a78a16706e7 submitted: BUY 100 AAPL @ 100.35
+2026-06-23 18:17:22 | INFO     | market_maker | Order b542130f-a50d-4cd3-be78-35998d4ca549 submitted: SELL 100 AAPL @ 100.6
+2026-06-23 18:17:22 | INFO     | market_maker | Order 5649fe9c-693c-440c-843c-07a1471c2c37 canceled: AAPL SELL 100
+2026-06-23 18:17:22 | INFO     | market_maker | Order 14603de8-e35e-47c7-b07b-3a78a16706e7 confirmed with status: ACTIVE
+2026-06-23 18:17:22 | INFO     | market_maker | Order b542130f-a50d-4cd3-be78-35998d4ca549 confirmed with status: ACTIVE
+2026-06-23 18:17:27 | INFO     | market_maker | Received TIME_TICK message: 2025-03-01T09:45:30+00:00
+2026-06-23 18:17:27 | INFO     | market_maker | Cancellation request sent for order 14603de8-e35e-47c7-b07b-3a78a16706e7
+2026-06-23 18:17:27 | INFO     | market_maker | Cancellation request sent for order b542130f-a50d-4cd3-be78-35998d4ca549
+2026-06-23 18:17:27 | INFO     | market_maker | Order 14603de8-e35e-47c7-b07b-3a78a16706e7 canceled: AAPL BUY 100
+2026-06-23 18:17:27 | INFO     | market_maker | Order e3de0643-a8f9-4b1b-bb68-df3555d37112 submitted: BUY 100 AAPL @ 100.36
+2026-06-23 18:17:27 | INFO     | market_maker | Order 391765d7-f7b8-4810-b0da-ba0e450bea30 submitted: SELL 100 AAPL @ 100.61
+2026-06-23 18:17:27 | INFO     | market_maker | Order b542130f-a50d-4cd3-be78-35998d4ca549 canceled: AAPL SELL 100
+2026-06-23 18:17:27 | INFO     | market_maker | Order e3de0643-a8f9-4b1b-bb68-df3555d37112 confirmed with status: ACTIVE
+2026-06-23 18:17:27 | INFO     | market_maker | Order 391765d7-f7b8-4810-b0da-ba0e450bea30 confirmed with status: ACTIVE
+2026-06-23 18:17:32 | INFO     | market_maker | Received TIME_TICK message: 2025-03-01T09:46:00+00:00
+2026-06-23 18:17:32 | INFO     | market_maker | Cancellation request sent for order e3de0643-a8f9-4b1b-bb68-df3555d37112
+2026-06-23 18:17:32 | INFO     | market_maker | Cancellation request sent for order 391765d7-f7b8-4810-b0da-ba0e450bea30
+2026-06-23 18:17:32 | INFO     | market_maker | Order c98b1efa-ec87-48ec-8a63-91b59237c5f5 submitted: BUY 100 AAPL @ 100.36
+2026-06-23 18:17:32 | INFO     | market_maker | Order d2004b50-2c67-48c9-bd6e-df8c4a63276b submitted: SELL 100 AAPL @ 100.61
+2026-06-23 18:17:32 | INFO     | market_maker | Order e3de0643-a8f9-4b1b-bb68-df3555d37112 canceled: AAPL BUY 100
+2026-06-23 18:17:32 | ERROR    | market_maker | Agent encountered error: Unable to cancel order. It may already be filled or canceled.
+2026-06-23 18:17:32 | INFO     | market_maker | Order c98b1efa-ec87-48ec-8a63-91b59237c5f5 confirmed with status: ACTIVE
+2026-06-23 18:17:32 | INFO     | market_maker | Order d2004b50-2c67-48c9-bd6e-df8c4a63276b confirmed with status: ACTIVE
+2026-06-23 18:17:37 | INFO     | market_maker | Received TIME_TICK message: 2025-03-01T09:46:30+00:00
+2026-06-23 18:17:37 | INFO     | market_maker | Cancellation request sent for order c98b1efa-ec87-48ec-8a63-91b59237c5f5
+2026-06-23 18:17:37 | INFO     | market_maker | Cancellation request sent for order d2004b50-2c67-48c9-bd6e-df8c4a63276b
+2026-06-23 18:17:37 | INFO     | market_maker | Order c98b1efa-ec87-48ec-8a63-91b59237c5f5 canceled: AAPL BUY 100
+2026-06-23 18:17:37 | INFO     | market_maker | Order 97355b91-d58c-46a8-9f68-7902c4a7a42e submitted: BUY 100 AAPL @ 100.51
+2026-06-23 18:17:37 | INFO     | market_maker | Order da4a2cea-1cd2-4023-9a95-6a9a163dbf93 submitted: SELL 100 AAPL @ 100.76
+2026-06-23 18:17:37 | INFO     | market_maker | Order d2004b50-2c67-48c9-bd6e-df8c4a63276b canceled: AAPL SELL 100
+2026-06-23 18:17:37 | INFO     | market_maker | Order 97355b91-d58c-46a8-9f68-7902c4a7a42e confirmed with status: ACTIVE
+2026-06-23 18:17:37 | INFO     | market_maker | Order da4a2cea-1cd2-4023-9a95-6a9a163dbf93 confirmed with status: ACTIVE
+2026-06-23 18:17:42 | INFO     | market_maker | Received TIME_TICK message: 2025-03-01T09:47:00+00:00
+2026-06-23 18:17:42 | INFO     | market_maker | Cancellation request sent for order da4a2cea-1cd2-4023-9a95-6a9a163dbf93
+2026-06-23 18:17:42 | INFO     | market_maker | Cancellation request sent for order 97355b91-d58c-46a8-9f68-7902c4a7a42e
+2026-06-23 18:17:42 | INFO     | market_maker | Order 97cfe657-7cbc-46cb-9b4e-9e8fe1990d08 submitted: BUY 100 AAPL @ 100.51
+2026-06-23 18:17:42 | INFO     | market_maker | Order 639d1014-0d61-4346-86b8-b896c05bfe33 submitted: SELL 100 AAPL @ 100.76
+2026-06-23 18:17:42 | INFO     | market_maker | Order da4a2cea-1cd2-4023-9a95-6a9a163dbf93 canceled: AAPL SELL 100
+2026-06-23 18:17:42 | INFO     | market_maker | Order 97355b91-d58c-46a8-9f68-7902c4a7a42e canceled: AAPL BUY 100
+2026-06-23 18:17:42 | INFO     | market_maker | Order 97cfe657-7cbc-46cb-9b4e-9e8fe1990d08 confirmed with status: ACTIVE
+2026-06-23 18:17:42 | INFO     | market_maker | Order 639d1014-0d61-4346-86b8-b896c05bfe33 confirmed with status: ACTIVE
+2026-06-23 18:17:47 | INFO     | market_maker | Received TIME_TICK message: 2025-03-01T09:47:30+00:00
+2026-06-23 18:17:47 | INFO     | market_maker | Cancellation request sent for order 639d1014-0d61-4346-86b8-b896c05bfe33
+2026-06-23 18:17:47 | INFO     | market_maker | Cancellation request sent for order 97cfe657-7cbc-46cb-9b4e-9e8fe1990d08
+2026-06-23 18:17:47 | INFO     | market_maker | Order 639d1014-0d61-4346-86b8-b896c05bfe33 canceled: AAPL SELL 100
+2026-06-23 18:17:47 | INFO     | market_maker | Order 4978cfe7-3943-417e-b59b-1c062a06eb68 submitted: BUY 100 AAPL @ 100.5
+2026-06-23 18:17:47 | INFO     | market_maker | Order 9a012390-c416-4076-8dab-2b68a504745a submitted: SELL 100 AAPL @ 100.75
+2026-06-23 18:17:47 | INFO     | market_maker | Order 97cfe657-7cbc-46cb-9b4e-9e8fe1990d08 canceled: AAPL BUY 100
+2026-06-23 18:17:47 | INFO     | market_maker | Order 4978cfe7-3943-417e-b59b-1c062a06eb68 confirmed with status: ACTIVE
+2026-06-23 18:17:47 | INFO     | market_maker | Order 9a012390-c416-4076-8dab-2b68a504745a confirmed with status: ACTIVE
+2026-06-23 18:17:52 | INFO     | market_maker | Received TIME_TICK message: 2025-03-01T09:48:00+00:00
+2026-06-23 18:17:52 | INFO     | market_maker | Cancellation request sent for order 9a012390-c416-4076-8dab-2b68a504745a
+2026-06-23 18:17:52 | INFO     | market_maker | Cancellation request sent for order 4978cfe7-3943-417e-b59b-1c062a06eb68
+2026-06-23 18:17:52 | INFO     | market_maker | Order 9a012390-c416-4076-8dab-2b68a504745a canceled: AAPL SELL 100
+2026-06-23 18:17:52 | INFO     | market_maker | Order e970b219-8cc8-4755-b239-dc5b0adb9454 submitted: BUY 100 AAPL @ 100.5
+2026-06-23 18:17:52 | INFO     | market_maker | Order 5e6584a9-9744-4cb4-8d27-e085a2955ecd submitted: SELL 100 AAPL @ 100.75
+2026-06-23 18:17:52 | INFO     | market_maker | Order 4978cfe7-3943-417e-b59b-1c062a06eb68 canceled: AAPL BUY 100
+2026-06-23 18:17:52 | INFO     | market_maker | Order e970b219-8cc8-4755-b239-dc5b0adb9454 confirmed with status: ACTIVE
+2026-06-23 18:17:52 | INFO     | market_maker | Order 5e6584a9-9744-4cb4-8d27-e085a2955ecd confirmed with status: ACTIVE
+2026-06-23 18:17:57 | INFO     | market_maker | Received TIME_TICK message: 2025-03-01T09:48:30+00:00
+2026-06-23 18:17:57 | INFO     | market_maker | Cancellation request sent for order e970b219-8cc8-4755-b239-dc5b0adb9454
+2026-06-23 18:17:57 | INFO     | market_maker | Cancellation request sent for order 5e6584a9-9744-4cb4-8d27-e085a2955ecd
+2026-06-23 18:17:57 | INFO     | market_maker | Order e970b219-8cc8-4755-b239-dc5b0adb9454 canceled: AAPL BUY 100
+2026-06-23 18:17:57 | INFO     | market_maker | Order 3b510dd9-7308-4335-850d-e25d3c8f1bc3 submitted: BUY 100 AAPL @ 100.5
+2026-06-23 18:17:57 | INFO     | market_maker | Order f6eff12e-f906-4ed9-abed-569093909a7f submitted: SELL 100 AAPL @ 100.75
+2026-06-23 18:17:57 | INFO     | market_maker | Order 5e6584a9-9744-4cb4-8d27-e085a2955ecd canceled: AAPL SELL 100
+2026-06-23 18:17:57 | INFO     | market_maker | Order 3b510dd9-7308-4335-850d-e25d3c8f1bc3 confirmed with status: ACTIVE
+2026-06-23 18:17:57 | INFO     | market_maker | Order f6eff12e-f906-4ed9-abed-569093909a7f confirmed with status: ACTIVE
+2026-06-23 18:18:02 | INFO     | market_maker | Received TIME_TICK message: 2025-03-01T09:49:00+00:00
+2026-06-23 18:18:02 | INFO     | market_maker | Cancellation request sent for order 3b510dd9-7308-4335-850d-e25d3c8f1bc3
+2026-06-23 18:18:02 | INFO     | market_maker | Cancellation request sent for order f6eff12e-f906-4ed9-abed-569093909a7f
+2026-06-23 18:18:02 | INFO     | market_maker | Order ecd0108d-5ef6-4061-8e88-3a45a4b5ba6f submitted: BUY 100 AAPL @ 100.5
+2026-06-23 18:18:02 | INFO     | market_maker | Order 119244b4-eab4-4170-9d1a-39946945308e submitted: SELL 100 AAPL @ 100.75
+2026-06-23 18:18:02 | INFO     | market_maker | Order 3b510dd9-7308-4335-850d-e25d3c8f1bc3 canceled: AAPL BUY 100
+2026-06-23 18:18:02 | INFO     | market_maker | Order f6eff12e-f906-4ed9-abed-569093909a7f canceled: AAPL SELL 100
+2026-06-23 18:18:02 | INFO     | market_maker | Order ecd0108d-5ef6-4061-8e88-3a45a4b5ba6f confirmed with status: ACTIVE
+2026-06-23 18:18:02 | INFO     | market_maker | Order 119244b4-eab4-4170-9d1a-39946945308e confirmed with status: ACTIVE
+2026-06-23 18:18:07 | INFO     | market_maker | Received TIME_TICK message: 2025-03-01T09:49:30+00:00
+2026-06-23 18:18:07 | INFO     | market_maker | Cancellation request sent for order ecd0108d-5ef6-4061-8e88-3a45a4b5ba6f
+2026-06-23 18:18:07 | INFO     | market_maker | Cancellation request sent for order 119244b4-eab4-4170-9d1a-39946945308e
+2026-06-23 18:18:07 | INFO     | market_maker | Order ecd0108d-5ef6-4061-8e88-3a45a4b5ba6f canceled: AAPL BUY 100
+2026-06-23 18:18:07 | INFO     | market_maker | Order c8e42c2c-df58-4d75-b8bc-bd6af2146a04 submitted: BUY 100 AAPL @ 100.53
+2026-06-23 18:18:07 | INFO     | market_maker | Order 33bc5b0c-1d7a-46fb-8767-5f4cf0f68e47 submitted: SELL 100 AAPL @ 100.78
+2026-06-23 18:18:07 | INFO     | market_maker | Order 119244b4-eab4-4170-9d1a-39946945308e canceled: AAPL SELL 100
+2026-06-23 18:18:07 | INFO     | market_maker | Order c8e42c2c-df58-4d75-b8bc-bd6af2146a04 confirmed with status: ACTIVE
+2026-06-23 18:18:07 | INFO     | market_maker | Order 33bc5b0c-1d7a-46fb-8767-5f4cf0f68e47 confirmed with status: ACTIVE
+2026-06-23 18:18:12 | INFO     | market_maker | Received TIME_TICK message: 2025-03-01T09:50:00+00:00
+2026-06-23 18:18:12 | INFO     | market_maker | market_maker slow loop completed: strategist=LLMStrategist, before={'strategy_type': 'market_making', 'risk_mode': 'normal', 'confidence': 0.75, 'reason': 'Static market-maker LLM test response: quote slightly wider and manage inventory conservatively.', 'updated_at': '2025-03-01T09:45:00+00:00', 'fair_price': 100.0, 'spread': 0.25, 'quote_size': 100, 'target_inventory': 10000, 'inventory_skew': 0.0015}, after={'strategy_type': 'market_making', 'risk_mode': 'normal', 'confidence': 0.75, 'reason': 'Static market-maker LLM test response: quote slightly wider and manage inventory conservatively.', 'updated_at': '2025-03-01T09:50:00+00:00', 'fair_price': 100.0, 'spread': 0.25, 'quote_size': 100, 'target_inventory': 10000, 'inventory_skew': 0.0015}
+2026-06-23 18:18:12 | INFO     | market_maker | Cancellation request sent for order c8e42c2c-df58-4d75-b8bc-bd6af2146a04
+2026-06-23 18:18:12 | INFO     | market_maker | Cancellation request sent for order 33bc5b0c-1d7a-46fb-8767-5f4cf0f68e47
+2026-06-23 18:18:12 | INFO     | market_maker | Order c8e42c2c-df58-4d75-b8bc-bd6af2146a04 canceled: AAPL BUY 100
+2026-06-23 18:18:12 | INFO     | market_maker | Order ec02d836-6f2f-4e4a-88be-a9152f81201c submitted: BUY 100 AAPL @ 100.53
+2026-06-23 18:18:12 | INFO     | market_maker | Order 4a5ef29d-c219-4530-953e-4a49e79e32ef submitted: SELL 100 AAPL @ 100.78
+2026-06-23 18:18:12 | ERROR    | market_maker | Agent encountered error: Unable to cancel order. It may already be filled or canceled.
+2026-06-23 18:18:12 | INFO     | market_maker | Order ec02d836-6f2f-4e4a-88be-a9152f81201c confirmed with status: ACTIVE
+2026-06-23 18:18:12 | INFO     | market_maker | Order 4a5ef29d-c219-4530-953e-4a49e79e32ef confirmed with status: ACTIVE
+2026-06-23 18:18:17 | INFO     | market_maker | Received TIME_TICK message: 2025-03-01T09:50:30+00:00
+2026-06-23 18:18:17 | INFO     | market_maker | Cancellation request sent for order 4a5ef29d-c219-4530-953e-4a49e79e32ef
+2026-06-23 18:18:17 | INFO     | market_maker | Cancellation request sent for order ec02d836-6f2f-4e4a-88be-a9152f81201c
+2026-06-23 18:18:17 | INFO     | market_maker | Order 4a5ef29d-c219-4530-953e-4a49e79e32ef canceled: AAPL SELL 100
+2026-06-23 18:18:17 | INFO     | market_maker | Order 150a63a4-4dc1-4078-956b-a03057efb277 submitted: BUY 100 AAPL @ 100.68
+2026-06-23 18:18:17 | INFO     | market_maker | Order 2c91e678-e3d1-422a-b551-c3c2dd81ec04 submitted: SELL 100 AAPL @ 100.93
+2026-06-23 18:18:17 | INFO     | market_maker | Order ec02d836-6f2f-4e4a-88be-a9152f81201c canceled: AAPL BUY 100
+2026-06-23 18:18:17 | INFO     | market_maker | Order 150a63a4-4dc1-4078-956b-a03057efb277 confirmed with status: ACTIVE
+2026-06-23 18:18:17 | INFO     | market_maker | Order 2c91e678-e3d1-422a-b551-c3c2dd81ec04 confirmed with status: ACTIVE
+2026-06-23 18:18:22 | INFO     | market_maker | Received TIME_TICK message: 2025-03-01T09:51:00+00:00
+2026-06-23 18:18:22 | INFO     | market_maker | Cancellation request sent for order 2c91e678-e3d1-422a-b551-c3c2dd81ec04
+2026-06-23 18:18:22 | INFO     | market_maker | Cancellation request sent for order 150a63a4-4dc1-4078-956b-a03057efb277
+2026-06-23 18:18:22 | INFO     | market_maker | Order 2c91e678-e3d1-422a-b551-c3c2dd81ec04 canceled: AAPL SELL 100
+2026-06-23 18:18:22 | INFO     | market_maker | Order 316335d0-58ea-46df-b19d-9726152e462c submitted: BUY 100 AAPL @ 100.68
+2026-06-23 18:18:22 | INFO     | market_maker | Order 4631878b-3912-4dee-aeb7-497e10d1db7e submitted: SELL 100 AAPL @ 100.93
+2026-06-23 18:18:22 | INFO     | market_maker | Order 150a63a4-4dc1-4078-956b-a03057efb277 canceled: AAPL BUY 100
+2026-06-23 18:18:22 | INFO     | market_maker | Order 316335d0-58ea-46df-b19d-9726152e462c confirmed with status: ACTIVE
+2026-06-23 18:18:22 | INFO     | market_maker | Order 4631878b-3912-4dee-aeb7-497e10d1db7e confirmed with status: ACTIVE
+2026-06-23 18:18:27 | INFO     | market_maker | Received TIME_TICK message: 2025-03-01T09:51:30+00:00
+2026-06-23 18:18:27 | INFO     | market_maker | Cancellation request sent for order 4631878b-3912-4dee-aeb7-497e10d1db7e
+2026-06-23 18:18:27 | INFO     | market_maker | Cancellation request sent for order 316335d0-58ea-46df-b19d-9726152e462c
+2026-06-23 18:18:27 | INFO     | market_maker | Order 4631878b-3912-4dee-aeb7-497e10d1db7e canceled: AAPL SELL 100
+2026-06-23 18:18:27 | INFO     | market_maker | Order 60d8468a-ac4c-45e1-ad60-13dbe63ddca2 submitted: BUY 100 AAPL @ 100.68
+2026-06-23 18:18:27 | INFO     | market_maker | Order 9b96134d-a89f-46fc-a40b-9641147df86c submitted: SELL 100 AAPL @ 100.93
+2026-06-23 18:18:27 | INFO     | market_maker | Order 316335d0-58ea-46df-b19d-9726152e462c canceled: AAPL BUY 100
+2026-06-23 18:18:27 | INFO     | market_maker | Order 60d8468a-ac4c-45e1-ad60-13dbe63ddca2 confirmed with status: ACTIVE
+2026-06-23 18:18:27 | INFO     | market_maker | Order 9b96134d-a89f-46fc-a40b-9641147df86c confirmed with status: ACTIVE
+2026-06-23 18:18:32 | INFO     | market_maker | Received TIME_TICK message: 2025-03-01T09:52:00+00:00
+2026-06-23 18:18:32 | INFO     | market_maker | Cancellation request sent for order 9b96134d-a89f-46fc-a40b-9641147df86c
+2026-06-23 18:18:32 | INFO     | market_maker | Cancellation request sent for order 60d8468a-ac4c-45e1-ad60-13dbe63ddca2
+2026-06-23 18:18:32 | INFO     | market_maker | Order 9b96134d-a89f-46fc-a40b-9641147df86c canceled: AAPL SELL 100
+2026-06-23 18:18:32 | INFO     | market_maker | Order d45da417-afb8-412c-8ea4-baf3819b24bd submitted: BUY 100 AAPL @ 100.68
+2026-06-23 18:18:32 | INFO     | market_maker | Order 0712d18b-e657-4da0-b8d8-1afdc4cd5a2f submitted: SELL 100 AAPL @ 100.93
+2026-06-23 18:18:32 | INFO     | market_maker | Order 60d8468a-ac4c-45e1-ad60-13dbe63ddca2 canceled: AAPL BUY 100
+2026-06-23 18:18:32 | INFO     | market_maker | Order d45da417-afb8-412c-8ea4-baf3819b24bd confirmed with status: ACTIVE
+2026-06-23 18:18:32 | INFO     | market_maker | Order 0712d18b-e657-4da0-b8d8-1afdc4cd5a2f confirmed with status: ACTIVE
+2026-06-23 18:18:37 | INFO     | market_maker | Received TIME_TICK message: 2025-03-01T09:52:30+00:00
+2026-06-23 18:18:37 | INFO     | market_maker | Cancellation request sent for order 0712d18b-e657-4da0-b8d8-1afdc4cd5a2f
+2026-06-23 18:18:37 | INFO     | market_maker | Cancellation request sent for order d45da417-afb8-412c-8ea4-baf3819b24bd
+2026-06-23 18:18:37 | INFO     | market_maker | Order 0712d18b-e657-4da0-b8d8-1afdc4cd5a2f canceled: AAPL SELL 100
+2026-06-23 18:18:37 | INFO     | market_maker | Order e5dab68a-fa3c-4f5f-9860-dcf086874e19 submitted: BUY 100 AAPL @ 100.68
+2026-06-23 18:18:37 | INFO     | market_maker | Order 8794d580-7eb6-44f7-9d1a-aafc0bb19dcd submitted: SELL 100 AAPL @ 100.93
+2026-06-23 18:18:37 | INFO     | market_maker | Order d45da417-afb8-412c-8ea4-baf3819b24bd canceled: AAPL BUY 100
+2026-06-23 18:18:37 | INFO     | market_maker | Order e5dab68a-fa3c-4f5f-9860-dcf086874e19 confirmed with status: ACTIVE
+2026-06-23 18:18:37 | INFO     | market_maker | Order 8794d580-7eb6-44f7-9d1a-aafc0bb19dcd confirmed with status: ACTIVE
+2026-06-23 18:18:42 | INFO     | market_maker | Received TIME_TICK message: 2025-03-01T09:53:00+00:00
+2026-06-23 18:18:42 | INFO     | market_maker | Cancellation request sent for order 8794d580-7eb6-44f7-9d1a-aafc0bb19dcd
+2026-06-23 18:18:42 | INFO     | market_maker | Cancellation request sent for order e5dab68a-fa3c-4f5f-9860-dcf086874e19
+2026-06-23 18:18:42 | INFO     | market_maker | Order 8794d580-7eb6-44f7-9d1a-aafc0bb19dcd canceled: AAPL SELL 100
+2026-06-23 18:18:42 | INFO     | market_maker | Order c2b01775-c6a7-4127-9bee-a017eabc92d4 submitted: BUY 100 AAPL @ 100.68
+2026-06-23 18:18:42 | INFO     | market_maker | Order 92b97518-b184-4da9-bea5-8739ff1fbce4 submitted: SELL 100 AAPL @ 100.93
+2026-06-23 18:18:42 | INFO     | market_maker | Order e5dab68a-fa3c-4f5f-9860-dcf086874e19 canceled: AAPL BUY 100
+2026-06-23 18:18:42 | INFO     | market_maker | Order c2b01775-c6a7-4127-9bee-a017eabc92d4 confirmed with status: ACTIVE
+2026-06-23 18:18:42 | INFO     | market_maker | Order 92b97518-b184-4da9-bea5-8739ff1fbce4 confirmed with status: ACTIVE
+2026-06-23 18:18:47 | INFO     | market_maker | Received TIME_TICK message: 2025-03-01T09:53:30+00:00
+2026-06-23 18:18:47 | INFO     | market_maker | Cancellation request sent for order 92b97518-b184-4da9-bea5-8739ff1fbce4
+2026-06-23 18:18:47 | INFO     | market_maker | Cancellation request sent for order c2b01775-c6a7-4127-9bee-a017eabc92d4
+2026-06-23 18:18:47 | INFO     | market_maker | Order 92b97518-b184-4da9-bea5-8739ff1fbce4 canceled: AAPL SELL 100
+2026-06-23 18:18:47 | INFO     | market_maker | Order 1a56144d-c2e1-4fe1-a604-a546e4c12b9d submitted: BUY 100 AAPL @ 100.67
+2026-06-23 18:18:47 | INFO     | market_maker | Order c6ffa416-1e69-4848-8383-156581cf5f87 submitted: SELL 100 AAPL @ 100.92
+2026-06-23 18:18:47 | INFO     | market_maker | Order c2b01775-c6a7-4127-9bee-a017eabc92d4 canceled: AAPL BUY 100
+2026-06-23 18:18:47 | INFO     | market_maker | Order 1a56144d-c2e1-4fe1-a604-a546e4c12b9d confirmed with status: ACTIVE
+2026-06-23 18:18:47 | INFO     | market_maker | Order c6ffa416-1e69-4848-8383-156581cf5f87 confirmed with status: ACTIVE
+2026-06-23 18:18:52 | INFO     | market_maker | Received TIME_TICK message: 2025-03-01T09:54:00+00:00
+2026-06-23 18:18:52 | INFO     | market_maker | Cancellation request sent for order c6ffa416-1e69-4848-8383-156581cf5f87
+2026-06-23 18:18:52 | INFO     | market_maker | Cancellation request sent for order 1a56144d-c2e1-4fe1-a604-a546e4c12b9d
+2026-06-23 18:18:52 | INFO     | market_maker | Order c6ffa416-1e69-4848-8383-156581cf5f87 canceled: AAPL SELL 100
+2026-06-23 18:18:52 | INFO     | market_maker | Order cfd5cb4d-3ef1-4883-bbcd-5d6f62e71e74 submitted: BUY 100 AAPL @ 100.67
+2026-06-23 18:18:52 | INFO     | market_maker | Order 2ce99dda-0ac6-4029-8a68-6972976415c8 submitted: SELL 100 AAPL @ 100.92
+2026-06-23 18:18:52 | INFO     | market_maker | Order 1a56144d-c2e1-4fe1-a604-a546e4c12b9d canceled: AAPL BUY 100
+2026-06-23 18:18:52 | INFO     | market_maker | Order cfd5cb4d-3ef1-4883-bbcd-5d6f62e71e74 confirmed with status: ACTIVE
+2026-06-23 18:18:52 | INFO     | market_maker | Order 2ce99dda-0ac6-4029-8a68-6972976415c8 confirmed with status: ACTIVE
+2026-06-23 18:18:57 | INFO     | market_maker | Received TIME_TICK message: 2025-03-01T09:54:30+00:00
+2026-06-23 18:18:57 | INFO     | market_maker | Cancellation request sent for order cfd5cb4d-3ef1-4883-bbcd-5d6f62e71e74
+2026-06-23 18:18:57 | INFO     | market_maker | Cancellation request sent for order 2ce99dda-0ac6-4029-8a68-6972976415c8
+2026-06-23 18:18:57 | INFO     | market_maker | Order cfd5cb4d-3ef1-4883-bbcd-5d6f62e71e74 canceled: AAPL BUY 100
+2026-06-23 18:18:57 | INFO     | market_maker | Order bb213abd-c87b-482b-a1c8-b038ccd5168e submitted: BUY 100 AAPL @ 100.66
+2026-06-23 18:18:57 | INFO     | market_maker | Order c5c57b35-5485-41ac-91e4-2b52eef615a5 submitted: SELL 100 AAPL @ 100.91
+2026-06-23 18:18:57 | INFO     | market_maker | Order 2ce99dda-0ac6-4029-8a68-6972976415c8 canceled: AAPL SELL 100
+2026-06-23 18:18:57 | INFO     | market_maker | Order bb213abd-c87b-482b-a1c8-b038ccd5168e confirmed with status: ACTIVE
+2026-06-23 18:18:57 | INFO     | market_maker | Order c5c57b35-5485-41ac-91e4-2b52eef615a5 confirmed with status: ACTIVE
+2026-06-23 18:19:02 | INFO     | market_maker | Received TIME_TICK message: 2025-03-01T09:55:00+00:00
+2026-06-23 18:19:02 | INFO     | market_maker | market_maker slow loop completed: strategist=LLMStrategist, before={'strategy_type': 'market_making', 'risk_mode': 'normal', 'confidence': 0.75, 'reason': 'Static market-maker LLM test response: quote slightly wider and manage inventory conservatively.', 'updated_at': '2025-03-01T09:50:00+00:00', 'fair_price': 100.0, 'spread': 0.25, 'quote_size': 100, 'target_inventory': 10000, 'inventory_skew': 0.0015}, after={'strategy_type': 'market_making', 'risk_mode': 'normal', 'confidence': 0.75, 'reason': 'Static market-maker LLM test response: quote slightly wider and manage inventory conservatively.', 'updated_at': '2025-03-01T09:55:00+00:00', 'fair_price': 100.0, 'spread': 0.25, 'quote_size': 100, 'target_inventory': 10000, 'inventory_skew': 0.0015}
+2026-06-23 18:19:02 | INFO     | market_maker | Cancellation request sent for order c5c57b35-5485-41ac-91e4-2b52eef615a5
+2026-06-23 18:19:02 | INFO     | market_maker | Cancellation request sent for order bb213abd-c87b-482b-a1c8-b038ccd5168e
+2026-06-23 18:19:02 | INFO     | market_maker | Order c5c57b35-5485-41ac-91e4-2b52eef615a5 canceled: AAPL SELL 100
+2026-06-23 18:19:02 | INFO     | market_maker | Order 45fab623-ab19-4e78-bee7-15806b081f7b submitted: BUY 100 AAPL @ 100.66
+2026-06-23 18:19:02 | INFO     | market_maker | Order cc7f704c-fb09-433e-a441-b0c95f782bbd submitted: SELL 100 AAPL @ 100.91
+2026-06-23 18:19:02 | INFO     | market_maker | Order bb213abd-c87b-482b-a1c8-b038ccd5168e canceled: AAPL BUY 100
+2026-06-23 18:19:02 | INFO     | market_maker | Order 45fab623-ab19-4e78-bee7-15806b081f7b confirmed with status: ACTIVE
+2026-06-23 18:19:02 | INFO     | market_maker | Order cc7f704c-fb09-433e-a441-b0c95f782bbd confirmed with status: ACTIVE
+2026-06-23 18:19:07 | INFO     | market_maker | Received TIME_TICK message: 2025-03-01T09:55:30+00:00
+2026-06-23 18:19:07 | INFO     | market_maker | Cancellation request sent for order 45fab623-ab19-4e78-bee7-15806b081f7b
+2026-06-23 18:19:07 | INFO     | market_maker | Cancellation request sent for order cc7f704c-fb09-433e-a441-b0c95f782bbd
+2026-06-23 18:19:07 | INFO     | market_maker | Order 45fab623-ab19-4e78-bee7-15806b081f7b canceled: AAPL BUY 100
+2026-06-23 18:19:07 | INFO     | market_maker | Order c6462e00-6f21-4465-9e84-933598e177d8 submitted: BUY 100 AAPL @ 100.66
+2026-06-23 18:19:07 | INFO     | market_maker | Order 12728494-81ef-4cde-84e6-819e2492bef6 submitted: SELL 100 AAPL @ 100.91
+2026-06-23 18:19:07 | INFO     | market_maker | Order cc7f704c-fb09-433e-a441-b0c95f782bbd canceled: AAPL SELL 100
+2026-06-23 18:19:07 | INFO     | market_maker | Order c6462e00-6f21-4465-9e84-933598e177d8 confirmed with status: ACTIVE
+2026-06-23 18:19:07 | INFO     | market_maker | Order 12728494-81ef-4cde-84e6-819e2492bef6 confirmed with status: ACTIVE
+2026-06-23 18:19:12 | INFO     | market_maker | Received TIME_TICK message: 2025-03-01T09:56:00+00:00
+2026-06-23 18:19:12 | INFO     | market_maker | Cancellation request sent for order 12728494-81ef-4cde-84e6-819e2492bef6
+2026-06-23 18:19:12 | INFO     | market_maker | Cancellation request sent for order c6462e00-6f21-4465-9e84-933598e177d8
+2026-06-23 18:19:12 | INFO     | market_maker | Order 12728494-81ef-4cde-84e6-819e2492bef6 canceled: AAPL SELL 100
+2026-06-23 18:19:12 | INFO     | market_maker | Order e4f0b185-a48e-4093-a1b6-53faa80eb8da submitted: BUY 100 AAPL @ 100.66
+2026-06-23 18:19:12 | INFO     | market_maker | Order b2d24981-eeea-4a24-8326-998d279e9bec submitted: SELL 100 AAPL @ 100.91
+2026-06-23 18:19:12 | INFO     | market_maker | Order c6462e00-6f21-4465-9e84-933598e177d8 canceled: AAPL BUY 100
+2026-06-23 18:19:12 | INFO     | market_maker | Order e4f0b185-a48e-4093-a1b6-53faa80eb8da confirmed with status: ACTIVE
+2026-06-23 18:19:12 | INFO     | market_maker | Order b2d24981-eeea-4a24-8326-998d279e9bec confirmed with status: ACTIVE
+2026-06-23 18:19:17 | INFO     | market_maker | Received TIME_TICK message: 2025-03-01T09:56:30+00:00
+2026-06-23 18:19:17 | INFO     | market_maker | Cancellation request sent for order b2d24981-eeea-4a24-8326-998d279e9bec
+2026-06-23 18:19:17 | INFO     | market_maker | Cancellation request sent for order e4f0b185-a48e-4093-a1b6-53faa80eb8da
+2026-06-23 18:19:17 | INFO     | market_maker | Order b2d24981-eeea-4a24-8326-998d279e9bec canceled: AAPL SELL 100
+2026-06-23 18:19:17 | INFO     | market_maker | Order 6cfc1f9f-d9c2-4203-a39b-9f45c8b9ed9e submitted: BUY 100 AAPL @ 100.66
+2026-06-23 18:19:17 | INFO     | market_maker | Order eef09e1a-707b-4a18-b02c-642763a3f5ca submitted: SELL 100 AAPL @ 100.91
+2026-06-23 18:19:17 | INFO     | market_maker | Order e4f0b185-a48e-4093-a1b6-53faa80eb8da canceled: AAPL BUY 100
+2026-06-23 18:19:17 | INFO     | market_maker | Order 6cfc1f9f-d9c2-4203-a39b-9f45c8b9ed9e confirmed with status: ACTIVE
+2026-06-23 18:19:17 | INFO     | market_maker | Order eef09e1a-707b-4a18-b02c-642763a3f5ca confirmed with status: ACTIVE
+2026-06-23 18:19:22 | INFO     | market_maker | Received TIME_TICK message: 2025-03-01T09:57:00+00:00
+2026-06-23 18:19:22 | INFO     | market_maker | Cancellation request sent for order eef09e1a-707b-4a18-b02c-642763a3f5ca
+2026-06-23 18:19:22 | INFO     | market_maker | Cancellation request sent for order 6cfc1f9f-d9c2-4203-a39b-9f45c8b9ed9e
+2026-06-23 18:19:22 | INFO     | market_maker | Order eef09e1a-707b-4a18-b02c-642763a3f5ca canceled: AAPL SELL 100
+2026-06-23 18:19:22 | INFO     | market_maker | Order 842065ca-a5b5-44b8-80c0-d4fd57be3e0d submitted: BUY 100 AAPL @ 100.66
+2026-06-23 18:19:22 | INFO     | market_maker | Order d41714c0-55c1-489b-8ebe-6d8629761b9a submitted: SELL 100 AAPL @ 100.91
+2026-06-23 18:19:22 | INFO     | market_maker | Order 6cfc1f9f-d9c2-4203-a39b-9f45c8b9ed9e canceled: AAPL BUY 100
+2026-06-23 18:19:22 | INFO     | market_maker | Order 842065ca-a5b5-44b8-80c0-d4fd57be3e0d confirmed with status: ACTIVE
+2026-06-23 18:19:22 | INFO     | market_maker | Order d41714c0-55c1-489b-8ebe-6d8629761b9a confirmed with status: ACTIVE
+2026-06-23 18:19:27 | INFO     | market_maker | Received TIME_TICK message: 2025-03-01T09:57:30+00:00
+2026-06-23 18:19:27 | INFO     | market_maker | Cancellation request sent for order 842065ca-a5b5-44b8-80c0-d4fd57be3e0d
+2026-06-23 18:19:27 | INFO     | market_maker | Cancellation request sent for order d41714c0-55c1-489b-8ebe-6d8629761b9a
+2026-06-23 18:19:27 | INFO     | market_maker | Order 842065ca-a5b5-44b8-80c0-d4fd57be3e0d canceled: AAPL BUY 100
+2026-06-23 18:19:27 | INFO     | market_maker | Order 03226d75-42a2-4ea6-9509-958de9e4d514 submitted: BUY 100 AAPL @ 100.66
+2026-06-23 18:19:27 | INFO     | market_maker | Order e5f0c783-5237-4c78-8ec0-c8b672eb3e92 submitted: SELL 100 AAPL @ 100.91
+2026-06-23 18:19:27 | INFO     | market_maker | Order d41714c0-55c1-489b-8ebe-6d8629761b9a canceled: AAPL SELL 100
+2026-06-23 18:19:27 | INFO     | market_maker | Order 03226d75-42a2-4ea6-9509-958de9e4d514 confirmed with status: ACTIVE
+2026-06-23 18:19:27 | INFO     | market_maker | Order e5f0c783-5237-4c78-8ec0-c8b672eb3e92 confirmed with status: ACTIVE
+2026-06-23 18:19:33 | INFO     | market_maker | Received TIME_TICK message: 2025-03-01T09:58:00+00:00
+2026-06-23 18:19:33 | INFO     | market_maker | Cancellation request sent for order 03226d75-42a2-4ea6-9509-958de9e4d514
+2026-06-23 18:19:33 | INFO     | market_maker | Cancellation request sent for order e5f0c783-5237-4c78-8ec0-c8b672eb3e92
+2026-06-23 18:19:33 | INFO     | market_maker | Order 03226d75-42a2-4ea6-9509-958de9e4d514 canceled: AAPL BUY 100
+2026-06-23 18:19:33 | INFO     | market_maker | Order 47f87145-f4ff-4ca1-b1d8-33328f8a1d9e submitted: BUY 100 AAPL @ 100.66
+2026-06-23 18:19:33 | INFO     | market_maker | Order d32ea9ab-51a5-4f82-a68a-b21b49feb1a3 submitted: SELL 100 AAPL @ 100.91
+2026-06-23 18:19:33 | INFO     | market_maker | Order e5f0c783-5237-4c78-8ec0-c8b672eb3e92 canceled: AAPL SELL 100
+2026-06-23 18:19:33 | INFO     | market_maker | Order 47f87145-f4ff-4ca1-b1d8-33328f8a1d9e confirmed with status: ACTIVE
+2026-06-23 18:19:33 | INFO     | market_maker | Order d32ea9ab-51a5-4f82-a68a-b21b49feb1a3 confirmed with status: ACTIVE
+2026-06-23 18:19:38 | INFO     | market_maker | Received TIME_TICK message: 2025-03-01T09:58:30+00:00
+2026-06-23 18:19:38 | INFO     | market_maker | Cancellation request sent for order 47f87145-f4ff-4ca1-b1d8-33328f8a1d9e
+2026-06-23 18:19:38 | INFO     | market_maker | Cancellation request sent for order d32ea9ab-51a5-4f82-a68a-b21b49feb1a3
+2026-06-23 18:19:38 | INFO     | market_maker | Order 47f87145-f4ff-4ca1-b1d8-33328f8a1d9e canceled: AAPL BUY 100
+2026-06-23 18:19:38 | INFO     | market_maker | Order 45acb10e-997b-4492-b4f5-7dcdc0987308 submitted: BUY 100 AAPL @ 100.67
+2026-06-23 18:19:38 | INFO     | market_maker | Order 21f309c5-3abd-4df2-969f-99910b164053 submitted: SELL 100 AAPL @ 100.92
+2026-06-23 18:19:38 | INFO     | market_maker | Order d32ea9ab-51a5-4f82-a68a-b21b49feb1a3 canceled: AAPL SELL 100
+2026-06-23 18:19:38 | INFO     | market_maker | Order 45acb10e-997b-4492-b4f5-7dcdc0987308 confirmed with status: ACTIVE
+2026-06-23 18:19:38 | INFO     | market_maker | Order 21f309c5-3abd-4df2-969f-99910b164053 confirmed with status: ACTIVE
+2026-06-23 18:19:43 | INFO     | market_maker | Received TIME_TICK message: 2025-03-01T09:59:00+00:00
+2026-06-23 18:19:43 | INFO     | market_maker | Cancellation request sent for order 45acb10e-997b-4492-b4f5-7dcdc0987308
+2026-06-23 18:19:43 | INFO     | market_maker | Cancellation request sent for order 21f309c5-3abd-4df2-969f-99910b164053
+2026-06-23 18:19:43 | INFO     | market_maker | Order 26a08c61-e8ab-4aab-ad20-cc3d11e12bf6 submitted: BUY 100 AAPL @ 100.67
+2026-06-23 18:19:43 | INFO     | market_maker | Order 7b221e66-e817-4d9d-8ebd-eed39c77ac9a submitted: SELL 100 AAPL @ 100.92
+2026-06-23 18:19:43 | INFO     | market_maker | Order 45acb10e-997b-4492-b4f5-7dcdc0987308 canceled: AAPL BUY 100
+2026-06-23 18:19:43 | INFO     | market_maker | Order 21f309c5-3abd-4df2-969f-99910b164053 canceled: AAPL SELL 100
+2026-06-23 18:19:43 | INFO     | market_maker | Order 26a08c61-e8ab-4aab-ad20-cc3d11e12bf6 confirmed with status: ACTIVE
+2026-06-23 18:19:43 | INFO     | market_maker | Order 7b221e66-e817-4d9d-8ebd-eed39c77ac9a confirmed with status: ACTIVE
+2026-06-23 18:19:48 | INFO     | market_maker | Received TIME_TICK message: 2025-03-01T09:59:30+00:00
+2026-06-23 18:19:48 | INFO     | market_maker | Cancellation request sent for order 7b221e66-e817-4d9d-8ebd-eed39c77ac9a
+2026-06-23 18:19:48 | INFO     | market_maker | Cancellation request sent for order 26a08c61-e8ab-4aab-ad20-cc3d11e12bf6
+2026-06-23 18:19:48 | INFO     | market_maker | Order 7b221e66-e817-4d9d-8ebd-eed39c77ac9a canceled: AAPL SELL 100
+2026-06-23 18:19:48 | INFO     | market_maker | Order 8649d3d2-e2ec-4d43-ad4a-b54aec72c17e submitted: BUY 100 AAPL @ 100.69
+2026-06-23 18:19:48 | INFO     | market_maker | Order e530a543-f270-457d-855b-47904916d135 submitted: SELL 100 AAPL @ 100.94
+2026-06-23 18:19:48 | INFO     | market_maker | Order 26a08c61-e8ab-4aab-ad20-cc3d11e12bf6 canceled: AAPL BUY 100
+2026-06-23 18:19:48 | INFO     | market_maker | Order 8649d3d2-e2ec-4d43-ad4a-b54aec72c17e confirmed with status: ACTIVE
+2026-06-23 18:19:48 | INFO     | market_maker | Order e530a543-f270-457d-855b-47904916d135 confirmed with status: ACTIVE
+2026-06-23 18:19:55 | INFO     | market_maker | Agent market_maker received STOP_SIMULATION. Shutting down.
+2026-06-23 18:19:55 | INFO     | market_maker | AML trader actions exported to /Users/mailuong/internships/nus/AML-Sim/.aml_runs/aml_orderbook_replay_20260623T101416Z/reports/agents/trader_actions_market_maker.json
+2026-06-23 18:19:55 | INFO     | market_maker | Final portfolio value: $2,008,961.04
+2026-06-23 18:19:55 | INFO     | market_maker | Realized P&L: {'AAPL': 275.67}
+2026-06-23 18:19:55 | INFO     | market_maker | Final Performance Metrics:
+{
+  "ROI": 0.0039,
+  "Sharpe Ratio": 0.1341,
+  "Annualized Sharpe Ratio": 2.1283,
+  "Sortino Ratio": 0.2302,
+  "Win Rate": 1.0,
+  "Profit Factor": 999.0,
+  "Max Drawdown": 0.0012,
+  "Num Trades": 29,
+  "Num Closed Trades": 20,
+  "Total Traded Volume": 61790.74,
+  "Average Trade Size": 2130.7152,
+  "ROIC": 2.1469,
+  "Profit per Trade": 13.7835,
+  "Last Portfolio Value": 2008961.04,
+  "Risk Free Rate Used": 1.5844043907014477e-09,
+  "Realized P&L": {
+    "AAPL": 275.67
+  }
+}
+2026-06-23 18:19:55 | INFO     | market_maker | Performance metrics exported to /Users/mailuong/internships/nus/AML-Sim/.aml_runs/aml_orderbook_replay_20260623T101416Z/reports/agents/metrics_market_maker.json
+2026-06-23 18:19:55 | INFO     | market_maker | Executed orders exported to /Users/mailuong/internships/nus/AML-Sim/.aml_runs/aml_orderbook_replay_20260623T101416Z/reports/agents/executed_orders_market_maker.json
+2026-06-23 18:19:55 | INFO     | market_maker | Portfolio time series exported to /Users/mailuong/internships/nus/AML-Sim/.aml_runs/aml_orderbook_replay_20260623T101416Z/reports/agents/portfolio_timeseries_market_maker.json
+2026-06-23 18:19:55 | INFO     | market_maker | Pending orders exported to /Users/mailuong/internships/nus/AML-Sim/.aml_runs/aml_orderbook_replay_20260623T101416Z/reports/agents/pending_orders_market_maker.json
+2026-06-23 18:19:55 | INFO     | market_maker | Cancelled message consumption.
+2026-06-23 18:19:55 | INFO     | market_maker | Cancelled TIME_TICK message consumption.
+2026-06-23 18:19:56 | INFO     | market_maker | Waited briefly for pending publisher confirmations.
+2026-06-23 18:19:56 | INFO     | market_maker | Channel closed.
+2026-06-23 18:19:56 | INFO     | market_maker | Closed RabbitMQ connection.
+2026-06-23 18:19:56 | INFO     | market_maker | Agent market_maker shut down.

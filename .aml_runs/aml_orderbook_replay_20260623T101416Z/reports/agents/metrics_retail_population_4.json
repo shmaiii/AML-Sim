@@ -1,0 +1,20 @@
+{
+  "ROI": -0.0,
+  "Sharpe Ratio": -0.1589,
+  "Annualized Sharpe Ratio": -2.5222,
+  "Sortino Ratio": -0.1684,
+  "Win Rate": 0.0,
+  "Profit Factor": 0.0,
+  "Max Drawdown": 0.0,
+  "Num Trades": 5,
+  "Num Closed Trades": 2,
+  "Total Traded Volume": 1207.58,
+  "Average Trade Size": 241.516,
+  "ROIC": -0.0006,
+  "Profit per Trade": -0.29,
+  "Last Portfolio Value": 24999.42,
+  "Risk Free Rate Used": 9.506426344208686e-08,
+  "Realized P&L": {
+    "AAPL": -0.58
+  }
+}

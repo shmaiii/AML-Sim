@@ -1,0 +1,141 @@
+2026-06-23 18:14:31 | INFO     | retail_population_2 | Initializing Agent retail_population_2 with RabbitMQ host localhost.
+2026-06-23 18:14:31 | INFO     | retail_population_2 | TraderAgent retail_population_2 initialized with cash balance $25,000.00
+2026-06-23 18:14:31 | INFO     | retail_population_2 | retail_population_2 slow loop configured: strategist=LLMStrategist, interval=0:05:00
+2026-06-23 18:14:31 | INFO     | retail_population_2 | AMLRetailTrader retail_population_2 initialized: strategy_state=RetailStrategyState(strategy_type='retail_noise', risk_mode='normal', confidence=1.0, reason=None, updated_at=None, trade_probability=0.45, buy_bias=0.5, max_order_size=10, herding_tendency=0.0, panic_level=0.0)
+2026-06-23 18:14:31 | INFO     | retail_population_2 | Attempting to connect to RabbitMQ at localhost...
+2026-06-23 18:14:31 | INFO     | retail_population_2 | Time routing key: trader.#
+2026-06-23 18:14:31 | INFO     | retail_population_2 | Agent retail_population_2 bound to time exchange 'time_exchange'.
+2026-06-23 18:14:31 | INFO     | retail_population_2 | Started consuming messages.
+2026-06-23 18:14:31 | INFO     | retail_population_2 | Started consuming TIME_TICK messages.
+2026-06-23 18:14:31 | INFO     | retail_population_2 | Subscription confirmation for AAPL: subscribed
+2026-06-23 18:14:51 | INFO     | retail_population_2 | Received TIME_TICK message: 2025-03-01T09:30:00+00:00
+2026-06-23 18:14:51 | INFO     | retail_population_2 | retail_population_2 slow loop completed: strategist=LLMStrategist, before={'strategy_type': 'retail_noise', 'risk_mode': 'normal', 'confidence': 1.0, 'reason': None, 'updated_at': None, 'trade_probability': 0.45, 'buy_bias': 0.5, 'max_order_size': 10, 'herding_tendency': 0.0, 'panic_level': 0.0}, after={'strategy_type': 'retail_noise', 'risk_mode': 'normal', 'confidence': 0.7, 'reason': 'Static retail LLM test response: slightly active, mildly bullish, low panic.', 'updated_at': '2025-03-01T09:30:00+00:00', 'trade_probability': 0.35, 'buy_bias': 0.52, 'max_order_size': 10, 'herding_tendency': 0.15, 'panic_level': 0.05}
+2026-06-23 18:14:51 | INFO     | retail_population_2 | Order f67ba0ed-29cb-4e33-84c6-5804735d8266 submitted: BUY 4 AAPL @ MARKET
+2026-06-23 18:14:51 | INFO     | retail_population_2 | AMLRetailTrader retail_population_2 placed BUY market order for 4 AAPL
+2026-06-23 18:14:51 | INFO     | retail_population_2 | Order f67ba0ed-29cb-4e33-84c6-5804735d8266 confirmed with status: ACTIVE
+2026-06-23 18:14:56 | INFO     | retail_population_2 | Received TIME_TICK message: 2025-03-01T09:30:30+00:00
+2026-06-23 18:15:01 | INFO     | retail_population_2 | Received TIME_TICK message: 2025-03-01T09:31:00+00:00
+2026-06-23 18:15:06 | INFO     | retail_population_2 | Received TIME_TICK message: 2025-03-01T09:31:30+00:00
+2026-06-23 18:15:11 | INFO     | retail_population_2 | Received TIME_TICK message: 2025-03-01T09:32:00+00:00
+2026-06-23 18:15:16 | INFO     | retail_population_2 | Received TIME_TICK message: 2025-03-01T09:32:30+00:00
+2026-06-23 18:15:21 | INFO     | retail_population_2 | Received TIME_TICK message: 2025-03-01T09:33:00+00:00
+2026-06-23 18:15:26 | INFO     | retail_population_2 | Received TIME_TICK message: 2025-03-01T09:33:30+00:00
+2026-06-23 18:15:31 | INFO     | retail_population_2 | Received TIME_TICK message: 2025-03-01T09:34:00+00:00
+2026-06-23 18:15:31 | INFO     | retail_population_2 | Order 5d6ebfc7-a950-4b38-b891-75d441f91298 submitted: BUY 4 AAPL @ MARKET
+2026-06-23 18:15:31 | INFO     | retail_population_2 | AMLRetailTrader retail_population_2 placed BUY market order for 4 AAPL
+2026-06-23 18:15:31 | INFO     | retail_population_2 | Order 5d6ebfc7-a950-4b38-b891-75d441f91298 confirmed with status: ACTIVE
+2026-06-23 18:15:36 | INFO     | retail_population_2 | Received TIME_TICK message: 2025-03-01T09:34:30+00:00
+2026-06-23 18:15:41 | INFO     | retail_population_2 | Received TIME_TICK message: 2025-03-01T09:35:00+00:00
+2026-06-23 18:15:41 | INFO     | retail_population_2 | retail_population_2 slow loop completed: strategist=LLMStrategist, before={'strategy_type': 'retail_noise', 'risk_mode': 'normal', 'confidence': 0.7, 'reason': 'Static retail LLM test response: slightly active, mildly bullish, low panic.', 'updated_at': '2025-03-01T09:30:00+00:00', 'trade_probability': 0.35, 'buy_bias': 0.52, 'max_order_size': 10, 'herding_tendency': 0.15, 'panic_level': 0.05}, after={'strategy_type': 'retail_noise', 'risk_mode': 'normal', 'confidence': 0.7, 'reason': 'Static retail LLM test response: slightly active, mildly bullish, low panic.', 'updated_at': '2025-03-01T09:35:00+00:00', 'trade_probability': 0.35, 'buy_bias': 0.52, 'max_order_size': 10, 'herding_tendency': 0.15, 'panic_level': 0.05}
+2026-06-23 18:15:46 | INFO     | retail_population_2 | Received TIME_TICK message: 2025-03-01T09:35:30+00:00
+2026-06-23 18:15:51 | INFO     | retail_population_2 | Received TIME_TICK message: 2025-03-01T09:36:00+00:00
+2026-06-23 18:15:56 | INFO     | retail_population_2 | Received TIME_TICK message: 2025-03-01T09:36:30+00:00
+2026-06-23 18:16:01 | INFO     | retail_population_2 | Received TIME_TICK message: 2025-03-01T09:37:00+00:00
+2026-06-23 18:16:06 | INFO     | retail_population_2 | Received TIME_TICK message: 2025-03-01T09:37:30+00:00
+2026-06-23 18:16:11 | INFO     | retail_population_2 | Received TIME_TICK message: 2025-03-01T09:38:00+00:00
+2026-06-23 18:16:17 | INFO     | retail_population_2 | Received TIME_TICK message: 2025-03-01T09:38:30+00:00
+2026-06-23 18:16:22 | INFO     | retail_population_2 | Received TIME_TICK message: 2025-03-01T09:39:00+00:00
+2026-06-23 18:16:22 | INFO     | retail_population_2 | Order a9f91d2a-7166-4fc6-9812-397006572cd6 submitted: BUY 9 AAPL @ MARKET
+2026-06-23 18:16:22 | INFO     | retail_population_2 | AMLRetailTrader retail_population_2 placed BUY market order for 9 AAPL
+2026-06-23 18:16:22 | INFO     | retail_population_2 | Order a9f91d2a-7166-4fc6-9812-397006572cd6 confirmed with status: ACTIVE
+2026-06-23 18:16:27 | INFO     | retail_population_2 | Received TIME_TICK message: 2025-03-01T09:39:30+00:00
+2026-06-23 18:16:32 | INFO     | retail_population_2 | Received TIME_TICK message: 2025-03-01T09:40:00+00:00
+2026-06-23 18:16:32 | INFO     | retail_population_2 | retail_population_2 slow loop completed: strategist=LLMStrategist, before={'strategy_type': 'retail_noise', 'risk_mode': 'normal', 'confidence': 0.7, 'reason': 'Static retail LLM test response: slightly active, mildly bullish, low panic.', 'updated_at': '2025-03-01T09:35:00+00:00', 'trade_probability': 0.35, 'buy_bias': 0.52, 'max_order_size': 10, 'herding_tendency': 0.15, 'panic_level': 0.05}, after={'strategy_type': 'retail_noise', 'risk_mode': 'normal', 'confidence': 0.7, 'reason': 'Static retail LLM test response: slightly active, mildly bullish, low panic.', 'updated_at': '2025-03-01T09:40:00+00:00', 'trade_probability': 0.35, 'buy_bias': 0.52, 'max_order_size': 10, 'herding_tendency': 0.15, 'panic_level': 0.05}
+2026-06-23 18:16:37 | INFO     | retail_population_2 | Received TIME_TICK message: 2025-03-01T09:40:30+00:00
+2026-06-23 18:16:42 | INFO     | retail_population_2 | Received TIME_TICK message: 2025-03-01T09:41:00+00:00
+2026-06-23 18:16:47 | INFO     | retail_population_2 | Received TIME_TICK message: 2025-03-01T09:41:30+00:00
+2026-06-23 18:16:52 | INFO     | retail_population_2 | Received TIME_TICK message: 2025-03-01T09:42:00+00:00
+2026-06-23 18:16:57 | INFO     | retail_population_2 | Received TIME_TICK message: 2025-03-01T09:42:30+00:00
+2026-06-23 18:17:02 | INFO     | retail_population_2 | Received TIME_TICK message: 2025-03-01T09:43:00+00:00
+2026-06-23 18:17:02 | INFO     | retail_population_2 | Order f1c2235d-0dd9-4d37-b529-ddabbba6346a submitted: BUY 4 AAPL @ MARKET
+2026-06-23 18:17:02 | INFO     | retail_population_2 | AMLRetailTrader retail_population_2 placed BUY market order for 4 AAPL
+2026-06-23 18:17:02 | INFO     | retail_population_2 | Order f1c2235d-0dd9-4d37-b529-ddabbba6346a confirmed with status: ACTIVE
+2026-06-23 18:17:07 | INFO     | retail_population_2 | Received TIME_TICK message: 2025-03-01T09:43:30+00:00
+2026-06-23 18:17:12 | INFO     | retail_population_2 | Received TIME_TICK message: 2025-03-01T09:44:00+00:00
+2026-06-23 18:17:12 | INFO     | retail_population_2 | Order bfb30050-04a1-40ff-84f8-c20a9d8c8d74 submitted: BUY 2 AAPL @ MARKET
+2026-06-23 18:17:12 | INFO     | retail_population_2 | AMLRetailTrader retail_population_2 placed BUY market order for 2 AAPL
+2026-06-23 18:17:12 | INFO     | retail_population_2 | Order bfb30050-04a1-40ff-84f8-c20a9d8c8d74 confirmed with status: ACTIVE
+2026-06-23 18:17:17 | INFO     | retail_population_2 | Received TIME_TICK message: 2025-03-01T09:44:30+00:00
+2026-06-23 18:17:22 | INFO     | retail_population_2 | Received TIME_TICK message: 2025-03-01T09:45:00+00:00
+2026-06-23 18:17:22 | INFO     | retail_population_2 | retail_population_2 slow loop completed: strategist=LLMStrategist, before={'strategy_type': 'retail_noise', 'risk_mode': 'normal', 'confidence': 0.7, 'reason': 'Static retail LLM test response: slightly active, mildly bullish, low panic.', 'updated_at': '2025-03-01T09:40:00+00:00', 'trade_probability': 0.35, 'buy_bias': 0.52, 'max_order_size': 10, 'herding_tendency': 0.15, 'panic_level': 0.05}, after={'strategy_type': 'retail_noise', 'risk_mode': 'normal', 'confidence': 0.7, 'reason': 'Static retail LLM test response: slightly active, mildly bullish, low panic.', 'updated_at': '2025-03-01T09:45:00+00:00', 'trade_probability': 0.35, 'buy_bias': 0.52, 'max_order_size': 10, 'herding_tendency': 0.15, 'panic_level': 0.05}
+2026-06-23 18:17:27 | INFO     | retail_population_2 | Received TIME_TICK message: 2025-03-01T09:45:30+00:00
+2026-06-23 18:17:32 | INFO     | retail_population_2 | Received TIME_TICK message: 2025-03-01T09:46:00+00:00
+2026-06-23 18:17:37 | INFO     | retail_population_2 | Received TIME_TICK message: 2025-03-01T09:46:30+00:00
+2026-06-23 18:17:42 | INFO     | retail_population_2 | Received TIME_TICK message: 2025-03-01T09:47:00+00:00
+2026-06-23 18:17:42 | INFO     | retail_population_2 | Order f0d04a1a-8a01-46da-9865-577fe4b1e565 submitted: SELL 8 AAPL @ MARKET
+2026-06-23 18:17:42 | INFO     | retail_population_2 | AMLRetailTrader retail_population_2 placed SELL market order for 8 AAPL
+2026-06-23 18:17:42 | INFO     | retail_population_2 | Order f0d04a1a-8a01-46da-9865-577fe4b1e565 confirmed with status: ACTIVE
+2026-06-23 18:17:47 | INFO     | retail_population_2 | Received TIME_TICK message: 2025-03-01T09:47:30+00:00
+2026-06-23 18:17:52 | INFO     | retail_population_2 | Received TIME_TICK message: 2025-03-01T09:48:00+00:00
+2026-06-23 18:17:57 | INFO     | retail_population_2 | Received TIME_TICK message: 2025-03-01T09:48:30+00:00
+2026-06-23 18:18:02 | INFO     | retail_population_2 | Received TIME_TICK message: 2025-03-01T09:49:00+00:00
+2026-06-23 18:18:02 | INFO     | retail_population_2 | Order 6cb2c5df-ced2-44e4-8246-d9073662cbe5 submitted: BUY 6 AAPL @ MARKET
+2026-06-23 18:18:02 | INFO     | retail_population_2 | AMLRetailTrader retail_population_2 placed BUY market order for 6 AAPL
+2026-06-23 18:18:02 | INFO     | retail_population_2 | Order 6cb2c5df-ced2-44e4-8246-d9073662cbe5 confirmed with status: ACTIVE
+2026-06-23 18:18:07 | INFO     | retail_population_2 | Received TIME_TICK message: 2025-03-01T09:49:30+00:00
+2026-06-23 18:18:12 | INFO     | retail_population_2 | Received TIME_TICK message: 2025-03-01T09:50:00+00:00
+2026-06-23 18:18:12 | INFO     | retail_population_2 | retail_population_2 slow loop completed: strategist=LLMStrategist, before={'strategy_type': 'retail_noise', 'risk_mode': 'normal', 'confidence': 0.7, 'reason': 'Static retail LLM test response: slightly active, mildly bullish, low panic.', 'updated_at': '2025-03-01T09:45:00+00:00', 'trade_probability': 0.35, 'buy_bias': 0.52, 'max_order_size': 10, 'herding_tendency': 0.15, 'panic_level': 0.05}, after={'strategy_type': 'retail_noise', 'risk_mode': 'normal', 'confidence': 0.7, 'reason': 'Static retail LLM test response: slightly active, mildly bullish, low panic.', 'updated_at': '2025-03-01T09:50:00+00:00', 'trade_probability': 0.35, 'buy_bias': 0.52, 'max_order_size': 10, 'herding_tendency': 0.15, 'panic_level': 0.05}
+2026-06-23 18:18:17 | INFO     | retail_population_2 | Received TIME_TICK message: 2025-03-01T09:50:30+00:00
+2026-06-23 18:18:22 | INFO     | retail_population_2 | Received TIME_TICK message: 2025-03-01T09:51:00+00:00
+2026-06-23 18:18:27 | INFO     | retail_population_2 | Received TIME_TICK message: 2025-03-01T09:51:30+00:00
+2026-06-23 18:18:32 | INFO     | retail_population_2 | Received TIME_TICK message: 2025-03-01T09:52:00+00:00
+2026-06-23 18:18:37 | INFO     | retail_population_2 | Received TIME_TICK message: 2025-03-01T09:52:30+00:00
+2026-06-23 18:18:42 | INFO     | retail_population_2 | Received TIME_TICK message: 2025-03-01T09:53:00+00:00
+2026-06-23 18:18:47 | INFO     | retail_population_2 | Received TIME_TICK message: 2025-03-01T09:53:30+00:00
+2026-06-23 18:18:52 | INFO     | retail_population_2 | Received TIME_TICK message: 2025-03-01T09:54:00+00:00
+2026-06-23 18:18:57 | INFO     | retail_population_2 | Received TIME_TICK message: 2025-03-01T09:54:30+00:00
+2026-06-23 18:19:02 | INFO     | retail_population_2 | Received TIME_TICK message: 2025-03-01T09:55:00+00:00
+2026-06-23 18:19:02 | INFO     | retail_population_2 | retail_population_2 slow loop completed: strategist=LLMStrategist, before={'strategy_type': 'retail_noise', 'risk_mode': 'normal', 'confidence': 0.7, 'reason': 'Static retail LLM test response: slightly active, mildly bullish, low panic.', 'updated_at': '2025-03-01T09:50:00+00:00', 'trade_probability': 0.35, 'buy_bias': 0.52, 'max_order_size': 10, 'herding_tendency': 0.15, 'panic_level': 0.05}, after={'strategy_type': 'retail_noise', 'risk_mode': 'normal', 'confidence': 0.7, 'reason': 'Static retail LLM test response: slightly active, mildly bullish, low panic.', 'updated_at': '2025-03-01T09:55:00+00:00', 'trade_probability': 0.35, 'buy_bias': 0.52, 'max_order_size': 10, 'herding_tendency': 0.15, 'panic_level': 0.05}
+2026-06-23 18:19:02 | INFO     | retail_population_2 | Order 0875ee9e-427e-4a54-b7ef-f28432740e63 submitted: SELL 2 AAPL @ MARKET
+2026-06-23 18:19:02 | INFO     | retail_population_2 | AMLRetailTrader retail_population_2 placed SELL market order for 2 AAPL
+2026-06-23 18:19:02 | INFO     | retail_population_2 | Order 0875ee9e-427e-4a54-b7ef-f28432740e63 confirmed with status: ACTIVE
+2026-06-23 18:19:07 | INFO     | retail_population_2 | Received TIME_TICK message: 2025-03-01T09:55:30+00:00
+2026-06-23 18:19:12 | INFO     | retail_population_2 | Received TIME_TICK message: 2025-03-01T09:56:00+00:00
+2026-06-23 18:19:17 | INFO     | retail_population_2 | Received TIME_TICK message: 2025-03-01T09:56:30+00:00
+2026-06-23 18:19:22 | INFO     | retail_population_2 | Received TIME_TICK message: 2025-03-01T09:57:00+00:00
+2026-06-23 18:19:22 | INFO     | retail_population_2 | Order 2aad6fa9-8f30-41af-9a6f-7632919f3fec submitted: BUY 4 AAPL @ MARKET
+2026-06-23 18:19:22 | INFO     | retail_population_2 | AMLRetailTrader retail_population_2 placed BUY market order for 4 AAPL
+2026-06-23 18:19:22 | INFO     | retail_population_2 | Order 2aad6fa9-8f30-41af-9a6f-7632919f3fec confirmed with status: ACTIVE
+2026-06-23 18:19:27 | INFO     | retail_population_2 | Received TIME_TICK message: 2025-03-01T09:57:30+00:00
+2026-06-23 18:19:33 | INFO     | retail_population_2 | Received TIME_TICK message: 2025-03-01T09:58:00+00:00
+2026-06-23 18:19:33 | INFO     | retail_population_2 | Order af2c6d64-12db-4999-8641-e4fd91271ffc submitted: BUY 9 AAPL @ MARKET
+2026-06-23 18:19:33 | INFO     | retail_population_2 | AMLRetailTrader retail_population_2 placed BUY market order for 9 AAPL
+2026-06-23 18:19:33 | INFO     | retail_population_2 | Order af2c6d64-12db-4999-8641-e4fd91271ffc confirmed with status: ACTIVE
+2026-06-23 18:19:38 | INFO     | retail_population_2 | Received TIME_TICK message: 2025-03-01T09:58:30+00:00
+2026-06-23 18:19:43 | INFO     | retail_population_2 | Received TIME_TICK message: 2025-03-01T09:59:00+00:00
+2026-06-23 18:19:48 | INFO     | retail_population_2 | Received TIME_TICK message: 2025-03-01T09:59:30+00:00
+2026-06-23 18:19:55 | INFO     | retail_population_2 | Agent retail_population_2 received STOP_SIMULATION. Shutting down.
+2026-06-23 18:19:55 | INFO     | retail_population_2 | AML trader actions exported to /Users/mailuong/internships/nus/AML-Sim/.aml_runs/aml_orderbook_replay_20260623T101416Z/reports/agents/trader_actions_retail_population_2.json
+2026-06-23 18:19:55 | INFO     | retail_population_2 | Final portfolio value: $25,004.39
+2026-06-23 18:19:55 | INFO     | retail_population_2 | Realized P&L: {'AAPL': 2.29}
+2026-06-23 18:19:55 | INFO     | retail_population_2 | Final Performance Metrics:
+{
+  "ROI": 0.0002,
+  "Sharpe Ratio": 0.0915,
+  "Annualized Sharpe Ratio": 1.4529,
+  "Sortino Ratio": 0.1616,
+  "Win Rate": 1.0,
+  "Profit Factor": 999.0,
+  "Max Drawdown": 0.0001,
+  "Num Trades": 6,
+  "Num Closed Trades": 2,
+  "Total Traded Volume": 3822.97,
+  "Average Trade Size": 637.1617,
+  "ROIC": 0.0016,
+  "Profit per Trade": 1.145,
+  "Last Portfolio Value": 25004.39,
+  "Risk Free Rate Used": 9.506426344208686e-08,
+  "Realized P&L": {
+    "AAPL": 2.29
+  }
+}
+2026-06-23 18:19:55 | INFO     | retail_population_2 | Performance metrics exported to /Users/mailuong/internships/nus/AML-Sim/.aml_runs/aml_orderbook_replay_20260623T101416Z/reports/agents/metrics_retail_population_2.json
+2026-06-23 18:19:55 | INFO     | retail_population_2 | Executed orders exported to /Users/mailuong/internships/nus/AML-Sim/.aml_runs/aml_orderbook_replay_20260623T101416Z/reports/agents/executed_orders_retail_population_2.json
+2026-06-23 18:19:55 | INFO     | retail_population_2 | Portfolio time series exported to /Users/mailuong/internships/nus/AML-Sim/.aml_runs/aml_orderbook_replay_20260623T101416Z/reports/agents/portfolio_timeseries_retail_population_2.json
+2026-06-23 18:19:55 | INFO     | retail_population_2 | Pending orders exported to /Users/mailuong/internships/nus/AML-Sim/.aml_runs/aml_orderbook_replay_20260623T101416Z/reports/agents/pending_orders_retail_population_2.json
+2026-06-23 18:19:55 | INFO     | retail_population_2 | Cancelled message consumption.
+2026-06-23 18:19:55 | INFO     | retail_population_2 | Cancelled TIME_TICK message consumption.
+2026-06-23 18:19:56 | INFO     | retail_population_2 | Waited briefly for pending publisher confirmations.
+2026-06-23 18:19:56 | INFO     | retail_population_2 | Channel closed.
+2026-06-23 18:19:56 | INFO     | retail_population_2 | Closed RabbitMQ connection.
+2026-06-23 18:19:56 | INFO     | retail_population_2 | Agent retail_population_2 shut down.

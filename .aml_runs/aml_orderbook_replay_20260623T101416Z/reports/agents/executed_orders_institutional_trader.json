@@ -1,0 +1,47 @@
+[
+  {
+    "timestamp": "2025-03-01T09:34:00+00:00",
+    "instrument": "AAPL",
+    "action": "BUY",
+    "orderType": null,
+    "price": 100.12,
+    "quantity": 100,
+    "explanation": "AML institutional child order toward target 500"
+  },
+  {
+    "timestamp": "2025-03-01T09:40:00+00:00",
+    "instrument": "AAPL",
+    "action": "BUY",
+    "orderType": null,
+    "price": 100.31,
+    "quantity": 100,
+    "explanation": "AML institutional child order toward target 500"
+  },
+  {
+    "timestamp": "2025-03-01T09:42:00+00:00",
+    "instrument": "AAPL",
+    "action": "BUY",
+    "orderType": null,
+    "price": 100.45,
+    "quantity": 100,
+    "explanation": "AML institutional child order toward target 500"
+  },
+  {
+    "timestamp": "2025-03-01T09:46:00+00:00",
+    "instrument": "AAPL",
+    "action": "BUY",
+    "orderType": null,
+    "price": 100.61,
+    "quantity": 100,
+    "explanation": "AML institutional child order toward target 500"
+  },
+  {
+    "timestamp": "2025-03-01T09:50:00+00:00",
+    "instrument": "AAPL",
+    "action": "BUY",
+    "orderType": null,
+    "price": 100.78,
+    "quantity": 100,
+    "explanation": "AML institutional child order toward target 500"
+  }
+]

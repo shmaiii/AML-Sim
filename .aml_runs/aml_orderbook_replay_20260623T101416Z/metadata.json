@@ -1,0 +1,22 @@
+{
+  "run_id": "aml_orderbook_replay_20260623T101416Z",
+  "created_at": "2026-06-23T10:14:16.306113+00:00",
+  "scenario": {
+    "name": "aml_orderbook_replay",
+    "description": "First AML wrapper orderbook smoke test. This keeps StockSim unchanged and runs AAPL with the minimum synthetic AML market roles.\n",
+    "source_path": "/Users/mailuong/internships/nus/AML-Sim/scenarios/aml_orderbook_replay.yaml",
+    "archived_path": "/Users/mailuong/internships/nus/AML-Sim/.aml_runs/aml_orderbook_replay_20260623T101416Z/scenario.yaml",
+    "rabbitmq_host": "localhost"
+  },
+  "artifacts": {
+    "run_dir": "/Users/mailuong/internships/nus/AML-Sim/.aml_runs/aml_orderbook_replay_20260623T101416Z",
+    "logs_dir": "/Users/mailuong/internships/nus/AML-Sim/.aml_runs/aml_orderbook_replay_20260623T101416Z/logs",
+    "charts_dir": "/Users/mailuong/internships/nus/AML-Sim/.aml_runs/aml_orderbook_replay_20260623T101416Z/charts",
+    "reports_dir": "/Users/mailuong/internships/nus/AML-Sim/.aml_runs/aml_orderbook_replay_20260623T101416Z/reports",
+    "stocksim_config_path": "/Users/mailuong/internships/nus/AML-Sim/.aml_runs/aml_orderbook_replay_20260623T101416Z/stocksim_config.yaml",
+    "metadata_path": "/Users/mailuong/internships/nus/AML-Sim/.aml_runs/aml_orderbook_replay_20260623T101416Z/metadata.json"
+  },
+  "stocksim": {
+    "launch_mode": "aml_component_orchestrator"
+  }
+}

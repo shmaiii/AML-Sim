@@ -1,0 +1,459 @@
+2026-06-23 18:14:24 | INFO     | exchange_aapl | Initializing Agent exchange_aapl with RabbitMQ host localhost.
+2026-06-23 18:14:24 | INFO     | exchange_aapl | Synthetic data source selected for AAPL; no external market data client initialized.
+2026-06-23 18:14:24 | INFO     | exchange_aapl | Synthetic data source selected; skipping external indicator warmup for AAPL
+2026-06-23 18:14:24 | INFO     | exchange_aapl | Synthetic data source selected; skipping external fundamentals for AAPL
+2026-06-23 18:14:24 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl initialized for instrument AAPL.
+2026-06-23 18:14:24 | INFO     | exchange_aapl | Attempting to connect to RabbitMQ at localhost...
+2026-06-23 18:14:24 | INFO     | exchange_aapl | Time routing key: exchange.#
+2026-06-23 18:14:24 | INFO     | exchange_aapl | Agent exchange_aapl bound to time exchange 'time_exchange'.
+2026-06-23 18:14:24 | INFO     | exchange_aapl | Started consuming messages.
+2026-06-23 18:14:24 | INFO     | exchange_aapl | Started consuming TIME_TICK messages.
+2026-06-23 18:14:31 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl confirmed SUBSCRIBE to agent market_maker for instrument AAPL.
+2026-06-23 18:14:31 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl confirmed SUBSCRIBE to agent retail_population_2 for instrument AAPL.
+2026-06-23 18:14:31 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl confirmed SUBSCRIBE to agent retail_population_5 for instrument AAPL.
+2026-06-23 18:14:31 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl confirmed SUBSCRIBE to agent retail_population_3 for instrument AAPL.
+2026-06-23 18:14:31 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl confirmed SUBSCRIBE to agent retail_population_1 for instrument AAPL.
+2026-06-23 18:14:31 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl confirmed SUBSCRIBE to agent institutional_trader for instrument AAPL.
+2026-06-23 18:14:31 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl confirmed SUBSCRIBE to agent retail_population_4 for instrument AAPL.
+2026-06-23 18:14:51 | INFO     | exchange_aapl | Received TIME_TICK message: 2025-03-01T09:30:00+00:00
+2026-06-23 18:14:51 | INFO     | exchange_aapl | Sent BARRIER_RESPONSE for tick 0.
+2026-06-23 18:14:51 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=e3ad6ef1-5989-408d-85d9-8747cd3f8be1, agent=institutional_trader, side=BUY, type=MARKET, qty=100/100, price=MKT, status=ACTIVE, time=2025-03-01T09:30:00+00:00)
+2026-06-23 18:14:51 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=f67ba0ed-29cb-4e33-84c6-5804735d8266, agent=retail_population_2, side=BUY, type=MARKET, qty=4/4, price=MKT, status=ACTIVE, time=2025-03-01T09:30:00+00:00)
+2026-06-23 18:14:51 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=12668d92-088b-43b3-af1f-aae27ee2670d, agent=market_maker, side=BUY, type=LIMIT, qty=100/100, price=99.88, status=ACTIVE, time=2025-03-01T09:30:00+00:00)
+2026-06-23 18:14:51 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=f5e6d5f2-e74f-4264-9c15-42ccf3bfa13c, agent=market_maker, side=SELL, type=LIMIT, qty=100/100, price=100.12, status=ACTIVE, time=2025-03-01T09:30:00+00:00)
+2026-06-23 18:14:56 | INFO     | exchange_aapl | Received TIME_TICK message: 2025-03-01T09:30:30+00:00
+2026-06-23 18:14:56 | INFO     | exchange_aapl | Sent BARRIER_RESPONSE for tick 1.
+2026-06-23 18:14:56 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl canceled order 12668d92-088b-43b3-af1f-aae27ee2670d for agent market_maker.
+2026-06-23 18:14:56 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl canceled order f5e6d5f2-e74f-4264-9c15-42ccf3bfa13c for agent market_maker.
+2026-06-23 18:14:56 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=828a4aa5-5e43-456e-a133-61b7a8f3bf46, agent=market_maker, side=BUY, type=LIMIT, qty=100/100, price=99.88, status=ACTIVE, time=2025-03-01T09:30:30+00:00)
+2026-06-23 18:14:56 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=aa035a45-e529-4d08-8897-76400111934d, agent=market_maker, side=SELL, type=LIMIT, qty=100/100, price=100.12, status=ACTIVE, time=2025-03-01T09:30:30+00:00)
+2026-06-23 18:15:01 | INFO     | exchange_aapl | Received TIME_TICK message: 2025-03-01T09:31:00+00:00
+2026-06-23 18:15:01 | INFO     | exchange_aapl | Sent BARRIER_RESPONSE for tick 2.
+2026-06-23 18:15:01 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl canceled order aa035a45-e529-4d08-8897-76400111934d for agent market_maker.
+2026-06-23 18:15:01 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl canceled order 828a4aa5-5e43-456e-a133-61b7a8f3bf46 for agent market_maker.
+2026-06-23 18:15:01 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=d117f0e6-6456-43e3-ba42-29bf93589e23, agent=market_maker, side=BUY, type=LIMIT, qty=100/100, price=99.88, status=ACTIVE, time=2025-03-01T09:31:00+00:00)
+2026-06-23 18:15:01 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=661084d0-ab74-4319-b507-318ec87cf324, agent=market_maker, side=SELL, type=LIMIT, qty=100/100, price=100.12, status=ACTIVE, time=2025-03-01T09:31:00+00:00)
+2026-06-23 18:15:06 | INFO     | exchange_aapl | Received TIME_TICK message: 2025-03-01T09:31:30+00:00
+2026-06-23 18:15:06 | INFO     | exchange_aapl | Sent BARRIER_RESPONSE for tick 3.
+2026-06-23 18:15:06 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl canceled order 661084d0-ab74-4319-b507-318ec87cf324 for agent market_maker.
+2026-06-23 18:15:06 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl canceled order d117f0e6-6456-43e3-ba42-29bf93589e23 for agent market_maker.
+2026-06-23 18:15:06 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=f32c23b8-4e55-4c2b-93e4-53cef378224f, agent=market_maker, side=BUY, type=LIMIT, qty=100/100, price=99.88, status=ACTIVE, time=2025-03-01T09:31:30+00:00)
+2026-06-23 18:15:06 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=2082bb4c-82ee-4976-98bf-8350feeb76b9, agent=market_maker, side=SELL, type=LIMIT, qty=100/100, price=100.12, status=ACTIVE, time=2025-03-01T09:31:30+00:00)
+2026-06-23 18:15:11 | INFO     | exchange_aapl | Received TIME_TICK message: 2025-03-01T09:32:00+00:00
+2026-06-23 18:15:11 | INFO     | exchange_aapl | Sent BARRIER_RESPONSE for tick 4.
+2026-06-23 18:15:11 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl canceled order 2082bb4c-82ee-4976-98bf-8350feeb76b9 for agent market_maker.
+2026-06-23 18:15:11 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=55dc03e7-3a6d-43d1-9f55-1ebba2d2cfc1, agent=institutional_trader, side=BUY, type=MARKET, qty=100/100, price=MKT, status=ACTIVE, time=2025-03-01T09:32:00+00:00)
+2026-06-23 18:15:11 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl canceled order f32c23b8-4e55-4c2b-93e4-53cef378224f for agent market_maker.
+2026-06-23 18:15:11 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=b5a9f1f3-0dcc-4841-9162-b3aa11b3647b, agent=retail_population_1, side=BUY, type=MARKET, qty=4/4, price=MKT, status=ACTIVE, time=2025-03-01T09:32:00+00:00)
+2026-06-23 18:15:11 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=3fdaa2e4-9c86-4ca5-9de2-cd24c623439a, agent=market_maker, side=BUY, type=LIMIT, qty=100/100, price=99.88, status=ACTIVE, time=2025-03-01T09:32:00+00:00)
+2026-06-23 18:15:11 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=be0a35bf-a4f9-4d44-82de-d8862028f7dd, agent=market_maker, side=SELL, type=LIMIT, qty=100/100, price=100.12, status=ACTIVE, time=2025-03-01T09:32:00+00:00)
+2026-06-23 18:15:16 | INFO     | exchange_aapl | Received TIME_TICK message: 2025-03-01T09:32:30+00:00
+2026-06-23 18:15:16 | INFO     | exchange_aapl | Sent BARRIER_RESPONSE for tick 5.
+2026-06-23 18:15:16 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl canceled order 3fdaa2e4-9c86-4ca5-9de2-cd24c623439a for agent market_maker.
+2026-06-23 18:15:16 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl canceled order be0a35bf-a4f9-4d44-82de-d8862028f7dd for agent market_maker.
+2026-06-23 18:15:16 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=d27726fb-e4ef-42b9-bcef-4c01780c589b, agent=market_maker, side=BUY, type=LIMIT, qty=100/100, price=99.88, status=ACTIVE, time=2025-03-01T09:32:30+00:00)
+2026-06-23 18:15:16 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=5698b3e4-11fc-4dac-a0ed-eebc87c6cd16, agent=market_maker, side=SELL, type=LIMIT, qty=100/100, price=100.12, status=ACTIVE, time=2025-03-01T09:32:30+00:00)
+2026-06-23 18:15:21 | INFO     | exchange_aapl | Received TIME_TICK message: 2025-03-01T09:33:00+00:00
+2026-06-23 18:15:21 | INFO     | exchange_aapl | Sent BARRIER_RESPONSE for tick 6.
+2026-06-23 18:15:21 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl canceled order d27726fb-e4ef-42b9-bcef-4c01780c589b for agent market_maker.
+2026-06-23 18:15:21 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl canceled order 5698b3e4-11fc-4dac-a0ed-eebc87c6cd16 for agent market_maker.
+2026-06-23 18:15:21 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=76238f52-85c8-4ec0-baff-8bac51427c22, agent=market_maker, side=BUY, type=LIMIT, qty=100/100, price=99.88, status=ACTIVE, time=2025-03-01T09:33:00+00:00)
+2026-06-23 18:15:21 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=40ecb205-d38e-43f8-92b4-39450055d914, agent=market_maker, side=SELL, type=LIMIT, qty=100/100, price=100.12, status=ACTIVE, time=2025-03-01T09:33:00+00:00)
+2026-06-23 18:15:26 | INFO     | exchange_aapl | Received TIME_TICK message: 2025-03-01T09:33:30+00:00
+2026-06-23 18:15:26 | INFO     | exchange_aapl | Sent BARRIER_RESPONSE for tick 7.
+2026-06-23 18:15:26 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl canceled order 76238f52-85c8-4ec0-baff-8bac51427c22 for agent market_maker.
+2026-06-23 18:15:26 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl canceled order 40ecb205-d38e-43f8-92b4-39450055d914 for agent market_maker.
+2026-06-23 18:15:26 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=cb7a235f-a5b0-4fb8-a8d7-7fa37e97e6eb, agent=market_maker, side=BUY, type=LIMIT, qty=100/100, price=99.88, status=ACTIVE, time=2025-03-01T09:33:30+00:00)
+2026-06-23 18:15:26 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=6a9db2c1-ff01-465f-8fbf-c88225bc0848, agent=market_maker, side=SELL, type=LIMIT, qty=100/100, price=100.12, status=ACTIVE, time=2025-03-01T09:33:30+00:00)
+2026-06-23 18:15:31 | INFO     | exchange_aapl | Received TIME_TICK message: 2025-03-01T09:34:00+00:00
+2026-06-23 18:15:31 | INFO     | exchange_aapl | Sent BARRIER_RESPONSE for tick 8.
+2026-06-23 18:15:31 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=39c9e152-55af-4064-bcdc-44b3073c1260, agent=institutional_trader, side=BUY, type=MARKET, qty=0/100, price=MKT, status=FILLED, time=2025-03-01T09:34:00+00:00)
+2026-06-23 18:15:31 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl canceled order cb7a235f-a5b0-4fb8-a8d7-7fa37e97e6eb for agent market_maker.
+2026-06-23 18:15:31 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=5d6ebfc7-a950-4b38-b891-75d441f91298, agent=retail_population_2, side=BUY, type=MARKET, qty=4/4, price=MKT, status=ACTIVE, time=2025-03-01T09:34:00+00:00)
+2026-06-23 18:15:31 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=b9408dd6-84be-47a0-b417-b0a0373cd741, agent=retail_population_4, side=BUY, type=MARKET, qty=1/1, price=MKT, status=ACTIVE, time=2025-03-01T09:34:00+00:00)
+2026-06-23 18:15:31 | WARNING  | exchange_aapl | ExchangeAgent exchange_aapl failed to cancel order 6a9db2c1-ff01-465f-8fbf-c88225bc0848 for agent market_maker.
+2026-06-23 18:15:31 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=f517b645-8c9b-429f-b423-84e98738affb, agent=market_maker, side=BUY, type=LIMIT, qty=100/100, price=99.88, status=ACTIVE, time=2025-03-01T09:34:00+00:00)
+2026-06-23 18:15:31 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=b0368f51-72d2-459c-a75a-55614756becd, agent=market_maker, side=SELL, type=LIMIT, qty=100/100, price=100.12, status=ACTIVE, time=2025-03-01T09:34:00+00:00)
+2026-06-23 18:15:36 | INFO     | exchange_aapl | Received TIME_TICK message: 2025-03-01T09:34:30+00:00
+2026-06-23 18:15:36 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl dispatched TRADE_EXECUTION to institutional_trader and market_maker for trade: {'instrument': 'AAPL', 'price': 100.12, 'quantity': 100, 'timestamp': '2025-03-01T09:34:00+00:00', 'seq': 0}
+2026-06-23 18:15:36 | INFO     | exchange_aapl | Sent BARRIER_RESPONSE for tick 9.
+2026-06-23 18:15:36 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl canceled order f517b645-8c9b-429f-b423-84e98738affb for agent market_maker.
+2026-06-23 18:15:36 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl canceled order b0368f51-72d2-459c-a75a-55614756becd for agent market_maker.
+2026-06-23 18:15:36 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=4e9a7149-96a2-463f-a86b-64b0e3190e88, agent=market_maker, side=BUY, type=LIMIT, qty=100/100, price=100.03, status=ACTIVE, time=2025-03-01T09:34:30+00:00)
+2026-06-23 18:15:36 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=51a81a91-189c-411a-ac18-52c2e09f5bdc, agent=market_maker, side=SELL, type=LIMIT, qty=100/100, price=100.28, status=ACTIVE, time=2025-03-01T09:34:30+00:00)
+2026-06-23 18:15:41 | INFO     | exchange_aapl | Received TIME_TICK message: 2025-03-01T09:35:00+00:00
+2026-06-23 18:15:41 | INFO     | exchange_aapl | Sent BARRIER_RESPONSE for tick 10.
+2026-06-23 18:15:41 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl canceled order 4e9a7149-96a2-463f-a86b-64b0e3190e88 for agent market_maker.
+2026-06-23 18:15:41 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=164bfa31-86a8-41a8-9150-28d8d04f8131, agent=retail_population_1, side=BUY, type=MARKET, qty=0/4, price=MKT, status=FILLED, time=2025-03-01T09:35:00+00:00)
+2026-06-23 18:15:41 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl canceled order 51a81a91-189c-411a-ac18-52c2e09f5bdc for agent market_maker.
+2026-06-23 18:15:41 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=3f016d18-561e-471a-816f-a8eabce47529, agent=market_maker, side=BUY, type=LIMIT, qty=100/100, price=100.03, status=ACTIVE, time=2025-03-01T09:35:00+00:00)
+2026-06-23 18:15:41 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=d5eed7b5-dd3e-4148-ad24-1b537df35210, agent=market_maker, side=SELL, type=LIMIT, qty=100/100, price=100.28, status=ACTIVE, time=2025-03-01T09:35:00+00:00)
+2026-06-23 18:15:46 | INFO     | exchange_aapl | Received TIME_TICK message: 2025-03-01T09:35:30+00:00
+2026-06-23 18:15:46 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl dispatched TRADE_EXECUTION to retail_population_1 and market_maker for trade: {'instrument': 'AAPL', 'price': 100.28, 'quantity': 4, 'timestamp': '2025-03-01T09:35:00+00:00', 'seq': 1}
+2026-06-23 18:15:46 | INFO     | exchange_aapl | Sent BARRIER_RESPONSE for tick 11.
+2026-06-23 18:15:46 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl canceled order 3f016d18-561e-471a-816f-a8eabce47529 for agent market_maker.
+2026-06-23 18:15:46 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl canceled order d5eed7b5-dd3e-4148-ad24-1b537df35210 for agent market_maker.
+2026-06-23 18:15:46 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=c5831f93-da1d-440e-80b4-2e898aaae643, agent=market_maker, side=BUY, type=LIMIT, qty=100/100, price=100.03, status=ACTIVE, time=2025-03-01T09:35:30+00:00)
+2026-06-23 18:15:46 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=314b706b-14ac-48a6-80e4-5cc506750fde, agent=market_maker, side=SELL, type=LIMIT, qty=100/100, price=100.28, status=ACTIVE, time=2025-03-01T09:35:30+00:00)
+2026-06-23 18:15:51 | INFO     | exchange_aapl | Received TIME_TICK message: 2025-03-01T09:36:00+00:00
+2026-06-23 18:15:51 | INFO     | exchange_aapl | Sent BARRIER_RESPONSE for tick 12.
+2026-06-23 18:15:51 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=b284e863-ce8d-4741-880a-4606a4c2f007, agent=retail_population_4, side=BUY, type=MARKET, qty=0/2, price=MKT, status=FILLED, time=2025-03-01T09:36:00+00:00)
+2026-06-23 18:15:51 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl canceled order 314b706b-14ac-48a6-80e4-5cc506750fde for agent market_maker.
+2026-06-23 18:15:51 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=5553ae75-4dfd-4b74-acfd-0e2445c5b5b7, agent=institutional_trader, side=BUY, type=MARKET, qty=100/100, price=MKT, status=ACTIVE, time=2025-03-01T09:36:00+00:00)
+2026-06-23 18:15:51 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl canceled order c5831f93-da1d-440e-80b4-2e898aaae643 for agent market_maker.
+2026-06-23 18:15:51 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=c6e8db61-1fe6-4903-b4a4-d82ebbcdf6dd, agent=market_maker, side=BUY, type=LIMIT, qty=100/100, price=100.03, status=ACTIVE, time=2025-03-01T09:36:00+00:00)
+2026-06-23 18:15:51 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=5e8cdb6e-cbd3-44fd-9222-23236277b1a0, agent=market_maker, side=SELL, type=LIMIT, qty=100/100, price=100.28, status=ACTIVE, time=2025-03-01T09:36:00+00:00)
+2026-06-23 18:15:56 | INFO     | exchange_aapl | Received TIME_TICK message: 2025-03-01T09:36:30+00:00
+2026-06-23 18:15:56 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl dispatched TRADE_EXECUTION to retail_population_4 and market_maker for trade: {'instrument': 'AAPL', 'price': 100.28, 'quantity': 2, 'timestamp': '2025-03-01T09:36:00+00:00', 'seq': 2}
+2026-06-23 18:15:56 | INFO     | exchange_aapl | Sent BARRIER_RESPONSE for tick 13.
+2026-06-23 18:15:56 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl canceled order c6e8db61-1fe6-4903-b4a4-d82ebbcdf6dd for agent market_maker.
+2026-06-23 18:15:56 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl canceled order 5e8cdb6e-cbd3-44fd-9222-23236277b1a0 for agent market_maker.
+2026-06-23 18:15:56 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=4f0b8fca-cb0f-4d56-a993-bf75f841eacc, agent=market_maker, side=BUY, type=LIMIT, qty=100/100, price=100.03, status=ACTIVE, time=2025-03-01T09:36:30+00:00)
+2026-06-23 18:15:56 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=3e1e9f57-5e8a-4dde-a7b7-664f72a5cefa, agent=market_maker, side=SELL, type=LIMIT, qty=100/100, price=100.28, status=ACTIVE, time=2025-03-01T09:36:30+00:00)
+2026-06-23 18:16:01 | INFO     | exchange_aapl | Received TIME_TICK message: 2025-03-01T09:37:00+00:00
+2026-06-23 18:16:01 | INFO     | exchange_aapl | Sent BARRIER_RESPONSE for tick 14.
+2026-06-23 18:16:01 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=0b679e32-3446-4717-8de9-12fb6035bafc, agent=retail_population_4, side=SELL, type=MARKET, qty=0/2, price=MKT, status=FILLED, time=2025-03-01T09:37:00+00:00)
+2026-06-23 18:16:01 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl canceled order 3e1e9f57-5e8a-4dde-a7b7-664f72a5cefa for agent market_maker.
+2026-06-23 18:16:01 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl canceled order 4f0b8fca-cb0f-4d56-a993-bf75f841eacc for agent market_maker.
+2026-06-23 18:16:01 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=1d322628-9307-434a-a4e4-f26896a22ea6, agent=market_maker, side=BUY, type=LIMIT, qty=100/100, price=100.03, status=ACTIVE, time=2025-03-01T09:37:00+00:00)
+2026-06-23 18:16:01 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=5e547cb3-e84e-4c51-ace0-86f1bad7e8af, agent=market_maker, side=SELL, type=LIMIT, qty=100/100, price=100.28, status=ACTIVE, time=2025-03-01T09:37:00+00:00)
+2026-06-23 18:16:06 | INFO     | exchange_aapl | Received TIME_TICK message: 2025-03-01T09:37:30+00:00
+2026-06-23 18:16:06 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl dispatched TRADE_EXECUTION to market_maker and retail_population_4 for trade: {'instrument': 'AAPL', 'price': 100.03, 'quantity': 2, 'timestamp': '2025-03-01T09:37:00+00:00', 'seq': 3}
+2026-06-23 18:16:06 | INFO     | exchange_aapl | Sent BARRIER_RESPONSE for tick 15.
+2026-06-23 18:16:06 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl canceled order 5e547cb3-e84e-4c51-ace0-86f1bad7e8af for agent market_maker.
+2026-06-23 18:16:06 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl canceled order 1d322628-9307-434a-a4e4-f26896a22ea6 for agent market_maker.
+2026-06-23 18:16:06 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=2df94a53-206a-4016-a2ae-1a46479878a7, agent=market_maker, side=BUY, type=LIMIT, qty=100/100, price=100.03, status=ACTIVE, time=2025-03-01T09:37:30+00:00)
+2026-06-23 18:16:06 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=9a38168e-c2d7-4ba2-bc40-788a60f2a5bb, agent=market_maker, side=SELL, type=LIMIT, qty=100/100, price=100.28, status=ACTIVE, time=2025-03-01T09:37:30+00:00)
+2026-06-23 18:16:11 | INFO     | exchange_aapl | Received TIME_TICK message: 2025-03-01T09:38:00+00:00
+2026-06-23 18:16:11 | INFO     | exchange_aapl | Sent BARRIER_RESPONSE for tick 16.
+2026-06-23 18:16:11 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl canceled order 9a38168e-c2d7-4ba2-bc40-788a60f2a5bb for agent market_maker.
+2026-06-23 18:16:11 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=6b29af7d-23cc-43c3-b2c2-70effcd27849, agent=institutional_trader, side=BUY, type=MARKET, qty=100/100, price=MKT, status=ACTIVE, time=2025-03-01T09:38:00+00:00)
+2026-06-23 18:16:11 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl canceled order 2df94a53-206a-4016-a2ae-1a46479878a7 for agent market_maker.
+2026-06-23 18:16:12 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=499c346e-4111-4a83-bc61-23016eac61c6, agent=market_maker, side=BUY, type=LIMIT, qty=100/100, price=100.03, status=ACTIVE, time=2025-03-01T09:38:00+00:00)
+2026-06-23 18:16:12 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=860e0be5-721e-4d53-bc32-38bc557167e7, agent=market_maker, side=SELL, type=LIMIT, qty=100/100, price=100.28, status=ACTIVE, time=2025-03-01T09:38:00+00:00)
+2026-06-23 18:16:16 | INFO     | exchange_aapl | Received TIME_TICK message: 2025-03-01T09:38:30+00:00
+2026-06-23 18:16:17 | INFO     | exchange_aapl | Sent BARRIER_RESPONSE for tick 17.
+2026-06-23 18:16:17 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl canceled order 860e0be5-721e-4d53-bc32-38bc557167e7 for agent market_maker.
+2026-06-23 18:16:17 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl canceled order 499c346e-4111-4a83-bc61-23016eac61c6 for agent market_maker.
+2026-06-23 18:16:17 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=3af04f7b-40ef-4d99-96c0-944c0ed56b00, agent=market_maker, side=BUY, type=LIMIT, qty=100/100, price=100.03, status=ACTIVE, time=2025-03-01T09:38:30+00:00)
+2026-06-23 18:16:17 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=9bc0138f-2410-402e-b4a6-0f863c673dc3, agent=market_maker, side=SELL, type=LIMIT, qty=100/100, price=100.28, status=ACTIVE, time=2025-03-01T09:38:30+00:00)
+2026-06-23 18:16:22 | INFO     | exchange_aapl | Received TIME_TICK message: 2025-03-01T09:39:00+00:00
+2026-06-23 18:16:22 | INFO     | exchange_aapl | Sent BARRIER_RESPONSE for tick 18.
+2026-06-23 18:16:22 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl canceled order 3af04f7b-40ef-4d99-96c0-944c0ed56b00 for agent market_maker.
+2026-06-23 18:16:22 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=a9f91d2a-7166-4fc6-9812-397006572cd6, agent=retail_population_2, side=BUY, type=MARKET, qty=0/9, price=MKT, status=FILLED, time=2025-03-01T09:39:00+00:00)
+2026-06-23 18:16:22 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=4ccf5514-7367-4dc0-87dd-46f098f98546, agent=retail_population_1, side=BUY, type=MARKET, qty=0/8, price=MKT, status=FILLED, time=2025-03-01T09:39:00+00:00)
+2026-06-23 18:16:22 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl canceled order 9bc0138f-2410-402e-b4a6-0f863c673dc3 for agent market_maker.
+2026-06-23 18:16:22 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=a60e6640-9c43-4041-87be-f5698117a7ed, agent=market_maker, side=BUY, type=LIMIT, qty=100/100, price=100.03, status=ACTIVE, time=2025-03-01T09:39:00+00:00)
+2026-06-23 18:16:22 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=f82d00da-bc4b-4732-9c50-1e0554ff2b72, agent=market_maker, side=SELL, type=LIMIT, qty=100/100, price=100.28, status=ACTIVE, time=2025-03-01T09:39:00+00:00)
+2026-06-23 18:16:27 | INFO     | exchange_aapl | Received TIME_TICK message: 2025-03-01T09:39:30+00:00
+2026-06-23 18:16:27 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl dispatched TRADE_EXECUTION to retail_population_2 and market_maker for trade: {'instrument': 'AAPL', 'price': 100.28, 'quantity': 9, 'timestamp': '2025-03-01T09:39:00+00:00', 'seq': 4}
+2026-06-23 18:16:27 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl dispatched TRADE_EXECUTION to retail_population_1 and market_maker for trade: {'instrument': 'AAPL', 'price': 100.28, 'quantity': 8, 'timestamp': '2025-03-01T09:39:00+00:00', 'seq': 5}
+2026-06-23 18:16:27 | INFO     | exchange_aapl | Sent BARRIER_RESPONSE for tick 19.
+2026-06-23 18:16:27 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl canceled order f82d00da-bc4b-4732-9c50-1e0554ff2b72 for agent market_maker.
+2026-06-23 18:16:27 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl canceled order a60e6640-9c43-4041-87be-f5698117a7ed for agent market_maker.
+2026-06-23 18:16:27 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=b87bc398-cd7a-49ef-889e-32e048b01fd2, agent=market_maker, side=BUY, type=LIMIT, qty=100/100, price=100.06, status=ACTIVE, time=2025-03-01T09:39:30+00:00)
+2026-06-23 18:16:27 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=e73d4b15-74ea-4dbf-9315-861f49ee45fd, agent=market_maker, side=SELL, type=LIMIT, qty=100/100, price=100.31, status=ACTIVE, time=2025-03-01T09:39:30+00:00)
+2026-06-23 18:16:32 | INFO     | exchange_aapl | Received TIME_TICK message: 2025-03-01T09:40:00+00:00
+2026-06-23 18:16:32 | INFO     | exchange_aapl | Sent BARRIER_RESPONSE for tick 20.
+2026-06-23 18:16:32 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=ba5a9af3-4140-4357-81ec-de2287209cef, agent=institutional_trader, side=BUY, type=MARKET, qty=0/100, price=MKT, status=FILLED, time=2025-03-01T09:40:00+00:00)
+2026-06-23 18:16:32 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=ac8e22ce-4bd0-48d0-bd20-3414c296cb3a, agent=retail_population_1, side=SELL, type=MARKET, qty=0/10, price=MKT, status=FILLED, time=2025-03-01T09:40:00+00:00)
+2026-06-23 18:16:32 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl canceled order b87bc398-cd7a-49ef-889e-32e048b01fd2 for agent market_maker.
+2026-06-23 18:16:32 | WARNING  | exchange_aapl | ExchangeAgent exchange_aapl failed to cancel order e73d4b15-74ea-4dbf-9315-861f49ee45fd for agent market_maker.
+2026-06-23 18:16:32 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=c8dfc29c-a232-4f82-bd2c-cc5371cb3d84, agent=market_maker, side=BUY, type=LIMIT, qty=100/100, price=100.06, status=ACTIVE, time=2025-03-01T09:40:00+00:00)
+2026-06-23 18:16:32 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=e1f8b7ee-d530-401f-8a52-c328d8af02e9, agent=market_maker, side=SELL, type=LIMIT, qty=100/100, price=100.31, status=ACTIVE, time=2025-03-01T09:40:00+00:00)
+2026-06-23 18:16:37 | INFO     | exchange_aapl | Received TIME_TICK message: 2025-03-01T09:40:30+00:00
+2026-06-23 18:16:37 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl dispatched TRADE_EXECUTION to institutional_trader and market_maker for trade: {'instrument': 'AAPL', 'price': 100.31, 'quantity': 100, 'timestamp': '2025-03-01T09:40:00+00:00', 'seq': 6}
+2026-06-23 18:16:37 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl dispatched TRADE_EXECUTION to market_maker and retail_population_1 for trade: {'instrument': 'AAPL', 'price': 100.06, 'quantity': 10, 'timestamp': '2025-03-01T09:40:00+00:00', 'seq': 7}
+2026-06-23 18:16:37 | INFO     | exchange_aapl | Sent BARRIER_RESPONSE for tick 21.
+2026-06-23 18:16:37 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl canceled order e1f8b7ee-d530-401f-8a52-c328d8af02e9 for agent market_maker.
+2026-06-23 18:16:37 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl canceled order c8dfc29c-a232-4f82-bd2c-cc5371cb3d84 for agent market_maker.
+2026-06-23 18:16:37 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=d4999050-1ff5-4195-b5c7-94dba0102ea3, agent=market_maker, side=BUY, type=LIMIT, qty=100/100, price=100.19, status=ACTIVE, time=2025-03-01T09:40:30+00:00)
+2026-06-23 18:16:37 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=78bac15b-057f-4200-9551-6400a25b1e34, agent=market_maker, side=SELL, type=LIMIT, qty=100/100, price=100.44, status=ACTIVE, time=2025-03-01T09:40:30+00:00)
+2026-06-23 18:16:42 | INFO     | exchange_aapl | Received TIME_TICK message: 2025-03-01T09:41:00+00:00
+2026-06-23 18:16:42 | INFO     | exchange_aapl | Sent BARRIER_RESPONSE for tick 22.
+2026-06-23 18:16:42 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=753d5dc6-2bc5-4151-94c0-bcaa1e6769bb, agent=retail_population_1, side=BUY, type=MARKET, qty=0/3, price=MKT, status=FILLED, time=2025-03-01T09:41:00+00:00)
+2026-06-23 18:16:42 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl canceled order 78bac15b-057f-4200-9551-6400a25b1e34 for agent market_maker.
+2026-06-23 18:16:42 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl canceled order d4999050-1ff5-4195-b5c7-94dba0102ea3 for agent market_maker.
+2026-06-23 18:16:42 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=591b3ad5-be0d-4a09-a8e0-096700f546e4, agent=market_maker, side=BUY, type=LIMIT, qty=100/100, price=100.19, status=ACTIVE, time=2025-03-01T09:41:00+00:00)
+2026-06-23 18:16:42 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=714c32f4-6a0f-4dce-b639-e4c47da0f392, agent=market_maker, side=SELL, type=LIMIT, qty=100/100, price=100.44, status=ACTIVE, time=2025-03-01T09:41:00+00:00)
+2026-06-23 18:16:47 | INFO     | exchange_aapl | Received TIME_TICK message: 2025-03-01T09:41:30+00:00
+2026-06-23 18:16:47 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl dispatched TRADE_EXECUTION to retail_population_1 and market_maker for trade: {'instrument': 'AAPL', 'price': 100.44, 'quantity': 3, 'timestamp': '2025-03-01T09:41:00+00:00', 'seq': 8}
+2026-06-23 18:16:47 | INFO     | exchange_aapl | Sent BARRIER_RESPONSE for tick 23.
+2026-06-23 18:16:47 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl canceled order 714c32f4-6a0f-4dce-b639-e4c47da0f392 for agent market_maker.
+2026-06-23 18:16:47 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl canceled order 591b3ad5-be0d-4a09-a8e0-096700f546e4 for agent market_maker.
+2026-06-23 18:16:47 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=a4d2459f-f580-438b-9279-9649ad0a1556, agent=market_maker, side=BUY, type=LIMIT, qty=100/100, price=100.2, status=ACTIVE, time=2025-03-01T09:41:30+00:00)
+2026-06-23 18:16:47 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=05a5eddf-385a-4aa9-a49e-0e9160af985f, agent=market_maker, side=SELL, type=LIMIT, qty=100/100, price=100.45, status=ACTIVE, time=2025-03-01T09:41:30+00:00)
+2026-06-23 18:16:52 | INFO     | exchange_aapl | Received TIME_TICK message: 2025-03-01T09:42:00+00:00
+2026-06-23 18:16:52 | INFO     | exchange_aapl | Sent BARRIER_RESPONSE for tick 24.
+2026-06-23 18:16:52 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=fa7e4b0c-1fc1-4492-8005-0a0852233523, agent=institutional_trader, side=BUY, type=MARKET, qty=0/100, price=MKT, status=FILLED, time=2025-03-01T09:42:00+00:00)
+2026-06-23 18:16:52 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=16c5caa3-1870-47ea-9630-ce3432746180, agent=retail_population_1, side=SELL, type=MARKET, qty=0/1, price=MKT, status=FILLED, time=2025-03-01T09:42:00+00:00)
+2026-06-23 18:16:52 | WARNING  | exchange_aapl | ExchangeAgent exchange_aapl failed to cancel order 05a5eddf-385a-4aa9-a49e-0e9160af985f for agent market_maker.
+2026-06-23 18:16:52 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl canceled order a4d2459f-f580-438b-9279-9649ad0a1556 for agent market_maker.
+2026-06-23 18:16:52 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=e991a11d-7bec-45bb-8bf1-200ac27dea34, agent=market_maker, side=BUY, type=LIMIT, qty=100/100, price=100.2, status=ACTIVE, time=2025-03-01T09:42:00+00:00)
+2026-06-23 18:16:52 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=fb18e613-e15b-4079-bac5-e9d54f7c7ce6, agent=market_maker, side=SELL, type=LIMIT, qty=100/100, price=100.45, status=ACTIVE, time=2025-03-01T09:42:00+00:00)
+2026-06-23 18:16:57 | INFO     | exchange_aapl | Received TIME_TICK message: 2025-03-01T09:42:30+00:00
+2026-06-23 18:16:57 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl dispatched TRADE_EXECUTION to institutional_trader and market_maker for trade: {'instrument': 'AAPL', 'price': 100.45, 'quantity': 100, 'timestamp': '2025-03-01T09:42:00+00:00', 'seq': 9}
+2026-06-23 18:16:57 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl dispatched TRADE_EXECUTION to market_maker and retail_population_1 for trade: {'instrument': 'AAPL', 'price': 100.2, 'quantity': 1, 'timestamp': '2025-03-01T09:42:00+00:00', 'seq': 10}
+2026-06-23 18:16:57 | INFO     | exchange_aapl | Sent BARRIER_RESPONSE for tick 25.
+2026-06-23 18:16:57 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl canceled order fb18e613-e15b-4079-bac5-e9d54f7c7ce6 for agent market_maker.
+2026-06-23 18:16:57 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl canceled order e991a11d-7bec-45bb-8bf1-200ac27dea34 for agent market_maker.
+2026-06-23 18:16:57 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=33ee3956-85f7-4395-a695-53c00072dcee, agent=market_maker, side=BUY, type=LIMIT, qty=100/100, price=100.34, status=ACTIVE, time=2025-03-01T09:42:30+00:00)
+2026-06-23 18:16:57 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=06e2d91f-8e62-4bff-bd70-5498d54cfa66, agent=market_maker, side=SELL, type=LIMIT, qty=100/100, price=100.59, status=ACTIVE, time=2025-03-01T09:42:30+00:00)
+2026-06-23 18:17:02 | INFO     | exchange_aapl | Received TIME_TICK message: 2025-03-01T09:43:00+00:00
+2026-06-23 18:17:02 | INFO     | exchange_aapl | Sent BARRIER_RESPONSE for tick 26.
+2026-06-23 18:17:02 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl canceled order 33ee3956-85f7-4395-a695-53c00072dcee for agent market_maker.
+2026-06-23 18:17:02 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=f1c2235d-0dd9-4d37-b529-ddabbba6346a, agent=retail_population_2, side=BUY, type=MARKET, qty=0/4, price=MKT, status=FILLED, time=2025-03-01T09:43:00+00:00)
+2026-06-23 18:17:02 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl canceled order 06e2d91f-8e62-4bff-bd70-5498d54cfa66 for agent market_maker.
+2026-06-23 18:17:02 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=bbd98c1f-62b2-4a52-aea7-82ffb9196b48, agent=market_maker, side=BUY, type=LIMIT, qty=100/100, price=100.34, status=ACTIVE, time=2025-03-01T09:43:00+00:00)
+2026-06-23 18:17:02 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=656ef824-a359-4099-a1d2-298a5b46e483, agent=market_maker, side=SELL, type=LIMIT, qty=100/100, price=100.59, status=ACTIVE, time=2025-03-01T09:43:00+00:00)
+2026-06-23 18:17:07 | INFO     | exchange_aapl | Received TIME_TICK message: 2025-03-01T09:43:30+00:00
+2026-06-23 18:17:07 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl dispatched TRADE_EXECUTION to retail_population_2 and market_maker for trade: {'instrument': 'AAPL', 'price': 100.59, 'quantity': 4, 'timestamp': '2025-03-01T09:43:00+00:00', 'seq': 11}
+2026-06-23 18:17:07 | INFO     | exchange_aapl | Sent BARRIER_RESPONSE for tick 27.
+2026-06-23 18:17:07 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl canceled order 656ef824-a359-4099-a1d2-298a5b46e483 for agent market_maker.
+2026-06-23 18:17:07 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl canceled order bbd98c1f-62b2-4a52-aea7-82ffb9196b48 for agent market_maker.
+2026-06-23 18:17:07 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=bc96b71e-da01-4ec2-a89b-4f1c27cd84be, agent=market_maker, side=BUY, type=LIMIT, qty=100/100, price=100.35, status=ACTIVE, time=2025-03-01T09:43:30+00:00)
+2026-06-23 18:17:07 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=3f56d98a-6fea-4c22-b74f-383e648aed08, agent=market_maker, side=SELL, type=LIMIT, qty=100/100, price=100.6, status=ACTIVE, time=2025-03-01T09:43:30+00:00)
+2026-06-23 18:17:12 | INFO     | exchange_aapl | Received TIME_TICK message: 2025-03-01T09:44:00+00:00
+2026-06-23 18:17:12 | INFO     | exchange_aapl | Sent BARRIER_RESPONSE for tick 28.
+2026-06-23 18:17:12 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl canceled order 3f56d98a-6fea-4c22-b74f-383e648aed08 for agent market_maker.
+2026-06-23 18:17:12 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=9dd0c266-108e-4ac3-accf-9cb56556a003, agent=institutional_trader, side=BUY, type=MARKET, qty=100/100, price=MKT, status=ACTIVE, time=2025-03-01T09:44:00+00:00)
+2026-06-23 18:17:12 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=bfb30050-04a1-40ff-84f8-c20a9d8c8d74, agent=retail_population_2, side=BUY, type=MARKET, qty=2/2, price=MKT, status=ACTIVE, time=2025-03-01T09:44:00+00:00)
+2026-06-23 18:17:12 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl canceled order bc96b71e-da01-4ec2-a89b-4f1c27cd84be for agent market_maker.
+2026-06-23 18:17:12 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=9245f40a-f227-43b1-8139-e66d6025ad33, agent=market_maker, side=BUY, type=LIMIT, qty=100/100, price=100.35, status=ACTIVE, time=2025-03-01T09:44:00+00:00)
+2026-06-23 18:17:12 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=5ba70309-16b8-40e4-8597-a2ab4d2b78ac, agent=market_maker, side=SELL, type=LIMIT, qty=100/100, price=100.6, status=ACTIVE, time=2025-03-01T09:44:00+00:00)
+2026-06-23 18:17:17 | INFO     | exchange_aapl | Received TIME_TICK message: 2025-03-01T09:44:30+00:00
+2026-06-23 18:17:17 | INFO     | exchange_aapl | Sent BARRIER_RESPONSE for tick 29.
+2026-06-23 18:17:17 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl canceled order 9245f40a-f227-43b1-8139-e66d6025ad33 for agent market_maker.
+2026-06-23 18:17:17 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl canceled order 5ba70309-16b8-40e4-8597-a2ab4d2b78ac for agent market_maker.
+2026-06-23 18:17:17 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=a9c4cd49-1b81-4282-9551-8c628dab8dd0, agent=market_maker, side=BUY, type=LIMIT, qty=100/100, price=100.35, status=ACTIVE, time=2025-03-01T09:44:30+00:00)
+2026-06-23 18:17:17 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=5649fe9c-693c-440c-843c-07a1471c2c37, agent=market_maker, side=SELL, type=LIMIT, qty=100/100, price=100.6, status=ACTIVE, time=2025-03-01T09:44:30+00:00)
+2026-06-23 18:17:22 | INFO     | exchange_aapl | Received TIME_TICK message: 2025-03-01T09:45:00+00:00
+2026-06-23 18:17:22 | INFO     | exchange_aapl | Sent BARRIER_RESPONSE for tick 30.
+2026-06-23 18:17:22 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl canceled order a9c4cd49-1b81-4282-9551-8c628dab8dd0 for agent market_maker.
+2026-06-23 18:17:22 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=ef54b3cb-16b3-4b94-b12c-dee30da5ae67, agent=retail_population_3, side=BUY, type=MARKET, qty=0/9, price=MKT, status=FILLED, time=2025-03-01T09:45:00+00:00)
+2026-06-23 18:17:22 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl canceled order 5649fe9c-693c-440c-843c-07a1471c2c37 for agent market_maker.
+2026-06-23 18:17:22 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=14603de8-e35e-47c7-b07b-3a78a16706e7, agent=market_maker, side=BUY, type=LIMIT, qty=100/100, price=100.35, status=ACTIVE, time=2025-03-01T09:45:00+00:00)
+2026-06-23 18:17:22 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=b542130f-a50d-4cd3-be78-35998d4ca549, agent=market_maker, side=SELL, type=LIMIT, qty=100/100, price=100.6, status=ACTIVE, time=2025-03-01T09:45:00+00:00)
+2026-06-23 18:17:27 | INFO     | exchange_aapl | Received TIME_TICK message: 2025-03-01T09:45:30+00:00
+2026-06-23 18:17:27 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl dispatched TRADE_EXECUTION to retail_population_3 and market_maker for trade: {'instrument': 'AAPL', 'price': 100.6, 'quantity': 9, 'timestamp': '2025-03-01T09:45:00+00:00', 'seq': 12}
+2026-06-23 18:17:27 | INFO     | exchange_aapl | Sent BARRIER_RESPONSE for tick 31.
+2026-06-23 18:17:27 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl canceled order 14603de8-e35e-47c7-b07b-3a78a16706e7 for agent market_maker.
+2026-06-23 18:17:27 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl canceled order b542130f-a50d-4cd3-be78-35998d4ca549 for agent market_maker.
+2026-06-23 18:17:27 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=e3de0643-a8f9-4b1b-bb68-df3555d37112, agent=market_maker, side=BUY, type=LIMIT, qty=100/100, price=100.36, status=ACTIVE, time=2025-03-01T09:45:30+00:00)
+2026-06-23 18:17:27 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=391765d7-f7b8-4810-b0da-ba0e450bea30, agent=market_maker, side=SELL, type=LIMIT, qty=100/100, price=100.61, status=ACTIVE, time=2025-03-01T09:45:30+00:00)
+2026-06-23 18:17:32 | INFO     | exchange_aapl | Received TIME_TICK message: 2025-03-01T09:46:00+00:00
+2026-06-23 18:17:32 | INFO     | exchange_aapl | Sent BARRIER_RESPONSE for tick 32.
+2026-06-23 18:17:32 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=6b3da67f-8267-4c3e-a4cd-2dc1f9d80229, agent=institutional_trader, side=BUY, type=MARKET, qty=0/100, price=MKT, status=FILLED, time=2025-03-01T09:46:00+00:00)
+2026-06-23 18:17:32 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl canceled order e3de0643-a8f9-4b1b-bb68-df3555d37112 for agent market_maker.
+2026-06-23 18:17:32 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=4de58527-71cf-4dc4-829d-28243ae2210d, agent=retail_population_1, side=BUY, type=MARKET, qty=8/8, price=MKT, status=ACTIVE, time=2025-03-01T09:46:00+00:00)
+2026-06-23 18:17:32 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=e7838820-b047-4a3f-a8c0-dcbe1a3a9fe8, agent=retail_population_4, side=BUY, type=MARKET, qty=5/5, price=MKT, status=ACTIVE, time=2025-03-01T09:46:00+00:00)
+2026-06-23 18:17:32 | WARNING  | exchange_aapl | ExchangeAgent exchange_aapl failed to cancel order 391765d7-f7b8-4810-b0da-ba0e450bea30 for agent market_maker.
+2026-06-23 18:17:32 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=c98b1efa-ec87-48ec-8a63-91b59237c5f5, agent=market_maker, side=BUY, type=LIMIT, qty=100/100, price=100.36, status=ACTIVE, time=2025-03-01T09:46:00+00:00)
+2026-06-23 18:17:32 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=d2004b50-2c67-48c9-bd6e-df8c4a63276b, agent=market_maker, side=SELL, type=LIMIT, qty=100/100, price=100.61, status=ACTIVE, time=2025-03-01T09:46:00+00:00)
+2026-06-23 18:17:37 | INFO     | exchange_aapl | Received TIME_TICK message: 2025-03-01T09:46:30+00:00
+2026-06-23 18:17:37 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl dispatched TRADE_EXECUTION to institutional_trader and market_maker for trade: {'instrument': 'AAPL', 'price': 100.61, 'quantity': 100, 'timestamp': '2025-03-01T09:46:00+00:00', 'seq': 13}
+2026-06-23 18:17:37 | INFO     | exchange_aapl | Sent BARRIER_RESPONSE for tick 33.
+2026-06-23 18:17:37 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl canceled order c98b1efa-ec87-48ec-8a63-91b59237c5f5 for agent market_maker.
+2026-06-23 18:17:37 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl canceled order d2004b50-2c67-48c9-bd6e-df8c4a63276b for agent market_maker.
+2026-06-23 18:17:37 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=97355b91-d58c-46a8-9f68-7902c4a7a42e, agent=market_maker, side=BUY, type=LIMIT, qty=100/100, price=100.51, status=ACTIVE, time=2025-03-01T09:46:30+00:00)
+2026-06-23 18:17:37 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=da4a2cea-1cd2-4023-9a95-6a9a163dbf93, agent=market_maker, side=SELL, type=LIMIT, qty=100/100, price=100.76, status=ACTIVE, time=2025-03-01T09:46:30+00:00)
+2026-06-23 18:17:42 | INFO     | exchange_aapl | Received TIME_TICK message: 2025-03-01T09:47:00+00:00
+2026-06-23 18:17:42 | INFO     | exchange_aapl | Sent BARRIER_RESPONSE for tick 34.
+2026-06-23 18:17:42 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=c58dedb0-5bb3-4f9d-a6c3-d7fa69a4a3b7, agent=retail_population_4, side=BUY, type=MARKET, qty=0/1, price=MKT, status=FILLED, time=2025-03-01T09:47:00+00:00)
+2026-06-23 18:17:42 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl canceled order da4a2cea-1cd2-4023-9a95-6a9a163dbf93 for agent market_maker.
+2026-06-23 18:17:42 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=f0d04a1a-8a01-46da-9865-577fe4b1e565, agent=retail_population_2, side=SELL, type=MARKET, qty=0/8, price=MKT, status=FILLED, time=2025-03-01T09:47:00+00:00)
+2026-06-23 18:17:42 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl canceled order 97355b91-d58c-46a8-9f68-7902c4a7a42e for agent market_maker.
+2026-06-23 18:17:42 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=97cfe657-7cbc-46cb-9b4e-9e8fe1990d08, agent=market_maker, side=BUY, type=LIMIT, qty=100/100, price=100.51, status=ACTIVE, time=2025-03-01T09:47:00+00:00)
+2026-06-23 18:17:42 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=639d1014-0d61-4346-86b8-b896c05bfe33, agent=market_maker, side=SELL, type=LIMIT, qty=100/100, price=100.76, status=ACTIVE, time=2025-03-01T09:47:00+00:00)
+2026-06-23 18:17:47 | INFO     | exchange_aapl | Received TIME_TICK message: 2025-03-01T09:47:30+00:00
+2026-06-23 18:17:47 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl dispatched TRADE_EXECUTION to retail_population_4 and market_maker for trade: {'instrument': 'AAPL', 'price': 100.76, 'quantity': 1, 'timestamp': '2025-03-01T09:47:00+00:00', 'seq': 14}
+2026-06-23 18:17:47 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl dispatched TRADE_EXECUTION to market_maker and retail_population_2 for trade: {'instrument': 'AAPL', 'price': 100.51, 'quantity': 8, 'timestamp': '2025-03-01T09:47:00+00:00', 'seq': 15}
+2026-06-23 18:17:47 | INFO     | exchange_aapl | Sent BARRIER_RESPONSE for tick 35.
+2026-06-23 18:17:47 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl canceled order 639d1014-0d61-4346-86b8-b896c05bfe33 for agent market_maker.
+2026-06-23 18:17:47 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl canceled order 97cfe657-7cbc-46cb-9b4e-9e8fe1990d08 for agent market_maker.
+2026-06-23 18:17:47 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=4978cfe7-3943-417e-b59b-1c062a06eb68, agent=market_maker, side=BUY, type=LIMIT, qty=100/100, price=100.5, status=ACTIVE, time=2025-03-01T09:47:30+00:00)
+2026-06-23 18:17:47 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=9a012390-c416-4076-8dab-2b68a504745a, agent=market_maker, side=SELL, type=LIMIT, qty=100/100, price=100.75, status=ACTIVE, time=2025-03-01T09:47:30+00:00)
+2026-06-23 18:17:52 | INFO     | exchange_aapl | Received TIME_TICK message: 2025-03-01T09:48:00+00:00
+2026-06-23 18:17:52 | INFO     | exchange_aapl | Sent BARRIER_RESPONSE for tick 36.
+2026-06-23 18:17:52 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl canceled order 9a012390-c416-4076-8dab-2b68a504745a for agent market_maker.
+2026-06-23 18:17:52 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=8827c327-39f8-431e-8b61-ab8316f558cc, agent=retail_population_1, side=BUY, type=MARKET, qty=7/7, price=MKT, status=ACTIVE, time=2025-03-01T09:48:00+00:00)
+2026-06-23 18:17:52 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=75a9d341-9dbb-4575-a442-592126d21694, agent=institutional_trader, side=BUY, type=MARKET, qty=100/100, price=MKT, status=ACTIVE, time=2025-03-01T09:48:00+00:00)
+2026-06-23 18:17:52 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl canceled order 4978cfe7-3943-417e-b59b-1c062a06eb68 for agent market_maker.
+2026-06-23 18:17:52 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=e970b219-8cc8-4755-b239-dc5b0adb9454, agent=market_maker, side=BUY, type=LIMIT, qty=100/100, price=100.5, status=ACTIVE, time=2025-03-01T09:48:00+00:00)
+2026-06-23 18:17:52 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=5e6584a9-9744-4cb4-8d27-e085a2955ecd, agent=market_maker, side=SELL, type=LIMIT, qty=100/100, price=100.75, status=ACTIVE, time=2025-03-01T09:48:00+00:00)
+2026-06-23 18:17:57 | INFO     | exchange_aapl | Received TIME_TICK message: 2025-03-01T09:48:30+00:00
+2026-06-23 18:17:57 | INFO     | exchange_aapl | Sent BARRIER_RESPONSE for tick 37.
+2026-06-23 18:17:57 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl canceled order e970b219-8cc8-4755-b239-dc5b0adb9454 for agent market_maker.
+2026-06-23 18:17:57 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl canceled order 5e6584a9-9744-4cb4-8d27-e085a2955ecd for agent market_maker.
+2026-06-23 18:17:57 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=3b510dd9-7308-4335-850d-e25d3c8f1bc3, agent=market_maker, side=BUY, type=LIMIT, qty=100/100, price=100.5, status=ACTIVE, time=2025-03-01T09:48:30+00:00)
+2026-06-23 18:17:57 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=f6eff12e-f906-4ed9-abed-569093909a7f, agent=market_maker, side=SELL, type=LIMIT, qty=100/100, price=100.75, status=ACTIVE, time=2025-03-01T09:48:30+00:00)
+2026-06-23 18:18:02 | INFO     | exchange_aapl | Received TIME_TICK message: 2025-03-01T09:49:00+00:00
+2026-06-23 18:18:02 | INFO     | exchange_aapl | Sent BARRIER_RESPONSE for tick 38.
+2026-06-23 18:18:02 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=5d559554-2279-428f-babf-116695b05807, agent=retail_population_3, side=BUY, type=MARKET, qty=0/6, price=MKT, status=FILLED, time=2025-03-01T09:49:00+00:00)
+2026-06-23 18:18:02 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl canceled order 3b510dd9-7308-4335-850d-e25d3c8f1bc3 for agent market_maker.
+2026-06-23 18:18:02 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=601c5e5f-c98a-459e-9109-cefb806146a5, agent=retail_population_1, side=SELL, type=MARKET, qty=1/1, price=MKT, status=ACTIVE, time=2025-03-01T09:49:00+00:00)
+2026-06-23 18:18:02 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=6cb2c5df-ced2-44e4-8246-d9073662cbe5, agent=retail_population_2, side=BUY, type=MARKET, qty=0/6, price=MKT, status=FILLED, time=2025-03-01T09:49:00+00:00)
+2026-06-23 18:18:02 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=50b6c09d-5d7d-4cb4-a36b-9fb349191052, agent=retail_population_5, side=BUY, type=MARKET, qty=0/8, price=MKT, status=FILLED, time=2025-03-01T09:49:00+00:00)
+2026-06-23 18:18:02 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl canceled order f6eff12e-f906-4ed9-abed-569093909a7f for agent market_maker.
+2026-06-23 18:18:02 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=ecd0108d-5ef6-4061-8e88-3a45a4b5ba6f, agent=market_maker, side=BUY, type=LIMIT, qty=100/100, price=100.5, status=ACTIVE, time=2025-03-01T09:49:00+00:00)
+2026-06-23 18:18:02 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=119244b4-eab4-4170-9d1a-39946945308e, agent=market_maker, side=SELL, type=LIMIT, qty=100/100, price=100.75, status=ACTIVE, time=2025-03-01T09:49:00+00:00)
+2026-06-23 18:18:07 | INFO     | exchange_aapl | Received TIME_TICK message: 2025-03-01T09:49:30+00:00
+2026-06-23 18:18:07 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl dispatched TRADE_EXECUTION to retail_population_3 and market_maker for trade: {'instrument': 'AAPL', 'price': 100.75, 'quantity': 6, 'timestamp': '2025-03-01T09:49:00+00:00', 'seq': 16}
+2026-06-23 18:18:07 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl dispatched TRADE_EXECUTION to retail_population_2 and market_maker for trade: {'instrument': 'AAPL', 'price': 100.75, 'quantity': 6, 'timestamp': '2025-03-01T09:49:00+00:00', 'seq': 17}
+2026-06-23 18:18:07 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl dispatched TRADE_EXECUTION to retail_population_5 and market_maker for trade: {'instrument': 'AAPL', 'price': 100.75, 'quantity': 8, 'timestamp': '2025-03-01T09:49:00+00:00', 'seq': 18}
+2026-06-23 18:18:07 | INFO     | exchange_aapl | Sent BARRIER_RESPONSE for tick 39.
+2026-06-23 18:18:07 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl canceled order ecd0108d-5ef6-4061-8e88-3a45a4b5ba6f for agent market_maker.
+2026-06-23 18:18:07 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl canceled order 119244b4-eab4-4170-9d1a-39946945308e for agent market_maker.
+2026-06-23 18:18:07 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=c8e42c2c-df58-4d75-b8bc-bd6af2146a04, agent=market_maker, side=BUY, type=LIMIT, qty=100/100, price=100.53, status=ACTIVE, time=2025-03-01T09:49:30+00:00)
+2026-06-23 18:18:07 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=33bc5b0c-1d7a-46fb-8767-5f4cf0f68e47, agent=market_maker, side=SELL, type=LIMIT, qty=100/100, price=100.78, status=ACTIVE, time=2025-03-01T09:49:30+00:00)
+2026-06-23 18:18:12 | INFO     | exchange_aapl | Received TIME_TICK message: 2025-03-01T09:50:00+00:00
+2026-06-23 18:18:12 | INFO     | exchange_aapl | Sent BARRIER_RESPONSE for tick 40.
+2026-06-23 18:18:12 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl canceled order c8e42c2c-df58-4d75-b8bc-bd6af2146a04 for agent market_maker.
+2026-06-23 18:18:12 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=713daefa-4c7a-4b5e-bc5b-aa595c06c1a4, agent=retail_population_3, side=SELL, type=MARKET, qty=10/10, price=MKT, status=ACTIVE, time=2025-03-01T09:50:00+00:00)
+2026-06-23 18:18:12 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=56ba9400-adeb-4f3d-87e9-493bf0c71d47, agent=institutional_trader, side=BUY, type=MARKET, qty=0/100, price=MKT, status=FILLED, time=2025-03-01T09:50:00+00:00)
+2026-06-23 18:18:12 | WARNING  | exchange_aapl | ExchangeAgent exchange_aapl failed to cancel order 33bc5b0c-1d7a-46fb-8767-5f4cf0f68e47 for agent market_maker.
+2026-06-23 18:18:12 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=ec02d836-6f2f-4e4a-88be-a9152f81201c, agent=market_maker, side=BUY, type=LIMIT, qty=100/100, price=100.53, status=ACTIVE, time=2025-03-01T09:50:00+00:00)
+2026-06-23 18:18:12 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=4a5ef29d-c219-4530-953e-4a49e79e32ef, agent=market_maker, side=SELL, type=LIMIT, qty=100/100, price=100.78, status=ACTIVE, time=2025-03-01T09:50:00+00:00)
+2026-06-23 18:18:17 | INFO     | exchange_aapl | Received TIME_TICK message: 2025-03-01T09:50:30+00:00
+2026-06-23 18:18:17 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl dispatched TRADE_EXECUTION to institutional_trader and market_maker for trade: {'instrument': 'AAPL', 'price': 100.78, 'quantity': 100, 'timestamp': '2025-03-01T09:50:00+00:00', 'seq': 19}
+2026-06-23 18:18:17 | INFO     | exchange_aapl | Sent BARRIER_RESPONSE for tick 41.
+2026-06-23 18:18:17 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl canceled order 4a5ef29d-c219-4530-953e-4a49e79e32ef for agent market_maker.
+2026-06-23 18:18:17 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl canceled order ec02d836-6f2f-4e4a-88be-a9152f81201c for agent market_maker.
+2026-06-23 18:18:17 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=150a63a4-4dc1-4078-956b-a03057efb277, agent=market_maker, side=BUY, type=LIMIT, qty=100/100, price=100.68, status=ACTIVE, time=2025-03-01T09:50:30+00:00)
+2026-06-23 18:18:17 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=2c91e678-e3d1-422a-b551-c3c2dd81ec04, agent=market_maker, side=SELL, type=LIMIT, qty=100/100, price=100.93, status=ACTIVE, time=2025-03-01T09:50:30+00:00)
+2026-06-23 18:18:22 | INFO     | exchange_aapl | Received TIME_TICK message: 2025-03-01T09:51:00+00:00
+2026-06-23 18:18:22 | INFO     | exchange_aapl | Sent BARRIER_RESPONSE for tick 42.
+2026-06-23 18:18:22 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl canceled order 2c91e678-e3d1-422a-b551-c3c2dd81ec04 for agent market_maker.
+2026-06-23 18:18:22 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl canceled order 150a63a4-4dc1-4078-956b-a03057efb277 for agent market_maker.
+2026-06-23 18:18:22 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=316335d0-58ea-46df-b19d-9726152e462c, agent=market_maker, side=BUY, type=LIMIT, qty=100/100, price=100.68, status=ACTIVE, time=2025-03-01T09:51:00+00:00)
+2026-06-23 18:18:22 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=4631878b-3912-4dee-aeb7-497e10d1db7e, agent=market_maker, side=SELL, type=LIMIT, qty=100/100, price=100.93, status=ACTIVE, time=2025-03-01T09:51:00+00:00)
+2026-06-23 18:18:27 | INFO     | exchange_aapl | Received TIME_TICK message: 2025-03-01T09:51:30+00:00
+2026-06-23 18:18:27 | INFO     | exchange_aapl | Sent BARRIER_RESPONSE for tick 43.
+2026-06-23 18:18:27 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl canceled order 4631878b-3912-4dee-aeb7-497e10d1db7e for agent market_maker.
+2026-06-23 18:18:27 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl canceled order 316335d0-58ea-46df-b19d-9726152e462c for agent market_maker.
+2026-06-23 18:18:27 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=60d8468a-ac4c-45e1-ad60-13dbe63ddca2, agent=market_maker, side=BUY, type=LIMIT, qty=100/100, price=100.68, status=ACTIVE, time=2025-03-01T09:51:30+00:00)
+2026-06-23 18:18:27 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=9b96134d-a89f-46fc-a40b-9641147df86c, agent=market_maker, side=SELL, type=LIMIT, qty=100/100, price=100.93, status=ACTIVE, time=2025-03-01T09:51:30+00:00)
+2026-06-23 18:18:32 | INFO     | exchange_aapl | Received TIME_TICK message: 2025-03-01T09:52:00+00:00
+2026-06-23 18:18:32 | INFO     | exchange_aapl | Sent BARRIER_RESPONSE for tick 44.
+2026-06-23 18:18:32 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl canceled order 9b96134d-a89f-46fc-a40b-9641147df86c for agent market_maker.
+2026-06-23 18:18:32 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=bfb5fa04-e723-45be-b36c-8c3d4cfe4058, agent=retail_population_1, side=SELL, type=MARKET, qty=0/4, price=MKT, status=FILLED, time=2025-03-01T09:52:00+00:00)
+2026-06-23 18:18:32 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=f5b81cf6-2867-42c1-a1d2-1122ae71847a, agent=retail_population_5, side=BUY, type=MARKET, qty=7/7, price=MKT, status=ACTIVE, time=2025-03-01T09:52:00+00:00)
+2026-06-23 18:18:32 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=a2118315-dfc2-4e1c-9b25-ccf9912efe0a, agent=retail_population_4, side=SELL, type=MARKET, qty=0/1, price=MKT, status=FILLED, time=2025-03-01T09:52:00+00:00)
+2026-06-23 18:18:32 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl canceled order 60d8468a-ac4c-45e1-ad60-13dbe63ddca2 for agent market_maker.
+2026-06-23 18:18:32 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=d45da417-afb8-412c-8ea4-baf3819b24bd, agent=market_maker, side=BUY, type=LIMIT, qty=100/100, price=100.68, status=ACTIVE, time=2025-03-01T09:52:00+00:00)
+2026-06-23 18:18:32 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=0712d18b-e657-4da0-b8d8-1afdc4cd5a2f, agent=market_maker, side=SELL, type=LIMIT, qty=100/100, price=100.93, status=ACTIVE, time=2025-03-01T09:52:00+00:00)
+2026-06-23 18:18:37 | INFO     | exchange_aapl | Received TIME_TICK message: 2025-03-01T09:52:30+00:00
+2026-06-23 18:18:37 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl dispatched TRADE_EXECUTION to market_maker and retail_population_1 for trade: {'instrument': 'AAPL', 'price': 100.68, 'quantity': 4, 'timestamp': '2025-03-01T09:52:00+00:00', 'seq': 20}
+2026-06-23 18:18:37 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl dispatched TRADE_EXECUTION to market_maker and retail_population_4 for trade: {'instrument': 'AAPL', 'price': 100.68, 'quantity': 1, 'timestamp': '2025-03-01T09:52:00+00:00', 'seq': 21}
+2026-06-23 18:18:37 | INFO     | exchange_aapl | Sent BARRIER_RESPONSE for tick 45.
+2026-06-23 18:18:37 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl canceled order 0712d18b-e657-4da0-b8d8-1afdc4cd5a2f for agent market_maker.
+2026-06-23 18:18:37 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl canceled order d45da417-afb8-412c-8ea4-baf3819b24bd for agent market_maker.
+2026-06-23 18:18:37 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=e5dab68a-fa3c-4f5f-9860-dcf086874e19, agent=market_maker, side=BUY, type=LIMIT, qty=100/100, price=100.68, status=ACTIVE, time=2025-03-01T09:52:30+00:00)
+2026-06-23 18:18:37 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=8794d580-7eb6-44f7-9d1a-aafc0bb19dcd, agent=market_maker, side=SELL, type=LIMIT, qty=100/100, price=100.93, status=ACTIVE, time=2025-03-01T09:52:30+00:00)
+2026-06-23 18:18:42 | INFO     | exchange_aapl | Received TIME_TICK message: 2025-03-01T09:53:00+00:00
+2026-06-23 18:18:42 | INFO     | exchange_aapl | Sent BARRIER_RESPONSE for tick 46.
+2026-06-23 18:18:42 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl canceled order 8794d580-7eb6-44f7-9d1a-aafc0bb19dcd for agent market_maker.
+2026-06-23 18:18:42 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=b28e30b6-4288-4139-80e5-fd1cacb9a074, agent=retail_population_5, side=SELL, type=MARKET, qty=0/5, price=MKT, status=FILLED, time=2025-03-01T09:53:00+00:00)
+2026-06-23 18:18:42 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl canceled order e5dab68a-fa3c-4f5f-9860-dcf086874e19 for agent market_maker.
+2026-06-23 18:18:42 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=c2b01775-c6a7-4127-9bee-a017eabc92d4, agent=market_maker, side=BUY, type=LIMIT, qty=100/100, price=100.68, status=ACTIVE, time=2025-03-01T09:53:00+00:00)
+2026-06-23 18:18:42 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=92b97518-b184-4da9-bea5-8739ff1fbce4, agent=market_maker, side=SELL, type=LIMIT, qty=100/100, price=100.93, status=ACTIVE, time=2025-03-01T09:53:00+00:00)
+2026-06-23 18:18:47 | INFO     | exchange_aapl | Received TIME_TICK message: 2025-03-01T09:53:30+00:00
+2026-06-23 18:18:47 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl dispatched TRADE_EXECUTION to market_maker and retail_population_5 for trade: {'instrument': 'AAPL', 'price': 100.68, 'quantity': 5, 'timestamp': '2025-03-01T09:53:00+00:00', 'seq': 22}
+2026-06-23 18:18:47 | INFO     | exchange_aapl | Sent BARRIER_RESPONSE for tick 47.
+2026-06-23 18:18:47 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl canceled order 92b97518-b184-4da9-bea5-8739ff1fbce4 for agent market_maker.
+2026-06-23 18:18:47 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl canceled order c2b01775-c6a7-4127-9bee-a017eabc92d4 for agent market_maker.
+2026-06-23 18:18:47 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=1a56144d-c2e1-4fe1-a604-a546e4c12b9d, agent=market_maker, side=BUY, type=LIMIT, qty=100/100, price=100.67, status=ACTIVE, time=2025-03-01T09:53:30+00:00)
+2026-06-23 18:18:47 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=c6ffa416-1e69-4848-8383-156581cf5f87, agent=market_maker, side=SELL, type=LIMIT, qty=100/100, price=100.92, status=ACTIVE, time=2025-03-01T09:53:30+00:00)
+2026-06-23 18:18:52 | INFO     | exchange_aapl | Received TIME_TICK message: 2025-03-01T09:54:00+00:00
+2026-06-23 18:18:52 | INFO     | exchange_aapl | Sent BARRIER_RESPONSE for tick 48.
+2026-06-23 18:18:52 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl canceled order c6ffa416-1e69-4848-8383-156581cf5f87 for agent market_maker.
+2026-06-23 18:18:52 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=6ff79dc0-a2ff-4981-bf5b-c487baf03cc5, agent=retail_population_5, side=SELL, type=MARKET, qty=0/3, price=MKT, status=FILLED, time=2025-03-01T09:54:00+00:00)
+2026-06-23 18:18:52 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl canceled order 1a56144d-c2e1-4fe1-a604-a546e4c12b9d for agent market_maker.
+2026-06-23 18:18:52 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=cfd5cb4d-3ef1-4883-bbcd-5d6f62e71e74, agent=market_maker, side=BUY, type=LIMIT, qty=100/100, price=100.67, status=ACTIVE, time=2025-03-01T09:54:00+00:00)
+2026-06-23 18:18:52 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=2ce99dda-0ac6-4029-8a68-6972976415c8, agent=market_maker, side=SELL, type=LIMIT, qty=100/100, price=100.92, status=ACTIVE, time=2025-03-01T09:54:00+00:00)
+2026-06-23 18:18:57 | INFO     | exchange_aapl | Received TIME_TICK message: 2025-03-01T09:54:30+00:00
+2026-06-23 18:18:57 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl dispatched TRADE_EXECUTION to market_maker and retail_population_5 for trade: {'instrument': 'AAPL', 'price': 100.67, 'quantity': 3, 'timestamp': '2025-03-01T09:54:00+00:00', 'seq': 23}
+2026-06-23 18:18:57 | INFO     | exchange_aapl | Sent BARRIER_RESPONSE for tick 49.
+2026-06-23 18:18:57 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl canceled order cfd5cb4d-3ef1-4883-bbcd-5d6f62e71e74 for agent market_maker.
+2026-06-23 18:18:57 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl canceled order 2ce99dda-0ac6-4029-8a68-6972976415c8 for agent market_maker.
+2026-06-23 18:18:57 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=bb213abd-c87b-482b-a1c8-b038ccd5168e, agent=market_maker, side=BUY, type=LIMIT, qty=100/100, price=100.66, status=ACTIVE, time=2025-03-01T09:54:30+00:00)
+2026-06-23 18:18:57 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=c5c57b35-5485-41ac-91e4-2b52eef615a5, agent=market_maker, side=SELL, type=LIMIT, qty=100/100, price=100.91, status=ACTIVE, time=2025-03-01T09:54:30+00:00)
+2026-06-23 18:19:02 | INFO     | exchange_aapl | Received TIME_TICK message: 2025-03-01T09:55:00+00:00
+2026-06-23 18:19:02 | INFO     | exchange_aapl | Sent BARRIER_RESPONSE for tick 50.
+2026-06-23 18:19:02 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl canceled order c5c57b35-5485-41ac-91e4-2b52eef615a5 for agent market_maker.
+2026-06-23 18:19:02 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=0875ee9e-427e-4a54-b7ef-f28432740e63, agent=retail_population_2, side=SELL, type=MARKET, qty=0/2, price=MKT, status=FILLED, time=2025-03-01T09:55:00+00:00)
+2026-06-23 18:19:02 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl canceled order bb213abd-c87b-482b-a1c8-b038ccd5168e for agent market_maker.
+2026-06-23 18:19:02 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=45fab623-ab19-4e78-bee7-15806b081f7b, agent=market_maker, side=BUY, type=LIMIT, qty=100/100, price=100.66, status=ACTIVE, time=2025-03-01T09:55:00+00:00)
+2026-06-23 18:19:02 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=cc7f704c-fb09-433e-a441-b0c95f782bbd, agent=market_maker, side=SELL, type=LIMIT, qty=100/100, price=100.91, status=ACTIVE, time=2025-03-01T09:55:00+00:00)
+2026-06-23 18:19:07 | INFO     | exchange_aapl | Received TIME_TICK message: 2025-03-01T09:55:30+00:00
+2026-06-23 18:19:07 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl dispatched TRADE_EXECUTION to market_maker and retail_population_2 for trade: {'instrument': 'AAPL', 'price': 100.66, 'quantity': 2, 'timestamp': '2025-03-01T09:55:00+00:00', 'seq': 24}
+2026-06-23 18:19:07 | INFO     | exchange_aapl | Sent BARRIER_RESPONSE for tick 51.
+2026-06-23 18:19:07 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl canceled order 45fab623-ab19-4e78-bee7-15806b081f7b for agent market_maker.
+2026-06-23 18:19:07 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl canceled order cc7f704c-fb09-433e-a441-b0c95f782bbd for agent market_maker.
+2026-06-23 18:19:07 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=c6462e00-6f21-4465-9e84-933598e177d8, agent=market_maker, side=BUY, type=LIMIT, qty=100/100, price=100.66, status=ACTIVE, time=2025-03-01T09:55:30+00:00)
+2026-06-23 18:19:07 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=12728494-81ef-4cde-84e6-819e2492bef6, agent=market_maker, side=SELL, type=LIMIT, qty=100/100, price=100.91, status=ACTIVE, time=2025-03-01T09:55:30+00:00)
+2026-06-23 18:19:12 | INFO     | exchange_aapl | Received TIME_TICK message: 2025-03-01T09:56:00+00:00
+2026-06-23 18:19:12 | INFO     | exchange_aapl | Sent BARRIER_RESPONSE for tick 52.
+2026-06-23 18:19:12 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl canceled order 12728494-81ef-4cde-84e6-819e2492bef6 for agent market_maker.
+2026-06-23 18:19:12 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=119724a9-8177-4865-a647-adf225a63090, agent=retail_population_5, side=BUY, type=MARKET, qty=10/10, price=MKT, status=ACTIVE, time=2025-03-01T09:56:00+00:00)
+2026-06-23 18:19:12 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl canceled order c6462e00-6f21-4465-9e84-933598e177d8 for agent market_maker.
+2026-06-23 18:19:12 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=e4f0b185-a48e-4093-a1b6-53faa80eb8da, agent=market_maker, side=BUY, type=LIMIT, qty=100/100, price=100.66, status=ACTIVE, time=2025-03-01T09:56:00+00:00)
+2026-06-23 18:19:12 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=b2d24981-eeea-4a24-8326-998d279e9bec, agent=market_maker, side=SELL, type=LIMIT, qty=100/100, price=100.91, status=ACTIVE, time=2025-03-01T09:56:00+00:00)
+2026-06-23 18:19:17 | INFO     | exchange_aapl | Received TIME_TICK message: 2025-03-01T09:56:30+00:00
+2026-06-23 18:19:17 | INFO     | exchange_aapl | Sent BARRIER_RESPONSE for tick 53.
+2026-06-23 18:19:17 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl canceled order b2d24981-eeea-4a24-8326-998d279e9bec for agent market_maker.
+2026-06-23 18:19:17 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl canceled order e4f0b185-a48e-4093-a1b6-53faa80eb8da for agent market_maker.
+2026-06-23 18:19:17 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=6cfc1f9f-d9c2-4203-a39b-9f45c8b9ed9e, agent=market_maker, side=BUY, type=LIMIT, qty=100/100, price=100.66, status=ACTIVE, time=2025-03-01T09:56:30+00:00)
+2026-06-23 18:19:17 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=eef09e1a-707b-4a18-b02c-642763a3f5ca, agent=market_maker, side=SELL, type=LIMIT, qty=100/100, price=100.91, status=ACTIVE, time=2025-03-01T09:56:30+00:00)
+2026-06-23 18:19:22 | INFO     | exchange_aapl | Received TIME_TICK message: 2025-03-01T09:57:00+00:00
+2026-06-23 18:19:22 | INFO     | exchange_aapl | Sent BARRIER_RESPONSE for tick 54.
+2026-06-23 18:19:22 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl canceled order eef09e1a-707b-4a18-b02c-642763a3f5ca for agent market_maker.
+2026-06-23 18:19:22 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=2aad6fa9-8f30-41af-9a6f-7632919f3fec, agent=retail_population_2, side=BUY, type=MARKET, qty=4/4, price=MKT, status=ACTIVE, time=2025-03-01T09:57:00+00:00)
+2026-06-23 18:19:22 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl canceled order 6cfc1f9f-d9c2-4203-a39b-9f45c8b9ed9e for agent market_maker.
+2026-06-23 18:19:22 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=842065ca-a5b5-44b8-80c0-d4fd57be3e0d, agent=market_maker, side=BUY, type=LIMIT, qty=100/100, price=100.66, status=ACTIVE, time=2025-03-01T09:57:00+00:00)
+2026-06-23 18:19:22 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=d41714c0-55c1-489b-8ebe-6d8629761b9a, agent=market_maker, side=SELL, type=LIMIT, qty=100/100, price=100.91, status=ACTIVE, time=2025-03-01T09:57:00+00:00)
+2026-06-23 18:19:27 | INFO     | exchange_aapl | Received TIME_TICK message: 2025-03-01T09:57:30+00:00
+2026-06-23 18:19:27 | INFO     | exchange_aapl | Sent BARRIER_RESPONSE for tick 55.
+2026-06-23 18:19:27 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl canceled order 842065ca-a5b5-44b8-80c0-d4fd57be3e0d for agent market_maker.
+2026-06-23 18:19:27 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl canceled order d41714c0-55c1-489b-8ebe-6d8629761b9a for agent market_maker.
+2026-06-23 18:19:27 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=03226d75-42a2-4ea6-9509-958de9e4d514, agent=market_maker, side=BUY, type=LIMIT, qty=100/100, price=100.66, status=ACTIVE, time=2025-03-01T09:57:30+00:00)
+2026-06-23 18:19:27 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=e5f0c783-5237-4c78-8ec0-c8b672eb3e92, agent=market_maker, side=SELL, type=LIMIT, qty=100/100, price=100.91, status=ACTIVE, time=2025-03-01T09:57:30+00:00)
+2026-06-23 18:19:32 | INFO     | exchange_aapl | Received TIME_TICK message: 2025-03-01T09:58:00+00:00
+2026-06-23 18:19:33 | INFO     | exchange_aapl | Sent BARRIER_RESPONSE for tick 56.
+2026-06-23 18:19:33 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl canceled order 03226d75-42a2-4ea6-9509-958de9e4d514 for agent market_maker.
+2026-06-23 18:19:33 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=af2c6d64-12db-4999-8641-e4fd91271ffc, agent=retail_population_2, side=BUY, type=MARKET, qty=0/9, price=MKT, status=FILLED, time=2025-03-01T09:58:00+00:00)
+2026-06-23 18:19:33 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl canceled order e5f0c783-5237-4c78-8ec0-c8b672eb3e92 for agent market_maker.
+2026-06-23 18:19:33 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=47f87145-f4ff-4ca1-b1d8-33328f8a1d9e, agent=market_maker, side=BUY, type=LIMIT, qty=100/100, price=100.66, status=ACTIVE, time=2025-03-01T09:58:00+00:00)
+2026-06-23 18:19:33 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=d32ea9ab-51a5-4f82-a68a-b21b49feb1a3, agent=market_maker, side=SELL, type=LIMIT, qty=100/100, price=100.91, status=ACTIVE, time=2025-03-01T09:58:00+00:00)
+2026-06-23 18:19:38 | INFO     | exchange_aapl | Received TIME_TICK message: 2025-03-01T09:58:30+00:00
+2026-06-23 18:19:38 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl dispatched TRADE_EXECUTION to retail_population_2 and market_maker for trade: {'instrument': 'AAPL', 'price': 100.91, 'quantity': 9, 'timestamp': '2025-03-01T09:58:00+00:00', 'seq': 25}
+2026-06-23 18:19:38 | INFO     | exchange_aapl | Sent BARRIER_RESPONSE for tick 57.
+2026-06-23 18:19:38 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl canceled order 47f87145-f4ff-4ca1-b1d8-33328f8a1d9e for agent market_maker.
+2026-06-23 18:19:38 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl canceled order d32ea9ab-51a5-4f82-a68a-b21b49feb1a3 for agent market_maker.
+2026-06-23 18:19:38 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=45acb10e-997b-4492-b4f5-7dcdc0987308, agent=market_maker, side=BUY, type=LIMIT, qty=100/100, price=100.67, status=ACTIVE, time=2025-03-01T09:58:30+00:00)
+2026-06-23 18:19:38 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=21f309c5-3abd-4df2-969f-99910b164053, agent=market_maker, side=SELL, type=LIMIT, qty=100/100, price=100.92, status=ACTIVE, time=2025-03-01T09:58:30+00:00)
+2026-06-23 18:19:43 | INFO     | exchange_aapl | Received TIME_TICK message: 2025-03-01T09:59:00+00:00
+2026-06-23 18:19:43 | INFO     | exchange_aapl | Sent BARRIER_RESPONSE for tick 58.
+2026-06-23 18:19:43 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=34df8eac-5153-421f-969c-2406a9e6d7bc, agent=retail_population_1, side=BUY, type=MARKET, qty=0/2, price=MKT, status=FILLED, time=2025-03-01T09:59:00+00:00)
+2026-06-23 18:19:43 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl canceled order 45acb10e-997b-4492-b4f5-7dcdc0987308 for agent market_maker.
+2026-06-23 18:19:43 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=138f8848-db22-4eb3-bf16-6c6e446a0aa0, agent=retail_population_5, side=BUY, type=MARKET, qty=0/2, price=MKT, status=FILLED, time=2025-03-01T09:59:00+00:00)
+2026-06-23 18:19:43 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=7006c353-337b-4e34-ab61-0b246b07ad8d, agent=retail_population_4, side=BUY, type=MARKET, qty=0/6, price=MKT, status=FILLED, time=2025-03-01T09:59:00+00:00)
+2026-06-23 18:19:43 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl canceled order 21f309c5-3abd-4df2-969f-99910b164053 for agent market_maker.
+2026-06-23 18:19:43 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=26a08c61-e8ab-4aab-ad20-cc3d11e12bf6, agent=market_maker, side=BUY, type=LIMIT, qty=100/100, price=100.67, status=ACTIVE, time=2025-03-01T09:59:00+00:00)
+2026-06-23 18:19:43 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=7b221e66-e817-4d9d-8ebd-eed39c77ac9a, agent=market_maker, side=SELL, type=LIMIT, qty=100/100, price=100.92, status=ACTIVE, time=2025-03-01T09:59:00+00:00)
+2026-06-23 18:19:48 | INFO     | exchange_aapl | Received TIME_TICK message: 2025-03-01T09:59:30+00:00
+2026-06-23 18:19:48 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl dispatched TRADE_EXECUTION to retail_population_1 and market_maker for trade: {'instrument': 'AAPL', 'price': 100.92, 'quantity': 2, 'timestamp': '2025-03-01T09:59:00+00:00', 'seq': 26}
+2026-06-23 18:19:48 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl dispatched TRADE_EXECUTION to retail_population_5 and market_maker for trade: {'instrument': 'AAPL', 'price': 100.92, 'quantity': 2, 'timestamp': '2025-03-01T09:59:00+00:00', 'seq': 27}
+2026-06-23 18:19:48 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl dispatched TRADE_EXECUTION to retail_population_4 and market_maker for trade: {'instrument': 'AAPL', 'price': 100.92, 'quantity': 6, 'timestamp': '2025-03-01T09:59:00+00:00', 'seq': 28}
+2026-06-23 18:19:48 | INFO     | exchange_aapl | Sent BARRIER_RESPONSE for tick 59.
+2026-06-23 18:19:48 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl canceled order 7b221e66-e817-4d9d-8ebd-eed39c77ac9a for agent market_maker.
+2026-06-23 18:19:48 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl canceled order 26a08c61-e8ab-4aab-ad20-cc3d11e12bf6 for agent market_maker.
+2026-06-23 18:19:48 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=8649d3d2-e2ec-4d43-ad4a-b54aec72c17e, agent=market_maker, side=BUY, type=LIMIT, qty=100/100, price=100.69, status=ACTIVE, time=2025-03-01T09:59:30+00:00)
+2026-06-23 18:19:48 | INFO     | exchange_aapl | ExchangeAgent exchange_aapl added order: Order(id=e530a543-f270-457d-855b-47904916d135, agent=market_maker, side=SELL, type=LIMIT, qty=100/100, price=100.94, status=ACTIVE, time=2025-03-01T09:59:30+00:00)
+2026-06-23 18:19:55 | INFO     | exchange_aapl | Agent exchange_aapl received STOP_SIMULATION. Shutting down.
+2026-06-23 18:19:55 | INFO     | exchange_aapl | Cancelled message consumption.
+2026-06-23 18:19:55 | INFO     | exchange_aapl | Cancelled TIME_TICK message consumption.
+2026-06-23 18:19:56 | INFO     | exchange_aapl | Waited briefly for pending publisher confirmations.
+2026-06-23 18:19:56 | INFO     | exchange_aapl | Channel closed.
+2026-06-23 18:19:56 | INFO     | exchange_aapl | Closed RabbitMQ connection.
+2026-06-23 18:19:56 | INFO     | exchange_aapl | Agent exchange_aapl shut down.

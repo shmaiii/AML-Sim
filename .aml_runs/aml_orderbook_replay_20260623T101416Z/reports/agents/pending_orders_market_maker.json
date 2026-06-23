@@ -1,0 +1,30 @@
+{
+  "8649d3d2-e2ec-4d43-ad4a-b54aec72c17e": {
+    "order_id": "8649d3d2-e2ec-4d43-ad4a-b54aec72c17e",
+    "instrument": "AAPL",
+    "side": "BUY",
+    "quantity": 100,
+    "order_type": "LIMIT",
+    "price": 100.69,
+    "oco_group": null,
+    "explanation": "AML market maker bid quote",
+    "is_short": false,
+    "is_short_cover": false,
+    "timestamp": "2025-03-01T09:59:30+00:00",
+    "exchange_id": "exchange_aapl"
+  },
+  "e530a543-f270-457d-855b-47904916d135": {
+    "order_id": "e530a543-f270-457d-855b-47904916d135",
+    "instrument": "AAPL",
+    "side": "SELL",
+    "quantity": 100,
+    "order_type": "LIMIT",
+    "price": 100.94,
+    "oco_group": null,
+    "explanation": "AML market maker ask quote",
+    "is_short": false,
+    "is_short_cover": false,
+    "timestamp": "2025-03-01T09:59:30+00:00",
+    "exchange_id": "exchange_aapl"
+  }
+}
