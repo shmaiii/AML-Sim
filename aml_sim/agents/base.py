@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import inspect
 from abc import abstractmethod
+from dataclasses import asdict, is_dataclass
 from datetime import timedelta
 from typing import Any, Callable, Mapping, Optional
 
@@ -58,6 +59,11 @@ class BaseAMLAgent(TraderAgent):
             seconds=slow_loop_interval_seconds or self.action_interval.total_seconds()
         )
         self.next_slow_loop_time = None
+        self.logger.info(
+            f"{self.agent_id} slow loop configured: "
+            f"strategist={type(self.slow_strategist).__name__}, "
+            f"interval={self.slow_loop_interval}"
+        )
 
     async def handle_time_tick(self, payload: dict[str, Any]) -> None:
         await super().handle_time_tick(payload)
@@ -105,6 +111,7 @@ class BaseAMLAgent(TraderAgent):
         )
 
     async def run_slow_loop(self, observation: Mapping[str, Any]) -> None:
+        before = self._strategy_snapshot(self.strategy_state)
         proposal = self.slow_strategist.propose(
             observation,
             self.strategy_state,
@@ -115,6 +122,12 @@ class BaseAMLAgent(TraderAgent):
             proposal = await proposal
 
         self.strategy_state = self._validate_or_keep(proposal)
+        after = self._strategy_snapshot(self.strategy_state)
+        self.logger.info(
+            f"{self.agent_id} slow loop completed: "
+            f"strategist={type(self.slow_strategist).__name__}, "
+            f"before={before}, after={after}"
+        )
 
     def _validate_or_keep(self, proposal: Any) -> Any:
         try:
@@ -127,6 +140,13 @@ class BaseAMLAgent(TraderAgent):
                 f"Rejected strategy proposal for {self.agent_id}; keeping previous state: {exc}"
             )
             return getattr(self, "strategy_state", proposal)
+
+    def _strategy_snapshot(self, strategy_state: Any) -> dict[str, Any]:
+        if is_dataclass(strategy_state):
+            return asdict(strategy_state)
+        if isinstance(strategy_state, Mapping):
+            return dict(strategy_state)
+        return dict(vars(strategy_state))
 
     @abstractmethod
     async def run_fast_loop(self, observation: Mapping[str, Any]) -> None:

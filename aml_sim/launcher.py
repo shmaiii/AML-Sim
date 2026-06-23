@@ -206,25 +206,23 @@ def build_agent_param_customizers(
     interval_to_seconds: Any,
 ) -> dict[str, Any]:
     """Create parameter transforms for AML-owned agent types."""
+    def normalize_aml_agent_params(params: dict[str, Any], default_action_interval: int) -> dict[str, Any]:
+        normalized = {
+            **params,
+            "action_interval_seconds": interval_to_seconds(params["action_interval"])
+            if "action_interval" in params
+            else params.get("action_interval_seconds", default_action_interval),
+        }
+        if "slow_loop_interval" in params:
+            normalized["slow_loop_interval_seconds"] = interval_to_seconds(
+                params["slow_loop_interval"]
+            )
+        return normalized
+
     return {
-        "AML_Market_Maker": lambda params: {
-            **params,
-            "action_interval_seconds": interval_to_seconds(params["action_interval"])
-            if "action_interval" in params
-            else params.get("action_interval_seconds", 60),
-        },
-        "AML_Retail_Trader": lambda params: {
-            **params,
-            "action_interval_seconds": interval_to_seconds(params["action_interval"])
-            if "action_interval" in params
-            else params.get("action_interval_seconds", 60),
-        },
-        "AML_Institutional_Trader": lambda params: {
-            **params,
-            "action_interval_seconds": interval_to_seconds(params["action_interval"])
-            if "action_interval" in params
-            else params.get("action_interval_seconds", 300),
-        },
+        "AML_Market_Maker": lambda params: normalize_aml_agent_params(params, 60),
+        "AML_Retail_Trader": lambda params: normalize_aml_agent_params(params, 60),
+        "AML_Institutional_Trader": lambda params: normalize_aml_agent_params(params, 300),
     }
 
 
