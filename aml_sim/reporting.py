@@ -10,13 +10,36 @@ from pathlib import Path
 from typing import Any
 
 
-def parse_report_datetime(value: str):
+def _parse_report_datetime(value: str):
     """Parse scenario datetimes, including common trailing-Z UTC notation."""
     from utils.time_utils import parse_datetime_utc
 
     if value.endswith("Z"):
         value = f"{value[:-1]}+00:00"
     return parse_datetime_utc(value)
+
+
+def _format_simulation_duration(start_str: str, end_str: str) -> str:
+    """Return a human-readable simulation duration string.
+
+    Uses hours:minutes for sub-day windows and days for longer runs.
+    """
+    try:
+        start = _parse_report_datetime(start_str)
+        end = _parse_report_datetime(end_str)
+        delta = end - start
+        total_seconds = delta.total_seconds()
+        if total_seconds < 0:
+            return "0m (end before start)"
+        if total_seconds < 3600:
+            return f"{total_seconds / 60:.0f}m"
+        if total_seconds < 86400:
+            hours = int(total_seconds // 3600)
+            minutes = int((total_seconds % 3600) // 60)
+            return f"{hours}h{minutes:02d}m"
+        return f"{delta.days}d"
+    except Exception:
+        return "unknown"
 
 
 def generate_post_simulation_artifacts(config: dict[str, Any]) -> None:
@@ -111,9 +134,9 @@ def generate_post_simulation_artifacts(config: dict[str, Any]) -> None:
             "simulation_info": {
                 "start_time": simulation_start_str,
                 "end_time": simulation_end_str,
-                "duration_days": (
-                    parse_report_datetime(simulation_end_str) - parse_report_datetime(simulation_start_str)
-                ).days,
+                "duration": _format_simulation_duration(
+                    simulation_start_str, simulation_end_str
+                ),
                 "instruments": instruments,
                 "total_agents": sum(
                     agent_config.get("count", 1)

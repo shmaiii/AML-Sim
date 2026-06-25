@@ -166,7 +166,11 @@ class LLMStrategist:
         if is_dataclass(current_strategy):
             return replace(current_strategy, **clean_updates)
 
-        proposed = current_strategy
+        # Non-dataclass: copy first so a later validation failure does not
+        # corrupt the live strategy object.
+        import copy
+
+        proposed = copy.deepcopy(current_strategy)
         for key, value in clean_updates.items():
             setattr(proposed, key, value)
         return proposed

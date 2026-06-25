@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 from dataclasses import asdict, is_dataclass
-from datetime import datetime
 from typing import Any, Mapping, Optional
 
 from aml_sim.agents.models.profile import profile_to_dict
+from aml_sim.serialization import serialize_mapping, serialize_value
 
 
 DEFAULT_RECENT_FILL_LIMIT = 10
@@ -32,21 +32,21 @@ def build_observation_context(
 
     return {
         "agent": _build_agent_context(agent, profile),
-        "current_time": _serialize_value(getattr(agent, "current_time", None)),
+        "current_time": serialize_value(getattr(agent, "current_time", None)),
         "market": {
-            "last_market_snapshot": _serialize_mapping(
+            "last_market_snapshot": serialize_mapping(
                 getattr(agent, "last_market_snapshot", {})
             ),
         },
         "portfolio": _build_portfolio_context(agent, instruments),
         "orders": {
-            "pending": _serialize_mapping(getattr(agent, "pending_orders", {})),
+            "pending": serialize_mapping(getattr(agent, "pending_orders", {})),
             "count": len(getattr(agent, "pending_orders", {}) or {}),
         },
         "recent_fills": _recent_fills(agent, recent_fill_limit),
         "strategy_state": _strategy_state(agent),
-        "memory": _serialize_mapping(memory or {}),
-        "events": [_serialize_mapping(event) for event in (events or [])],
+        "memory": serialize_mapping(memory or {}),
+        "events": [serialize_mapping(event) for event in (events or [])],
     }
 
 
@@ -79,7 +79,7 @@ def _build_agent_context(
 ) -> dict[str, Any]:
     return {
         "agent_id": getattr(agent, "agent_id", None),
-        "profile": _serialize_mapping(profile_to_dict(profile)),
+        "profile": serialize_mapping(profile_to_dict(profile)),
     }
 
 
@@ -109,7 +109,7 @@ def _recent_fills(agent: Any, recent_fill_limit: int) -> list[Any]:
     fills = getattr(agent, "session_executed_orders", []) or []
     if recent_fill_limit <= 0:
         return []
-    return [_serialize_value(fill) for fill in fills[-recent_fill_limit:]]
+    return [serialize_value(fill) for fill in fills[-recent_fill_limit:]]
 
 
 def _strategy_state(agent: Any) -> dict[str, Any]:
@@ -117,25 +117,7 @@ def _strategy_state(agent: Any) -> dict[str, Any]:
     if strategy_state is None:
         return {}
     if is_dataclass(strategy_state):
-        return _serialize_mapping(asdict(strategy_state))
+        return serialize_mapping(asdict(strategy_state))
     if isinstance(strategy_state, Mapping):
-        return _serialize_mapping(strategy_state)
-    return _serialize_mapping(vars(strategy_state))
-
-
-def _serialize_mapping(value: Mapping[str, Any]) -> dict[str, Any]:
-    return {str(key): _serialize_value(item) for key, item in value.items()}
-
-
-def _serialize_value(value: Any) -> Any:
-    if isinstance(value, datetime):
-        return value.isoformat()
-    if is_dataclass(value):
-        return _serialize_mapping(asdict(value))
-    if isinstance(value, Mapping):
-        return _serialize_mapping(value)
-    if isinstance(value, list):
-        return [_serialize_value(item) for item in value]
-    if isinstance(value, tuple):
-        return [_serialize_value(item) for item in value]
-    return value
+        return serialize_mapping(strategy_state)
+    return serialize_mapping(vars(strategy_state))
