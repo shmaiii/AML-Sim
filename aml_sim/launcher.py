@@ -150,6 +150,18 @@ def import_agent_class(agent_type: str) -> type:
         from aml_sim.agents.institutional_trader import AMLInstitutionalTrader
 
         return AMLInstitutionalTrader
+    if agent_type == "AML_Informed_Trader":
+        from aml_sim.agents.informed_trader import AMLInformedTrader
+
+        return AMLInformedTrader
+    if agent_type == "AML_Liquidity_Taker":
+        from aml_sim.agents.liquidity_taker import AMLLiquidityTaker
+
+        return AMLLiquidityTaker
+    if agent_type == "AML_Shock_Agent":
+        from aml_sim.agents.shock_agent import AMLShockAgent
+
+        return AMLShockAgent
 
     raise ValueError(f"Unsupported agent type '{agent_type}'")
 
@@ -223,6 +235,9 @@ def build_agent_param_customizers(
         "AML_Market_Maker": lambda params: normalize_aml_agent_params(params, 60),
         "AML_Retail_Trader": lambda params: normalize_aml_agent_params(params, 60),
         "AML_Institutional_Trader": lambda params: normalize_aml_agent_params(params, 300),
+        "AML_Informed_Trader": lambda params: normalize_aml_agent_params(params, 60),
+        "AML_Liquidity_Taker": lambda params: normalize_aml_agent_params(params, 60),
+        "AML_Shock_Agent": lambda params: params,
     }
 
 
@@ -460,6 +475,13 @@ def start_trader_processes(
 ) -> list[Process]:
     """Start one process for each configured trader instance."""
     agent_processes = []
+    agent_ids_by_name = build_agent_instance_id_map(agents_config)
+    shock_target_agent_ids = [
+        agent_id
+        for agent_name, agent_ids in agent_ids_by_name.items()
+        if agents_config.get(agent_name, {}).get("type") != "AML_Shock_Agent"
+        for agent_id in agent_ids
+    ]
 
     for agent_name, agent_details in agents_config.items():
         agent_type = agent_details.get("type")
@@ -482,6 +504,8 @@ def start_trader_processes(
             instance_params["agent_id"] = unique_agent_id
             instance_params.setdefault("instrument_exchange_map", instrument_exchange_map)
             instance_params["rabbitmq_host"] = rabbitmq_host
+            if agent_type == "AML_Shock_Agent":
+                instance_params.setdefault("target_agent_ids", shock_target_agent_ids)
 
             if agent_type == "Random_Trader":
                 instance_params["seed"] = random.randint(0, 10**6)
@@ -496,6 +520,18 @@ def start_trader_processes(
             print(f"Started trader '{unique_agent_id}'.")
 
     return agent_processes
+
+
+def build_agent_instance_id_map(agents_config: dict[str, Any]) -> dict[str, list[str]]:
+    """Return launcher-generated instance ids for each configured agent group."""
+    agent_ids: dict[str, list[str]] = {}
+    for agent_name, agent_details in agents_config.items():
+        count = agent_details.get("count", 1)
+        agent_ids[agent_name] = [
+            f"{agent_name}_{index + 1}" if count > 1 else agent_name
+            for index in range(count)
+        ]
+    return agent_ids
 
 
 def terminate_processes(processes: list[Process]) -> None:

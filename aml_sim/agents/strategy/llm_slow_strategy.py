@@ -217,8 +217,6 @@ STATIC_RETAIL_RESPONSE = {
         "risk_mode": "normal",
         "trade_probability": 0.35,
         "buy_bias": 0.52,
-        "herding_tendency": 0.15,
-        "panic_level": 0.05,
     },
     "confidence": 0.7,
     "reason": "Static retail LLM test response: slightly active, mildly bullish, low panic.",
@@ -228,12 +226,33 @@ STATIC_RETAIL_RESPONSE = {
 STATIC_INSTITUTIONAL_RESPONSE = {
     "strategy_updates": {
         "risk_mode": "normal",
-        "child_order_size": 100,
         "execution_style": "sliced",
         "urgency": 0.6,
     },
     "confidence": 0.78,
     "reason": "Static institutional LLM test response: keep sliced execution with moderate urgency.",
+}
+
+
+STATIC_INFORMED_RESPONSE = {
+    "strategy_updates": {
+        "risk_mode": "normal",
+        "trade_probability": 0.38,
+        "information_edge": 0.72,
+    },
+    "confidence": 0.74,
+    "reason": "Static informed-trader LLM test response: keep trading only when the private value signal is strong.",
+}
+
+
+STATIC_LIQUIDITY_TAKER_RESPONSE = {
+    "strategy_updates": {
+        "risk_mode": "normal",
+        "flow_intensity": 0.38,
+        "aggression": 0.75,
+    },
+    "confidence": 0.7,
+    "reason": "Static liquidity-taker LLM test response: maintain steady aggressive flow with bounded size.",
 }
 
 
@@ -253,3 +272,15 @@ def create_static_institutional_llm_strategist() -> LLMStrategist:
     """Create a fixed-response LLM strategist for institutional path tests."""
 
     return LLMStrategist(client=StaticJSONLLMClient(STATIC_INSTITUTIONAL_RESPONSE))
+
+
+def create_static_informed_llm_strategist() -> LLMStrategist:
+    """Create a fixed-response LLM strategist for informed-trader path tests."""
+
+    return LLMStrategist(client=StaticJSONLLMClient(STATIC_INFORMED_RESPONSE))
+
+
+def create_static_liquidity_taker_llm_strategist() -> LLMStrategist:
+    """Create a fixed-response LLM strategist for liquidity-taker path tests."""
+
+    return LLMStrategist(client=StaticJSONLLMClient(STATIC_LIQUIDITY_TAKER_RESPONSE))
