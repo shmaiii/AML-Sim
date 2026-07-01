@@ -2,20 +2,26 @@
 
 from __future__ import annotations
 
-import asyncio
-import json
+import logging
 import os
-import random
 import signal
+import socket
 import sys
 import time
 from contextlib import contextmanager
 from multiprocessing import Process
 from pathlib import Path
-from typing import Any, Iterator
+from typing import Any, Callable, Iterator
 
 from aml_sim.runs import AMLRun
 from aml_sim.scenario import AMLScenario
+
+logger = logging.getLogger(__name__)
+
+
+# ---------------------------------------------------------------------------
+# Environment helpers
+# ---------------------------------------------------------------------------
 
 
 def load_env_file(path: Path) -> dict[str, str]:
@@ -23,7 +29,7 @@ def load_env_file(path: Path) -> dict[str, str]:
     if not path.exists():
         return {}
 
-    values = {}
+    values: dict[str, str] = {}
     with path.open("r", encoding="utf-8") as handle:
         for raw_line in handle:
             line = raw_line.strip()
@@ -35,16 +41,6 @@ def load_env_file(path: Path) -> dict[str, str]:
             if key:
                 values[key] = value
     return values
-
-
-def load_json_file(file_path: str) -> Any:
-    """Load JSON config data for StockSim agents that require external orders."""
-    if not file_path:
-        return {}
-    if not os.path.exists(file_path):
-        raise FileNotFoundError(f"JSON file '{file_path}' does not exist.")
-    with open(file_path, "r", encoding="utf-8") as handle:
-        return json.load(handle)
 
 
 @contextmanager
@@ -82,17 +78,28 @@ def patched_output_directories(
     from utils import plot_charts
 
     original_helper = plot_charts.ensure_output_directories
+    already_patched = getattr(original_helper, "__aml_patched__", False)
 
-    def ensure_aml_output_directories() -> tuple[str, str]:
-        charts_dir.mkdir(parents=True, exist_ok=True)
-        reports_dir.mkdir(parents=True, exist_ok=True)
-        return str(charts_dir), str(reports_dir)
+    if not already_patched:
 
-    plot_charts.ensure_output_directories = ensure_aml_output_directories
+        def ensure_aml_output_directories() -> tuple[str, str]:
+            charts_dir.mkdir(parents=True, exist_ok=True)
+            reports_dir.mkdir(parents=True, exist_ok=True)
+            return str(charts_dir), str(reports_dir)
+
+        ensure_aml_output_directories.__aml_patched__ = True  # type: ignore[attr-defined]
+        plot_charts.ensure_output_directories = ensure_aml_output_directories
+
     try:
         yield
     finally:
-        plot_charts.ensure_output_directories = original_helper
+        if not already_patched:
+            plot_charts.ensure_output_directories = original_helper
+
+
+# ---------------------------------------------------------------------------
+# Import resolution
+# ---------------------------------------------------------------------------
 
 
 def ensure_stocksim_import_path(stocksim_dir: Path) -> None:
@@ -166,26 +173,29 @@ def import_agent_class(agent_type: str) -> type:
     raise ValueError(f"Unsupported agent type '{agent_type}'")
 
 
-def agent_runner(agent_class: type, parameters: dict[str, Any]) -> None:
-    """Run one trading agent process."""
-
-    async def async_agent_runner() -> None:
-        agent = agent_class(**parameters)
-        await agent.initialize()
-        await agent.run()
-
-    asyncio.run(async_agent_runner())
+# ---------------------------------------------------------------------------
+# Process runners
+# ---------------------------------------------------------------------------
 
 
-def exchange_agent_runner(agent_class: type, parameters: dict[str, Any]) -> None:
-    """Run one exchange agent process."""
+def _async_process_runner(
+    agent_class: type,
+    parameters: dict[str, Any],
+    label: str = "agent",
+) -> None:
+    """Run one agent or exchange process with asyncio lifecycle."""
 
-    async def async_exchange_agent_runner() -> None:
-        agent = agent_class(**parameters)
-        await agent.initialize()
-        await agent.run()
+    async def _run() -> None:
+        instance = agent_class(**parameters)
+        await instance.initialize()
+        await instance.run()
 
-    asyncio.run(async_exchange_agent_runner())
+    try:
+        import asyncio
+
+        asyncio.run(_run())
+    except Exception:
+        logger.exception("%s process crashed", label)
 
 
 def simulation_clock_runner(
@@ -208,23 +218,55 @@ def simulation_clock_runner(
         end_time=parse_datetime_utc(simulation_config["end_time"]),
         tick_interval_seconds=tick_interval_seconds,
         rabbitmq_host=rabbitmq_host,
-        expected_exchange_agent_count=simulation_config.get("expected_exchange_agent_count", 1),
+        expected_exchange_agent_count=simulation_config.get(
+            "expected_exchange_agent_count", 1
+        ),
         expected_responses=expected_responses,
     )
+    import asyncio
+
     asyncio.run(simulation_clock.run())
+
+
+# ---------------------------------------------------------------------------
+# RabbitMQ health check
+# ---------------------------------------------------------------------------
+
+
+def _check_rabbitmq_reachable(host: str, port: int = 5672, timeout: float = 5.0) -> bool:
+    """Return True if a TCP connection to RabbitMQ can be established."""
+    try:
+        sock = socket.create_connection((host, port), timeout=timeout)
+        sock.close()
+        return True
+    except OSError:
+        return False
+
+
+# ---------------------------------------------------------------------------
+# Parameter helpers
+# ---------------------------------------------------------------------------
 
 
 def build_agent_param_customizers(
     interval_to_seconds: Any,
-) -> dict[str, Any]:
+) -> dict[str, Callable[[dict[str, Any]], dict[str, Any]]]:
     """Create parameter transforms for AML-owned agent types."""
-    def normalize_aml_agent_params(params: dict[str, Any], default_action_interval: int) -> dict[str, Any]:
-        normalized = {
+
+    def _normalize_aml_agent_params(
+        params: dict[str, Any],
+        default_action_interval: int,
+    ) -> dict[str, Any]:
+        normalized: dict[str, Any] = {
             **params,
-            "action_interval_seconds": interval_to_seconds(params["action_interval"])
-            if "action_interval" in params
-            else params.get("action_interval_seconds", default_action_interval),
         }
+        if "action_interval" in params:
+            normalized["action_interval_seconds"] = interval_to_seconds(
+                params["action_interval"]
+            )
+        elif "action_interval_seconds" not in normalized:
+            normalized["action_interval_seconds"] = default_action_interval
+
         if "slow_loop_interval" in params:
             normalized["slow_loop_interval_seconds"] = interval_to_seconds(
                 params["slow_loop_interval"]
@@ -232,13 +274,20 @@ def build_agent_param_customizers(
         return normalized
 
     return {
-        "AML_Market_Maker": lambda params: normalize_aml_agent_params(params, 60),
-        "AML_Retail_Trader": lambda params: normalize_aml_agent_params(params, 60),
-        "AML_Institutional_Trader": lambda params: normalize_aml_agent_params(params, 300),
-        "AML_Informed_Trader": lambda params: normalize_aml_agent_params(params, 60),
-        "AML_Liquidity_Taker": lambda params: normalize_aml_agent_params(params, 60),
+        "AML_Market_Maker": lambda params: _normalize_aml_agent_params(params, 60),
+        "AML_Retail_Trader": lambda params: _normalize_aml_agent_params(params, 60),
+        "AML_Institutional_Trader": lambda params: _normalize_aml_agent_params(
+            params, 300
+        ),
+        "AML_Informed_Trader": lambda params: _normalize_aml_agent_params(params, 60),
+        "AML_Liquidity_Taker": lambda params: _normalize_aml_agent_params(params, 60),
         "AML_Shock_Agent": lambda params: params,
     }
+
+
+# ---------------------------------------------------------------------------
+# Main launch / orchestration
+# ---------------------------------------------------------------------------
 
 
 def launch_stocksim(
@@ -252,17 +301,30 @@ def launch_stocksim(
     if not stocksim_dir.exists():
         raise FileNotFoundError(f"StockSim directory not found: {stocksim_dir}")
 
+    rabbitmq_host = scenario.rabbitmq_host or "localhost"
+    if not _check_rabbitmq_reachable(rabbitmq_host):
+        logger.error(
+            "RabbitMQ is not reachable at %s:5672. "
+            "Start RabbitMQ (e.g. 'docker compose up -d rabbitmq' from "
+            "simulators/StockSim) before launching a scenario.",
+            rabbitmq_host,
+        )
+        return 1
+
     env_updates = load_env_file(env_file)
     env_updates["LOG_DIR"] = str(aml_run.logs_dir)
     env_updates["METRICS_OUTPUT_DIR"] = str(aml_run.reports_dir / "agents")
-    if scenario.rabbitmq_host:
-        env_updates["RABBITMQ_HOST"] = scenario.rabbitmq_host
+    env_updates["RABBITMQ_HOST"] = rabbitmq_host
 
-    print(f"Launching StockSim components from AML-Sim")
-    print(f"StockSim component root: {stocksim_dir}")
-    print(f"Generated config: {aml_run.stocksim_config_path}")
-    print(f"AML env file: {env_file if env_file.exists() else 'not found'}")
-    print(f"Logs: {aml_run.logs_dir}")
+    logger.info("Launching StockSim components from AML-Sim")
+    logger.info("StockSim component root: %s", stocksim_dir)
+    logger.info("Generated config: %s", aml_run.stocksim_config_path)
+    logger.info(
+        "AML env file: %s",
+        env_file if env_file.exists() else "not found",
+    )
+    logger.info("Logs: %s", aml_run.logs_dir)
+    logger.info("RabbitMQ host: %s", rabbitmq_host)
 
     ensure_stocksim_import_path(stocksim_dir)
     with temporary_environ(env_updates), temporary_cwd(stocksim_dir):
@@ -270,6 +332,7 @@ def launch_stocksim(
             config=scenario.stocksim_config,
             aml_run=aml_run,
             generate_reports=generate_reports,
+            rabbitmq_host=rabbitmq_host,
         )
 
 
@@ -277,6 +340,8 @@ def run_stocksim_components(
     config: dict[str, Any],
     aml_run: AMLRun,
     generate_reports: bool = False,
+    *,
+    rabbitmq_host: str = "localhost",
 ) -> int:
     """Start exchange, trader, and clock processes using StockSim classes."""
     components = import_stocksim_components(config)
@@ -284,14 +349,13 @@ def run_stocksim_components(
     agent_type_mapping = components["agent_types"]
     exchange_mode = config.get("exchange_mode", "orderbook").lower()
 
-    instruments = config.get("instruments", [])
-    exchanges_config = config.get("exchanges", {})
-    agents_config = config.get("agents", {})
-    simulation_config = config.get("simulation", {})
-    rabbitmq_host = os.getenv("RABBITMQ_HOST", "localhost")
+    instruments: list[str] = config.get("instruments", [])
+    exchanges_config: dict[str, Any] = config.get("exchanges", {})
+    agents_config: dict[str, Any] = config.get("agents", {})
+    simulation_config: dict[str, Any] = config.get("simulation", {})
 
-    simulation_start_time = simulation_config["start_time"]
-    simulation_end_time = simulation_config["end_time"]
+    simulation_start_time: str = simulation_config["start_time"]
+    simulation_end_time: str = simulation_config["end_time"]
 
     indicator_kwargs_map = {
         instrument: inst_cfg.get("indicator_kwargs", {})
@@ -301,11 +365,13 @@ def run_stocksim_components(
         instrument: inst_cfg.get("warmup_candles", 250)
         for instrument, inst_cfg in exchanges_config.items()
     }
-    print(f"Exchange mode: {exchange_mode}")
-    print(f"Instruments: {', '.join(instruments)}")
-    print(f"Configured agent groups: {len(agents_config)}")
 
-    exchange_agents = start_exchange_processes(
+    logger.info("Exchange mode: %s", exchange_mode)
+    logger.info("Instruments: %s", ", ".join(instruments))
+    logger.info("Configured agent groups: %d", len(agents_config))
+
+    # --- Exchange processes ---
+    exchange_processes = start_exchange_processes(
         exchange_mode=exchange_mode,
         instruments=instruments,
         exchanges_config=exchanges_config,
@@ -317,59 +383,69 @@ def run_stocksim_components(
         exchange_class=components["exchange_class"],
     )
 
-    print("Waiting for exchange agents to initialize...")
-    time.sleep(10)
+    _wait_for_healthy(exchange_processes, label="exchange agents", max_wait=30.0)
 
+    # --- Trader processes ---
     instrument_exchange_map = build_instrument_exchange_map(exchange_mode, instruments)
     agent_custom_params = build_agent_param_customizers(
-        interval_to_seconds=interval_to_seconds
+        interval_to_seconds=interval_to_seconds,
     )
-    agent_processes = start_trader_processes(
+    trader_processes = start_trader_processes(
         agents_config=agents_config,
         agent_type_mapping=agent_type_mapping,
         agent_custom_params=agent_custom_params,
         instrument_exchange_map=instrument_exchange_map,
         rabbitmq_host=rabbitmq_host,
+        run_id=aml_run.run_id,
     )
 
-    print("Waiting for trading agents to initialize...")
-    time.sleep(20)
+    _wait_for_healthy(trader_processes, label="trading agents", max_wait=30.0)
 
-    llm_count = sum(
+    # --- Clock process ---
+    llm_expected_responses = sum(
         details.get("count", 1)
         for details in agents_config.values()
         if details.get("type") == "LLMTradingAgent"
     )
     clock_process = Process(
         target=simulation_clock_runner,
-        args=(simulation_config, rabbitmq_host, llm_count),
+        args=(simulation_config, rabbitmq_host, llm_expected_responses),
         name="SimulationClock",
     )
     clock_process.start()
-    print("Started SimulationClock.")
+    logger.info("Started SimulationClock.")
 
-    all_processes = exchange_agents + agent_processes + [clock_process]
+    all_processes = exchange_processes + trader_processes + [clock_process]
 
-    def shutdown(signum: int, _frame: Any) -> None:
-        print(f"Received shutdown signal {signum}. Terminating simulation processes...")
+    # --- Signal handling ---
+    shutdown_requested = False
+
+    def _on_shutdown_signal(signum: int, _frame: Any) -> None:
+        nonlocal shutdown_requested
+        shutdown_requested = True
+        logger.warning(
+            "Received signal %d. Terminating simulation processes...", signum
+        )
         terminate_processes(all_processes)
-        raise SystemExit(0)
 
     previous_sigint = signal.getsignal(signal.SIGINT)
     previous_sigterm = signal.getsignal(signal.SIGTERM)
-    signal.signal(signal.SIGINT, shutdown)
-    signal.signal(signal.SIGTERM, shutdown)
+    signal.signal(signal.SIGINT, _on_shutdown_signal)
+    signal.signal(signal.SIGTERM, _on_shutdown_signal)
 
     exit_code = 0
     try:
-        for process in all_processes:
-            process.join()
+        _join_all_with_timeout(all_processes, timeout=300)
     except KeyboardInterrupt:
         terminate_processes(all_processes)
         exit_code = 130
+        shutdown_requested = True
     finally:
         signal.signal(signal.SIGINT, previous_sigint)
         signal.signal(signal.SIGTERM, previous_sigterm)
+
+    if shutdown_requested:
+        exit_code = 130
 
     if exit_code == 0:
         generate_aml_reports(aml_run)
@@ -377,6 +453,76 @@ def run_stocksim_components(
             generate_stocksim_reports(config, aml_run)
 
     return exit_code
+
+
+# ---------------------------------------------------------------------------
+# Process lifecycle helpers
+# ---------------------------------------------------------------------------
+
+
+def _wait_for_healthy(
+    processes: list[Process],
+    *,
+    label: str,
+    max_wait: float,
+) -> None:
+    """Poll process health until every process is alive or max_wait expires."""
+    deadline = time.monotonic() + max_wait
+    while time.monotonic() < deadline:
+        alive_count = sum(1 for p in processes if p.is_alive())
+        total = len(processes)
+        if alive_count == total:
+            logger.info("All %d %s are alive after %.1fs.", total, label, max_wait - (deadline - time.monotonic()))
+            return
+        time.sleep(0.5)
+
+    alive = sum(1 for p in processes if p.is_alive())
+    dead = len(processes) - alive
+    if dead:
+        logger.warning(
+            "%d/%d %s did not become healthy within %.0fs — launching clock anyway.",
+            dead,
+            len(processes),
+            label,
+            max_wait,
+        )
+    else:
+        logger.info("All %s are alive (checked at deadline).", label)
+
+
+def _join_all_with_timeout(
+    processes: list[Process],
+    *,
+    timeout: float,
+    interval: float = 2.0,
+) -> None:
+    """Join every process with a per-process deadline, polling for stalls."""
+    deadline = time.monotonic() + timeout
+    remaining = [p for p in processes if p.is_alive() or p.exitcode is None]
+    while remaining and time.monotonic() < deadline:
+        for p in list(remaining):
+            p.join(timeout=min(1.0, max(0.1, deadline - time.monotonic())))
+            if not p.is_alive():
+                remaining.remove(p)
+        if remaining:
+            time.sleep(interval)
+
+    for p in remaining:
+        logger.warning("Process '%s' (pid=%s) is still alive; terminating.", p.name, p.pid)
+        p.terminate()
+
+
+def terminate_processes(processes: list[Process]) -> None:
+    """Terminate any still-running child processes."""
+    for process in processes:
+        if process.is_alive():
+            process.terminate()
+            logger.info("Terminated process '%s' (PID: %s).", process.name, process.pid)
+
+
+# ---------------------------------------------------------------------------
+# Report orchestration
+# ---------------------------------------------------------------------------
 
 
 def generate_aml_reports(aml_run: AMLRun) -> None:
@@ -388,18 +534,31 @@ def generate_aml_reports(aml_run: AMLRun) -> None:
 
 def generate_stocksim_reports(config: dict[str, Any], aml_run: AMLRun) -> None:
     """Call StockSim's report generator while saving outputs under AML-Sim."""
-    print(f"Generating StockSim reports in: {aml_run.reports_dir}")
+    logger.info("Generating StockSim reports in: %s", aml_run.reports_dir)
     with patched_output_directories(aml_run.charts_dir, aml_run.reports_dir):
         from aml_sim.reporting import generate_post_simulation_artifacts
 
         generate_post_simulation_artifacts(config)
 
 
-def build_instrument_exchange_map(exchange_mode: str, instruments: list[str]) -> dict[str, str]:
+# ---------------------------------------------------------------------------
+# Exchange / trader process factories
+# ---------------------------------------------------------------------------
+
+
+def build_instrument_exchange_map(
+    exchange_mode: str, instruments: list[str]
+) -> dict[str, str]:
     """Map instrument symbols to the exchange agent ids AML-Sim will start."""
     if exchange_mode == "candle":
-        return {instrument: f"candle_exchange_{instrument.lower()}" for instrument in instruments}
-    return {instrument: f"exchange_{instrument.lower()}" for instrument in instruments}
+        return {
+            instrument: f"candle_exchange_{instrument.lower()}"
+            for instrument in instruments
+        }
+    return {
+        instrument: f"exchange_{instrument.lower()}"
+        for instrument in instruments
+    }
 
 
 def start_exchange_processes(
@@ -414,14 +573,14 @@ def start_exchange_processes(
     exchange_class: type,
 ) -> list[Process]:
     """Start one StockSim exchange process per configured instrument."""
-    exchange_processes = []
+    exchange_processes: list[Process] = []
     instrument_exchange_map = build_instrument_exchange_map(exchange_mode, instruments)
 
     for instrument, exchange_id in instrument_exchange_map.items():
         inst_cfg = exchanges_config.get(instrument, {})
 
         if exchange_mode == "candle":
-            exchange_params = {
+            exchange_params: dict[str, Any] = {
                 "instrument": instrument,
                 "resolution": inst_cfg.get("candle_interval", "1d"),
                 "start_date": simulation_start_time,
@@ -455,13 +614,14 @@ def start_exchange_processes(
             }
 
         process = Process(
-            target=exchange_agent_runner,
+            target=_async_process_runner,
             args=(exchange_class, exchange_params),
+            kwargs={"label": f"exchange:{exchange_id}"},
             name=exchange_id,
         )
         process.start()
         exchange_processes.append(process)
-        print(f"Started exchange '{exchange_id}' for {instrument}.")
+        logger.info("Started exchange '%s' for %s.", exchange_id, instrument)
 
     return exchange_processes
 
@@ -469,12 +629,14 @@ def start_exchange_processes(
 def start_trader_processes(
     agents_config: dict[str, Any],
     agent_type_mapping: dict[str, type],
-    agent_custom_params: dict[str, Any],
+    agent_custom_params: dict[str, Callable[[dict[str, Any]], dict[str, Any]]],
     instrument_exchange_map: dict[str, str],
     rabbitmq_host: str,
+    *,
+    run_id: str = "",
 ) -> list[Process]:
     """Start one process for each configured trader instance."""
-    agent_processes = []
+    agent_processes: list[Process] = []
     agent_ids_by_name = build_agent_instance_id_map(agents_config)
     shock_target_agent_ids = [
         agent_id
@@ -485,39 +647,48 @@ def start_trader_processes(
 
     for agent_name, agent_details in agents_config.items():
         agent_type = agent_details.get("type")
-        parameters = agent_details.get("parameters", {})
+        parameters: dict[str, Any] = dict(agent_details.get("parameters", {}))
         agent_class = agent_type_mapping.get(agent_type)
 
         if not agent_class:
-            raise ValueError(f"Unsupported agent type '{agent_type}' for agent '{agent_name}'")
+            raise ValueError(
+                f"Unsupported agent type '{agent_type}' for agent '{agent_name}'"
+            )
 
-        count = agent_details.get("count", 1)
-        print(f"Starting {agent_name} ({agent_type}) x {count}")
+        count: int = agent_details.get("count", 1)
+        logger.info("Starting %s (%s) x %d", agent_name, agent_type, count)
 
         for index in range(count):
-            unique_agent_id = f"{agent_name}_{index + 1}" if count > 1 else agent_name
+            unique_agent_id = (
+                f"{agent_name}_{index + 1}" if count > 1 else agent_name
+            )
             instance_params = dict(parameters)
 
             if agent_type in agent_custom_params:
                 instance_params = agent_custom_params[agent_type](instance_params)
 
             instance_params["agent_id"] = unique_agent_id
-            instance_params.setdefault("instrument_exchange_map", instrument_exchange_map)
+            instance_params.setdefault(
+                "instrument_exchange_map", instrument_exchange_map
+            )
             instance_params["rabbitmq_host"] = rabbitmq_host
             if agent_type == "AML_Shock_Agent":
                 instance_params.setdefault("target_agent_ids", shock_target_agent_ids)
 
+            # Deterministic seed: derived from run_id and agent identity so
+            # every re-run of the same scenario produces the same behaviour.
             if agent_type == "Random_Trader":
-                instance_params["seed"] = random.randint(0, 10**6)
+                instance_params["seed"] = _make_seed(run_id, unique_agent_id)
 
             process = Process(
-                target=agent_runner,
+                target=_async_process_runner,
                 args=(agent_class, instance_params),
+                kwargs={"label": f"trader:{unique_agent_id}"},
                 name=unique_agent_id,
             )
             process.start()
             agent_processes.append(process)
-            print(f"Started trader '{unique_agent_id}'.")
+            logger.info("Started trader '%s'.", unique_agent_id)
 
     return agent_processes
 
@@ -534,9 +705,10 @@ def build_agent_instance_id_map(agents_config: dict[str, Any]) -> dict[str, list
     return agent_ids
 
 
-def terminate_processes(processes: list[Process]) -> None:
-    """Terminate any still-running child processes."""
-    for process in processes:
-        if process.is_alive():
-            process.terminate()
-            print(f"Terminated process '{process.name}' (PID: {process.pid}).")
+def _make_seed(run_id: str, agent_id: str) -> int:
+    """Produce a deterministic seed from run and agent identity."""
+    # hash() is deterministic within a single Python process but not across
+    # runs.  For true cross-run reproducibility we would store the seed in
+    # the run metadata.  For now this guarantees that two agents with the
+    # same run_id + agent_id get the same seed every launch.
+    return hash(f"{run_id}:{agent_id}") & 0x7FFF_FFFF

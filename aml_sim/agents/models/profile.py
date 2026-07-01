@@ -106,21 +106,23 @@ def coerce_profile(
         raise TypeError(f"profile must be a mapping or {profile_cls.__name__}")
 
     valid_fields = {field.name for field in fields(profile_cls)}
-    known_values = {
+    known_values: dict[str, Any] = {
         key: value
         for key, value in profile.items()
         if key in valid_fields
     }
-    custom_values = {
+    unrecognised = {
         key: value
         for key, value in profile.items()
         if key not in valid_fields
     }
-    if custom_values:
-        known_values["custom"] = {
-            **dict(known_values.get("custom", {})),
-            **custom_values,
-        }
+    if unrecognised:
+        existing_custom = dict(known_values.get("custom", {}))
+        # Store unrecognised keys under a separate key so they never silently
+        # overwrite legitimate 'custom' entries.
+        existing_custom.setdefault("_unrecognised_fields", {})
+        existing_custom["_unrecognised_fields"].update(unrecognised)
+        known_values["custom"] = existing_custom
 
     return profile_cls(**known_values)
 

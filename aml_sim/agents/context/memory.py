@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass, field, is_dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any, Mapping, Optional, Protocol
+
+from aml_sim.serialization import serialize_mapping, serialize_value
 
 
 DEFAULT_MEMORY_BACKEND = "local"
@@ -59,8 +61,8 @@ class LocalAgentMemory:
     ) -> None:
         event = MemoryEvent(
             event_type=event_type,
-            payload=_serialize_mapping(payload),
-            timestamp=_serialize_value(timestamp),
+            payload=serialize_mapping(payload),
+            timestamp=serialize_value(timestamp),
         )
         self.events_by_agent.setdefault(agent_id, []).append(event)
 
@@ -77,7 +79,7 @@ class LocalAgentMemory:
         return {
             "backend": "local",
             "agent_id": agent_id,
-            "recent_events": [_serialize_value(event) for event in recent_events],
+            "recent_events": [serialize_value(event) for event in recent_events],
             "event_count": len(events),
             "retrieval_note": (
                 "Local memory returns the most recent events only. "
@@ -145,21 +147,3 @@ def create_memory_backend(config: Optional[Mapping[str, Any]] = None) -> MemoryB
         return ZepAgentMemory(config)
 
     raise ValueError(f"Unsupported AML memory backend: {backend!r}")
-
-
-def _serialize_mapping(value: Mapping[str, Any]) -> dict[str, Any]:
-    return {str(key): _serialize_value(item) for key, item in value.items()}
-
-
-def _serialize_value(value: Any) -> Any:
-    if isinstance(value, datetime):
-        return value.isoformat()
-    if is_dataclass(value):
-        return _serialize_mapping(asdict(value))
-    if isinstance(value, Mapping):
-        return _serialize_mapping(value)
-    if isinstance(value, list):
-        return [_serialize_value(item) for item in value]
-    if isinstance(value, tuple):
-        return [_serialize_value(item) for item in value]
-    return value

@@ -17,6 +17,9 @@ __all__ = [
 
 
 def __getattr__(name: str):
+    # Lazy imports are required because agent modules import from StockSim
+    # (e.g. utils.orders, agents.benchmark_traders.trader) which is only
+    # available at launch time after ensure_stocksim_import_path runs.
     if name in {
         "AgentProfile",
         "InformedProfile",

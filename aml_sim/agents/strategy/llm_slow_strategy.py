@@ -166,7 +166,11 @@ class LLMStrategist:
         if is_dataclass(current_strategy):
             return replace(current_strategy, **clean_updates)
 
-        proposed = current_strategy
+        # Non-dataclass: copy first so a later validation failure does not
+        # corrupt the live strategy object.
+        import copy
+
+        proposed = copy.deepcopy(current_strategy)
         for key, value in clean_updates.items():
             setattr(proposed, key, value)
         return proposed
@@ -217,6 +221,8 @@ STATIC_RETAIL_RESPONSE = {
         "risk_mode": "normal",
         "trade_probability": 0.35,
         "buy_bias": 0.52,
+        "herding_tendency": 0.15,
+        "panic_level": 0.05,
     },
     "confidence": 0.7,
     "reason": "Static retail LLM test response: slightly active, mildly bullish, low panic.",
@@ -226,6 +232,7 @@ STATIC_RETAIL_RESPONSE = {
 STATIC_INSTITUTIONAL_RESPONSE = {
     "strategy_updates": {
         "risk_mode": "normal",
+        "child_order_size": 100,
         "execution_style": "sliced",
         "urgency": 0.6,
     },

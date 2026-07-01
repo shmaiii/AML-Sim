@@ -141,13 +141,18 @@ def validate_strategy_state(
     ):
         errors.append("min_position must be <= max_position")
 
-    if strategy_state.confidence < limits.min_confidence or strategy_state.confidence > limits.max_confidence:
+    _check_has_attr(strategy_state, "confidence", errors)
+    if hasattr(strategy_state, "confidence") and (
+        strategy_state.confidence < limits.min_confidence
+        or strategy_state.confidence > limits.max_confidence
+    ):
         errors.append(
             f"confidence must be between {limits.min_confidence} and {limits.max_confidence}, "
             f"got {strategy_state.confidence}"
         )
 
-    if strategy_state.risk_mode not in limits.allowed_risk_modes:
+    _check_has_attr(strategy_state, "risk_mode", errors)
+    if hasattr(strategy_state, "risk_mode") and strategy_state.risk_mode not in limits.allowed_risk_modes:
         allowed = ", ".join(limits.allowed_risk_modes)
         errors.append(f"risk_mode must be one of [{allowed}], got {strategy_state.risk_mode!r}")
 
@@ -178,6 +183,11 @@ def validate_strategy_state(
         raise StrategyValidationError(f"Invalid {state_name}: " + "; ".join(errors))
 
     return strategy_state
+
+
+def _check_has_attr(strategy_state: Any, field_name: str, errors: list[str]) -> None:
+    if not hasattr(strategy_state, field_name):
+        errors.append(f"strategy state missing required field '{field_name}'")
 
 
 def _check_probability(strategy_state: Any, field_name: str, errors: list[str]) -> None:

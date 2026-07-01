@@ -5,8 +5,6 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Optional
 
-from utils.orders import OrderType
-
 
 @dataclass
 class BaseStrategyState:
@@ -63,7 +61,7 @@ class InstitutionalStrategyState(BaseStrategyState):
     strategy_type: str = "target_execution"
     target_positions: dict[str, int] = field(default_factory=dict)
     child_order_size: int = 100
-    order_type: str = OrderType.MARKET.value
+    order_type: str = "MARKET"
     limit_price: Optional[float] = None
     execution_style: str = "sliced"
     urgency: float = 0.5
@@ -94,7 +92,7 @@ class InformedStrategyState(BaseStrategyState):
     momentum_weight: float = 0.2
     fundamental_sensitivity: float = 1.0
     shock_reactivity: float = 0.8
-    order_type: str = OrderType.MARKET.value
+    order_type: str = "MARKET"
     limit_offset: float = 0.03
     signal_strength: float = 0.0
 

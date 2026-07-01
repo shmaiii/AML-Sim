@@ -7,7 +7,7 @@ import json
 import os
 from abc import abstractmethod
 from dataclasses import asdict, is_dataclass
-from datetime import datetime, timedelta
+from datetime import timedelta
 from typing import Any, Callable, Mapping, Optional
 
 from aml_sim.agents.context.memory import LocalAgentMemory, MemoryBackend
@@ -15,6 +15,7 @@ from aml_sim.agents.context.observation import ObservationProcessor
 from aml_sim.agents.models.profile import AgentProfile
 from aml_sim.agents.strategy.llm_slow_strategy import SlowStrategist
 from aml_sim.agents.strategy.validator import StrategyValidationError, validate_strategy_state
+from aml_sim.serialization import serialize_value
 from agents.benchmark_traders.trader import TraderAgent
 from utils.messages import MessageType
 
@@ -57,8 +58,14 @@ class BaseAMLAgent(TraderAgent):
             raise ValueError("BaseAMLAgent requires a slow_strategist.")
         self.slow_strategist = slow_strategist
         self.strategy_validator = strategy_validator or validate_strategy_state
-        self.strategy_state = self._validate_or_keep(strategy_state)
+        self.strategy_state = self._validate_or_keep(strategy_state, is_initial=True)
 
+        if slow_loop_interval_seconds is None:
+            self.logger.warning(
+                f"{self.agent_id} slow_loop_interval not configured; "
+                f"defaulting to action_interval ({self.action_interval}). "
+                f"Set slow_loop_interval in the scenario YAML to control strategy update cadence."
+            )
         self.slow_loop_interval = timedelta(
             seconds=slow_loop_interval_seconds or self.action_interval.total_seconds()
         )
@@ -101,6 +108,7 @@ class BaseAMLAgent(TraderAgent):
         fresh_observation = self.observation_processor.build_context(
             self,
             profile=self.profile,
+            events=self._active_events(),
         )
         memory_context = self.memory.retrieve_context(
             self.agent_id,
@@ -122,16 +130,26 @@ class BaseAMLAgent(TraderAgent):
 
     async def run_slow_loop(self, observation: Mapping[str, Any]) -> None:
         before = self._strategy_snapshot(self.strategy_state)
-        proposal = self.slow_strategist.propose(
-            observation,
-            self.strategy_state,
-            profile=self.profile,
-            memory=observation.get("memory", {}),
-        )
-        if inspect.isawaitable(proposal):
-            proposal = await proposal
+        try:
+            proposal = self.slow_strategist.propose(
+                observation,
+                self.strategy_state,
+                profile=self.profile,
+                memory=observation.get("memory", {}),
+            )
+            if inspect.isawaitable(proposal):
+                proposal = await proposal
 
-        self.strategy_state = self._validate_or_keep(proposal)
+            self.strategy_state = self._validate_or_keep(proposal)
+        except StrategyValidationError:
+            # Already logged in _validate_or_keep; propagate only if initial.
+            # For the slow loop, the previous state is kept inside _validate_or_keep.
+            pass
+        except Exception as exc:
+            self.logger.error(
+                f"{self.agent_id} slow loop failed; keeping current strategy: {exc}"
+            )
+
         after = self._strategy_snapshot(self.strategy_state)
         self.logger.info(
             f"{self.agent_id} slow loop completed: "
@@ -139,17 +157,22 @@ class BaseAMLAgent(TraderAgent):
             f"before={before}, after={after}"
         )
 
-    def _validate_or_keep(self, proposal: Any) -> Any:
+    def _validate_or_keep(self, proposal: Any, *, is_initial: bool = False) -> Any:
         try:
             validator = self.strategy_validator
             if hasattr(validator, "validate"):
                 return validator.validate(proposal)
             return validator(proposal)
         except StrategyValidationError as exc:
+            if is_initial:
+                raise StrategyValidationError(
+                    f"Initial strategy state for {self.agent_id} is invalid and "
+                    f"cannot be accepted: {exc}"
+                ) from exc
             self.logger.warning(
                 f"Rejected strategy proposal for {self.agent_id}; keeping previous state: {exc}"
             )
-            return getattr(self, "strategy_state", proposal)
+            return self.strategy_state
 
     def _strategy_snapshot(self, strategy_state: Any) -> dict[str, Any]:
         if is_dataclass(strategy_state):
@@ -260,10 +283,10 @@ class BaseAMLAgent(TraderAgent):
     def _record_action_event(self, event: dict[str, Any]) -> None:
         event.setdefault("agent_id", self.agent_id)
         event.setdefault("timestamp", self.current_time.isoformat() if self.current_time else None)
-        self.action_events.append(self._serialize_value(event))
+        self.action_events.append(serialize_value(event))
 
     def _handle_aml_event(self, event: Mapping[str, Any]) -> None:
-        observed = self._serialize_value(dict(event))
+        observed = serialize_value(dict(event))
         observed.setdefault("observed_at", self.current_time.isoformat() if self.current_time else None)
         observed.setdefault("observed_tick_id", self.current_tick_id)
         self.recent_events.append(observed)
@@ -358,19 +381,6 @@ class BaseAMLAgent(TraderAgent):
             self.logger.info(f"AML trader actions exported to {output_file}")
         except Exception as exc:
             self.logger.error(f"Failed to export AML trader actions: {exc}")
-
-    def _serialize_value(self, value: Any) -> Any:
-        if isinstance(value, datetime):
-            return value.isoformat()
-        if is_dataclass(value):
-            return self._serialize_value(asdict(value))
-        if isinstance(value, Mapping):
-            return {str(key): self._serialize_value(item) for key, item in value.items()}
-        if isinstance(value, list):
-            return [self._serialize_value(item) for item in value]
-        if isinstance(value, tuple):
-            return [self._serialize_value(item) for item in value]
-        return value
 
     @abstractmethod
     async def run_fast_loop(self, observation: Mapping[str, Any]) -> None:
