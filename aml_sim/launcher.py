@@ -401,6 +401,13 @@ def run_stocksim_components(
 
     _wait_for_healthy(trader_processes, label="trading agents", max_wait=30.0)
 
+    startup_grace_seconds = simulation_config.get("startup_grace_seconds", 5)
+    logger.info(
+        "Waiting %.1fs for RabbitMQ queue bindings before starting clock.",
+        startup_grace_seconds,
+    )
+    time.sleep(startup_grace_seconds)
+
     # --- Clock process ---
     llm_expected_responses = sum(
         details.get("count", 1)
