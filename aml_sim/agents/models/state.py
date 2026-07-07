@@ -68,6 +68,7 @@ class InstitutionalStrategyState(BaseStrategyState):
     alpha_strategy: str = "target_execution"
     alpha_strategies: list[str] = field(default_factory=list)
     strategy_weights: dict[str, float] = field(default_factory=dict)
+    blend_mode: str = "weighted_sum"
     lookback_ticks: int = 5
     entry_threshold: float = 0.002
     exit_threshold: float = 0.0005

@@ -124,11 +124,24 @@ stocksim_config:
           - target_execution
           - momentum
           - mean_reversion
+          - breakout
         strategy_weights:
-          momentum: 0.5
-          mean_reversion: 0.5
+          momentum: 0.4
+          mean_reversion: 0.35
+          breakout: 0.25
+        blend_mode: weighted_sum
         max_position: 200
         min_position: 0
+        risk_limits:
+          max_drawdown_pct: 0.2
+          max_order_rate: 30
+          max_consecutive_rejections: 6
+          cooldown_ticks: 4
+        behavioral_traits:
+          risk_aversion: 0.55
+          patience: 0.8
+          conviction: 0.65
+          discipline: 0.85
         initial_positions:
           AAPL: 0
         initial_cost_basis:

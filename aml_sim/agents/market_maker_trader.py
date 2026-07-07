@@ -60,6 +60,7 @@ class AMLMarketMakerTrader(BaseAMLAgent):
         slow_strategist: Optional[SlowStrategist] = None,
         agent_id: Optional[str] = None,
         rabbitmq_host: str = "localhost",
+        risk_overrides: Optional[Mapping[str, Any]] = None,
         **kwargs,
     ) -> None:
         trader_kwargs = {}
@@ -104,6 +105,15 @@ class AMLMarketMakerTrader(BaseAMLAgent):
         self.allow_short_selling = allow_short_selling
         self.quote_order_ids: set[str] = set()
 
+        # Apply risk overrides from YAML config
+        if risk_overrides:
+            for key, value in risk_overrides.items():
+                if hasattr(self.risk_manager, key):
+                    try:
+                        setattr(self.risk_manager, key, float(value))
+                    except (TypeError, ValueError):
+                        pass
+
         self.logger.info(
             f"AMLMarketMakerTrader {self.agent_id} initialized: "
             f"strategy_state={self.strategy_state}"
@@ -142,38 +152,44 @@ class AMLMarketMakerTrader(BaseAMLAgent):
 
     def _quote_prices(self, instrument: str) -> tuple[float, float]:
         strategy = self.strategy_state
+        # Apply profile modulation to strategy state for this tick
+        mod_strategy = self.profile_modulator.modulate(
+            strategy, self._traits, self.behavioral_state
+        )
         inventory = self.long_qty[instrument] - self.short_qty[instrument]
-        inventory_gap = inventory - strategy.target_inventory
-        skew = inventory_gap * strategy.inventory_skew
+        inventory_gap = inventory - mod_strategy.target_inventory
+        skew = inventory_gap * mod_strategy.inventory_skew
         pressure = event_pressure(self._active_events(), instrument)
-        prices = price_series(self.price_history, instrument, self.prices.get(instrument, strategy.fair_price))
+        prices = price_series(self.price_history, instrument, self.prices.get(instrument, mod_strategy.fair_price))
         volatility = realized_volatility(prices, lookback_ticks=10)
 
         shock_mid_adjustment = (
             pressure["fundamental_price_shift"]
-            + pressure["directional_bias"] * strategy.shock_price_adjustment
+            + pressure["directional_bias"] * mod_strategy.shock_price_adjustment
         )
-        midpoint = max(0.01, strategy.fair_price - skew + shock_mid_adjustment)
-        dynamic_spread = strategy.spread
-        dynamic_spread *= 1 + (volatility * strategy.volatility_sensitivity)
-        dynamic_spread *= 1 + (pressure["severity"] * strategy.shock_spread_multiplier)
-        dynamic_spread = min(strategy.max_spread, max(strategy.min_spread, dynamic_spread))
+        midpoint = max(0.01, mod_strategy.fair_price - skew + shock_mid_adjustment)
+        dynamic_spread = mod_strategy.spread
+        dynamic_spread *= 1 + (volatility * mod_strategy.volatility_sensitivity)
+        dynamic_spread *= 1 + (pressure["severity"] * mod_strategy.shock_spread_multiplier)
+        dynamic_spread = min(mod_strategy.max_spread, max(mod_strategy.min_spread, dynamic_spread))
         half_spread = max(0.01, dynamic_spread / 2)
         bid = max(0.01, midpoint - half_spread)
         ask = max(bid + 0.01, midpoint + half_spread)
         return round(bid, 2), round(ask, 2)
 
     def _quote_ladder(self, instrument: str) -> list[tuple[float, float, int]]:
-        strategy = self.strategy_state
+        mod_strategy = self.profile_modulator.modulate(
+            self.strategy_state, self._traits, self.behavioral_state
+        )
         best_bid, best_ask = self._quote_prices(instrument)
         levels: list[tuple[float, float, int]] = []
         seen_bids: set[float] = set()
         seen_asks: set[float] = set()
-        for level in range(max(1, strategy.quote_levels)):
-            offset = strategy.level_spacing * level
+        for level in range(max(1, mod_strategy.quote_levels)):
+            offset = mod_strategy.level_spacing * level
             bid = round(max(0.01, best_bid - offset), 2)
             ask = round(max(bid + 0.01, best_ask + offset), 2)
-            quantity = max(1, int(self._quote_size(instrument) * (strategy.size_decay ** level)))
+            quantity = max(1, int(self._quote_size(instrument) * (mod_strategy.size_decay ** level)))
             if bid in seen_bids or ask in seen_asks:
                 continue
             seen_bids.add(bid)

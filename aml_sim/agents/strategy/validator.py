@@ -26,6 +26,16 @@ class StrategyValidationLimits:
         "target_execution",
         "momentum",
         "mean_reversion",
+        "breakout",
+        "volatility_regime",
+        "event_driven",
+        "passive_benchmark",
+    )
+    allowed_blend_modes: tuple[str, ...] = (
+        "weighted_sum",
+        "vote",
+        "unanimous",
+        "priority_cascade",
     )
     allowed_order_types: tuple[str, ...] = ("MARKET", "LIMIT")
 
@@ -171,6 +181,12 @@ def validate_strategy_state(
                 errors.append(
                     f"alpha_strategies must contain only [{allowed}], got {normalized!r}"
                 )
+
+    if hasattr(strategy_state, "blend_mode"):
+        blend_mode = str(getattr(strategy_state, "blend_mode", "weighted_sum")).lower()
+        if blend_mode not in limits.allowed_blend_modes:
+            allowed = ", ".join(limits.allowed_blend_modes)
+            errors.append(f"blend_mode must be one of [{allowed}], got {blend_mode!r}")
 
     if hasattr(strategy_state, "order_type"):
         order_type = str(strategy_state.order_type).upper()

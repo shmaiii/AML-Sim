@@ -80,7 +80,9 @@ class AMLLiquidityTaker(BaseAMLAgent):
             await self._maybe_take_liquidity(instrument)
 
     async def _maybe_take_liquidity(self, instrument: str) -> None:
-        strategy = self.strategy_state
+        strategy = self.profile_modulator.modulate(
+            self.strategy_state, self._traits, self.behavioral_state
+        )
         pressure = event_pressure(self._active_events(), instrument)
         participation = strategy.flow_intensity
         participation *= pressure["order_arrival_multiplier"]
