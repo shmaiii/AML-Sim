@@ -1,0 +1,102 @@
+name: aml_llm_api_smoke
+description: >
+  Minimal AML smoke test for real OpenAI slow-loop strategy calls. This keeps
+  only three trading roles enabled to control API usage while validating the
+  LLM client, prompt, JSON response parsing, and strategy validation path.
+rabbitmq_host: localhost
+
+aml_config:
+  llm:
+    provider: openai
+    model: gpt-5.4
+    api_key_env: OPENAI_API_KEY
+    temperature: 0.2
+    timeout_seconds: 30
+    max_retries: 2
+
+stocksim_config:
+  exchange_mode: orderbook
+
+  instruments:
+    - AAPL
+
+  exchanges:
+    AAPL:
+      data_source: synthetic
+      symbol_type: stock
+      candle_interval: 1d
+      warmup_candles: 0
+
+  agents:
+    market_maker:
+      type: AML_Market_Maker
+      count: 1
+      parameters:
+        initial_cash: 500000
+        action_interval: 30s
+        slow_loop_interval: 2m
+        fair_price: 100.0
+        spread: 0.2
+        min_spread: 0.05
+        max_spread: 1.5
+        quote_size: 50
+        quote_levels: 3
+        target_inventory: 2500
+        max_inventory: 4000
+        min_inventory: 250
+        initial_positions:
+          AAPL: 2500
+        initial_cost_basis:
+          AAPL: 100.0
+        slow_strategist:
+          type: openai
+
+    retail_population:
+      type: AML_Retail_Trader
+      count: 1
+      parameters:
+        initial_cash: 25000
+        action_interval: 1m
+        slow_loop_interval: 2m
+        trade_probability: 0.35
+        max_order_size: 5
+        buy_bias: 0.5
+        herding_tendency: 0.25
+        panic_level: 0.3
+        initial_positions:
+          AAPL: 5
+        initial_cost_basis:
+          AAPL: 100.0
+        slow_strategist:
+          type: openai
+
+    institutional_execution:
+      type: AML_Institutional_Trader
+      count: 1
+      parameters:
+        initial_cash: 300000
+        action_interval: 2m
+        slow_loop_interval: 2m
+        target_positions:
+          AAPL: 100
+        child_order_size: 25
+        order_type: MARKET
+        max_position: 150
+        min_position: 0
+        initial_positions:
+          AAPL: 0
+        initial_cost_basis:
+          AAPL: 100.0
+        slow_strategist:
+          type: openai
+
+  simulation:
+    start_time: "2025-03-01T09:30:00+00:00"
+    end_time: "2025-03-01T09:32:00+00:00"
+    tick_interval: 30s
+    expected_exchange_agent_count: 1
+    startup_grace_seconds: 5
+
+  environment:
+    rabbitmq_host: localhost
+    log_level: INFO

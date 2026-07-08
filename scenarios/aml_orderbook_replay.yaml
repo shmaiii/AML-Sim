@@ -138,8 +138,8 @@ stocksim_config:
             message: Synthetic negative news shock for AML behavior study.
 
   simulation:
-    start_time: "2025-03-01T09:30:00Z"
-    end_time: "2025-03-01T10:00:00Z"
+    start_time: "2025-03-01T09:30:00+00:00"
+    end_time: "2025-03-01T10:00:00+00:00"
     tick_interval: 30s
     expected_exchange_agent_count: 1
 
