@@ -10,16 +10,15 @@ from aml_sim.agents.context.memory import MemoryBackend
 from aml_sim.agents.context.observation import ObservationProcessor
 from aml_sim.agents.models.profile import LiquidityTakerProfile, coerce_profile
 from aml_sim.agents.models.state import LiquidityTakerStrategyState
-from aml_sim.agents.strategy.llm_slow_strategy import (
-    SlowStrategist,
-    create_static_liquidity_taker_llm_strategist,
-)
+from aml_sim.agents.strategy.llm_slow_strategy import SlowStrategist
 from aml_sim.agents.strategy.signals import clamp, event_pressure
 from utils.orders import OrderType, Side
 
 
 class AMLLiquidityTaker(BaseAMLAgent):
     """Aggressive flow participant that consumes available displayed liquidity."""
+
+    LLM_STRATEGY_ROLE = "liquidity_taker"
 
     def __init__(
         self,
@@ -35,7 +34,7 @@ class AMLLiquidityTaker(BaseAMLAgent):
         memory: Optional[MemoryBackend] = None,
         observation_processor: Optional[ObservationProcessor] = None,
         slow_loop_interval_seconds: Optional[int] = None,
-        slow_strategist: Optional[SlowStrategist] = None,
+        slow_strategist: Optional[SlowStrategist | Mapping[str, Any]] = None,
         agent_id: Optional[str] = None,
         rabbitmq_host: str = "localhost",
         **kwargs: Any,
@@ -63,7 +62,7 @@ class AMLLiquidityTaker(BaseAMLAgent):
             profile=coerce_profile(profile, LiquidityTakerProfile),
             memory=memory,
             observation_processor=observation_processor,
-            slow_strategist=slow_strategist or create_static_liquidity_taker_llm_strategist(),
+            slow_strategist=self._build_slow_strategist(slow_strategist),
             slow_loop_interval_seconds=slow_loop_interval_seconds,
             agent_id=agent_id,
             rabbitmq_host=rabbitmq_host,

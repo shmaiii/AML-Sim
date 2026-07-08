@@ -155,8 +155,8 @@ stocksim_config:
             message: Short smoke-test negative news shock.
 
   simulation:
-    start_time: "2025-03-01T09:30:00Z"
-    end_time: "2025-03-01T09:34:00Z"
+    start_time: "2025-03-01T09:30:00+00:00"
+    end_time: "2025-03-01T09:34:00+00:00"
     tick_interval: 30s
     expected_exchange_agent_count: 1
 

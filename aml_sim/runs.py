@@ -106,6 +106,7 @@ def write_metadata(
             "source_path": str(scenario.path),
             "archived_path": str(scenario_path),
             "rabbitmq_host": scenario.rabbitmq_host,
+            "aml_config": scenario.aml_config,
         },
         "artifacts": {
             "run_dir": str(run_dir),

@@ -10,10 +10,7 @@ from aml_sim.agents.context.memory import MemoryBackend
 from aml_sim.agents.context.observation import ObservationProcessor
 from aml_sim.agents.models.profile import InformedProfile, coerce_profile
 from aml_sim.agents.models.state import InformedStrategyState
-from aml_sim.agents.strategy.llm_slow_strategy import (
-    SlowStrategist,
-    create_static_informed_llm_strategist,
-)
+from aml_sim.agents.strategy.llm_slow_strategy import SlowStrategist
 from aml_sim.agents.strategy.signals import (
     clamp,
     event_pressure,
@@ -31,6 +28,8 @@ class AMLInformedTrader(BaseAMLAgent):
     a role-level market participant with a value edge, and it may use recent
     momentum as a minor execution timing input.
     """
+
+    LLM_STRATEGY_ROLE = "informed"
 
     def __init__(
         self,
@@ -52,7 +51,7 @@ class AMLInformedTrader(BaseAMLAgent):
         memory: Optional[MemoryBackend] = None,
         observation_processor: Optional[ObservationProcessor] = None,
         slow_loop_interval_seconds: Optional[int] = None,
-        slow_strategist: Optional[SlowStrategist] = None,
+        slow_strategist: Optional[SlowStrategist | Mapping[str, Any]] = None,
         agent_id: Optional[str] = None,
         rabbitmq_host: str = "localhost",
         **kwargs: Any,
@@ -86,7 +85,7 @@ class AMLInformedTrader(BaseAMLAgent):
             profile=coerce_profile(profile, InformedProfile),
             memory=memory,
             observation_processor=observation_processor,
-            slow_strategist=slow_strategist or create_static_informed_llm_strategist(),
+            slow_strategist=self._build_slow_strategist(slow_strategist),
             slow_loop_interval_seconds=slow_loop_interval_seconds,
             agent_id=agent_id,
             rabbitmq_host=rabbitmq_host,

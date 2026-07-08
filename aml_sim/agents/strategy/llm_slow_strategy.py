@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import inspect
 import json
+import os
 from dataclasses import asdict, fields, is_dataclass, replace
 from typing import Any, Mapping, Optional, Protocol
 
@@ -204,6 +205,84 @@ class StaticJSONLLMClient:
         return self.response
 
 
+class OpenAIJSONLLMClient:
+    """OpenAI-backed JSON client for AML slow-loop strategy updates."""
+
+    def __init__(
+        self,
+        *,
+        model: str,
+        api_key_env: str = "OPENAI_API_KEY",
+        temperature: float = 0.2,
+        timeout_seconds: float = 30.0,
+        max_retries: int = 2,
+        system_prompt: Optional[str] = None,
+    ) -> None:
+        self.model = model
+        self.api_key_env = api_key_env
+        self.temperature = temperature
+        self.timeout_seconds = timeout_seconds
+        self.max_retries = max_retries
+        self.system_prompt = system_prompt or DEFAULT_OPENAI_SLOW_STRATEGY_PROMPT
+        self.last_context: Optional[Mapping[str, Any]] = None
+
+    async def complete_json(self, context: Mapping[str, Any]) -> Mapping[str, Any] | str:
+        api_key = os.getenv(self.api_key_env)
+        if not api_key:
+            raise LLMStrategistConfigurationError(
+                f"Missing OpenAI API key. Set {self.api_key_env} in .env or the process environment."
+            )
+
+        try:
+            from openai import AsyncOpenAI
+        except ImportError as exc:
+            raise LLMStrategistConfigurationError(
+                "OpenAI slow strategist requires the 'openai' Python package."
+            ) from exc
+
+        self.last_context = context
+        client = AsyncOpenAI(
+            api_key=api_key,
+            timeout=self.timeout_seconds,
+            max_retries=self.max_retries,
+        )
+        response = await client.responses.create(
+            model=self.model,
+            instructions=self.system_prompt,
+            input=json.dumps(context, default=str),
+            temperature=self.temperature,
+            text={"format": {"type": "json_object"}},
+        )
+        content = getattr(response, "output_text", None)
+        if not content:
+            raise LLMStrategyResponseError("OpenAI returned an empty strategy response.")
+        return content
+
+
+DEFAULT_OPENAI_SLOW_STRATEGY_PROMPT = """
+You are the slow-loop strategy module for one AML-Sim trading agent.
+
+You must return valid JSON only. Do not place orders. Do not include prose
+outside JSON. You may only propose updates to fields already present in
+current_strategy. The fast loop and StockSim execution layer will decide
+whether and how orders are placed.
+
+Return this shape:
+{
+  "strategy_updates": {
+    "<existing_strategy_field>": "<new_value>"
+  },
+  "confidence": 0.0,
+  "reason": "brief reason for the strategy update"
+}
+
+Use the profile, memory, observation, market/portfolio/order context, recent
+fills, shocks/events, and current_strategy to propose conservative bounded
+updates. If there is no good reason to change behavior, return an empty
+strategy_updates object with a short reason.
+""".strip()
+
+
 STATIC_MARKET_MAKER_RESPONSE = {
     "strategy_updates": {
         "risk_mode": "normal",
@@ -263,31 +342,47 @@ STATIC_LIQUIDITY_TAKER_RESPONSE = {
 }
 
 
-def create_static_market_maker_llm_strategist() -> LLMStrategist:
-    """Create a fixed-response LLM strategist for market-maker path tests."""
-
-    return LLMStrategist(client=StaticJSONLLMClient(STATIC_MARKET_MAKER_RESPONSE))
-
-
-def create_static_retail_llm_strategist() -> LLMStrategist:
-    """Create a fixed-response LLM strategist for retail path tests."""
-
-    return LLMStrategist(client=StaticJSONLLMClient(STATIC_RETAIL_RESPONSE))
+STATIC_RESPONSES_BY_ROLE = {
+    "market_maker": STATIC_MARKET_MAKER_RESPONSE,
+    "retail": STATIC_RETAIL_RESPONSE,
+    "institutional": STATIC_INSTITUTIONAL_RESPONSE,
+    "informed": STATIC_INFORMED_RESPONSE,
+    "liquidity_taker": STATIC_LIQUIDITY_TAKER_RESPONSE,
+}
 
 
-def create_static_institutional_llm_strategist() -> LLMStrategist:
-    """Create a fixed-response LLM strategist for institutional path tests."""
+def create_llm_strategist(
+    role: str,
+    config: Optional[Mapping[str, Any]] = None,
+) -> LLMStrategist:
+    """Create a slow-loop strategist from role-specific config."""
+    config = dict(config or {})
+    strategist_type = str(config.get("type", "static")).lower()
 
-    return LLMStrategist(client=StaticJSONLLMClient(STATIC_INSTITUTIONAL_RESPONSE))
+    if not config.get("enabled", True):
+        strategist_type = "static"
 
+    if strategist_type in {"static", "fixed", "test"}:
+        response = STATIC_RESPONSES_BY_ROLE[role]
+        return LLMStrategist(client=StaticJSONLLMClient(response))
 
-def create_static_informed_llm_strategist() -> LLMStrategist:
-    """Create a fixed-response LLM strategist for informed-trader path tests."""
+    if strategist_type in {"openai", "openai_json"}:
+        client = OpenAIJSONLLMClient(
+            model=str(config.get("model", "gpt-4o-mini")),
+            api_key_env=str(config.get("api_key_env", "OPENAI_API_KEY")),
+            temperature=float(config.get("temperature", 0.2)),
+            timeout_seconds=float(config.get("timeout_seconds", 30.0)),
+            max_retries=int(config.get("max_retries", 2)),
+            system_prompt=config.get("system_prompt") or config.get("prompt"),
+        )
+        allowed_fields = config.get("allowed_strategy_fields")
+        return LLMStrategist(
+            client=client,
+            allowed_strategy_fields=set(allowed_fields) if allowed_fields else None,
+        )
 
-    return LLMStrategist(client=StaticJSONLLMClient(STATIC_INFORMED_RESPONSE))
+    raise LLMStrategistConfigurationError(
+        f"Unsupported slow_strategist type {strategist_type!r}. "
+        "Use 'static' or 'openai'."
+    )
 
-
-def create_static_liquidity_taker_llm_strategist() -> LLMStrategist:
-    """Create a fixed-response LLM strategist for liquidity-taker path tests."""
-
-    return LLMStrategist(client=StaticJSONLLMClient(STATIC_LIQUIDITY_TAKER_RESPONSE))

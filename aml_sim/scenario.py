@@ -26,6 +26,7 @@ class AMLScenario:
     name: str
     description: str | None
     rabbitmq_host: str | None
+    aml_config: dict[str, Any]
     stocksim_config: dict[str, Any]
     raw: dict[str, Any]
 
@@ -66,6 +67,7 @@ def load_scenario(path: Path) -> AMLScenario:
     name = data.get("name") or scenario_path.stem
     description = data.get("description")
     rabbitmq_host = data.get("rabbitmq_host")
+    aml_config = data.get("aml_config", {})
 
     if not isinstance(name, str):
         raise ValueError("Scenario 'name' must be a string when provided")
@@ -73,13 +75,15 @@ def load_scenario(path: Path) -> AMLScenario:
         raise ValueError("Scenario 'description' must be a string when provided")
     if rabbitmq_host is not None and not isinstance(rabbitmq_host, str):
         raise ValueError("Scenario 'rabbitmq_host' must be a string when provided")
+    if not isinstance(aml_config, dict):
+        raise ValueError("Scenario 'aml_config' must be a mapping when provided")
 
     return AMLScenario(
         path=scenario_path,
         name=name,
         description=description,
         rabbitmq_host=rabbitmq_host,
+        aml_config=aml_config,
         stocksim_config=stocksim_config,
         raw=data,
     )
-

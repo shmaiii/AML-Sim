@@ -206,6 +206,7 @@ def simulation_clock_runner(
     """Run the StockSim simulation clock process."""
     from simulation.simulation_clock import SimulationClock
     from utils.time_utils import interval_to_seconds, parse_datetime_utc
+    import asyncio
 
     tick_interval_raw = simulation_config.get("tick_interval", "1d")
     if isinstance(tick_interval_raw, str):
@@ -213,19 +214,20 @@ def simulation_clock_runner(
     else:
         tick_interval_seconds = tick_interval_raw
 
-    simulation_clock = SimulationClock(
-        start_time=parse_datetime_utc(simulation_config["start_time"]),
-        end_time=parse_datetime_utc(simulation_config["end_time"]),
-        tick_interval_seconds=tick_interval_seconds,
-        rabbitmq_host=rabbitmq_host,
-        expected_exchange_agent_count=simulation_config.get(
-            "expected_exchange_agent_count", 1
-        ),
-        expected_responses=expected_responses,
-    )
-    import asyncio
+    async def _run_clock() -> None:
+        simulation_clock = SimulationClock(
+            start_time=parse_datetime_utc(simulation_config["start_time"]),
+            end_time=parse_datetime_utc(simulation_config["end_time"]),
+            tick_interval_seconds=tick_interval_seconds,
+            rabbitmq_host=rabbitmq_host,
+            expected_exchange_agent_count=simulation_config.get(
+                "expected_exchange_agent_count", 1
+            ),
+            expected_responses=expected_responses,
+        )
+        await simulation_clock.run()
 
-    asyncio.run(simulation_clock.run())
+    asyncio.run(_run_clock())
 
 
 # ---------------------------------------------------------------------------
@@ -330,6 +332,7 @@ def launch_stocksim(
     with temporary_environ(env_updates), temporary_cwd(stocksim_dir):
         return run_stocksim_components(
             config=scenario.stocksim_config,
+            aml_config=scenario.aml_config,
             aml_run=aml_run,
             generate_reports=generate_reports,
             rabbitmq_host=rabbitmq_host,
@@ -339,6 +342,7 @@ def launch_stocksim(
 def run_stocksim_components(
     config: dict[str, Any],
     aml_run: AMLRun,
+    aml_config: dict[str, Any] | None = None,
     generate_reports: bool = False,
     *,
     rabbitmq_host: str = "localhost",
@@ -396,6 +400,7 @@ def run_stocksim_components(
         agent_custom_params=agent_custom_params,
         instrument_exchange_map=instrument_exchange_map,
         rabbitmq_host=rabbitmq_host,
+        aml_config=aml_config or {},
         run_id=aml_run.run_id,
     )
 
@@ -640,10 +645,18 @@ def start_trader_processes(
     instrument_exchange_map: dict[str, str],
     rabbitmq_host: str,
     *,
+    aml_config: dict[str, Any] | None = None,
     run_id: str = "",
 ) -> list[Process]:
     """Start one process for each configured trader instance."""
     agent_processes: list[Process] = []
+    aml_config = aml_config or {}
+    llm_defaults = aml_config.get("llm", {})
+    if llm_defaults is None:
+        llm_defaults = {}
+    if not isinstance(llm_defaults, dict):
+        raise ValueError("aml_config.llm must be a mapping when provided")
+
     agent_ids_by_name = build_agent_instance_id_map(agents_config)
     shock_target_agent_ids = [
         agent_id
@@ -674,6 +687,11 @@ def start_trader_processes(
             if agent_type in agent_custom_params:
                 instance_params = agent_custom_params[agent_type](instance_params)
 
+            instance_params = apply_aml_agent_defaults(
+                instance_params,
+                llm_defaults=llm_defaults,
+            )
+
             instance_params["agent_id"] = unique_agent_id
             instance_params.setdefault(
                 "instrument_exchange_map", instrument_exchange_map
@@ -698,6 +716,29 @@ def start_trader_processes(
             logger.info("Started trader '%s'.", unique_agent_id)
 
     return agent_processes
+
+
+def apply_aml_agent_defaults(
+    params: dict[str, Any],
+    *,
+    llm_defaults: dict[str, Any],
+) -> dict[str, Any]:
+    """Merge AML-level defaults into agent parameters."""
+    normalized = dict(params)
+    if not llm_defaults:
+        return normalized
+
+    slow_strategist = normalized.get("slow_strategist")
+    if slow_strategist is None:
+        return normalized
+    if not isinstance(slow_strategist, dict):
+        return normalized
+
+    normalized["slow_strategist"] = {
+        **llm_defaults,
+        **slow_strategist,
+    }
+    return normalized
 
 
 def build_agent_instance_id_map(agents_config: dict[str, Any]) -> dict[str, list[str]]:
