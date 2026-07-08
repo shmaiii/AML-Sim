@@ -13,7 +13,7 @@ from typing import Any, Callable, Mapping, Optional
 from aml_sim.agents.context.memory import LocalAgentMemory, MemoryBackend
 from aml_sim.agents.context.observation import ObservationProcessor
 from aml_sim.agents.models.profile import AgentProfile
-from aml_sim.agents.strategy.llm_slow_strategy import SlowStrategist
+from aml_sim.agents.strategy.llm_slow_strategy import SlowStrategist, create_llm_strategist
 from aml_sim.agents.strategy.validator import StrategyValidationError, validate_strategy_state
 from aml_sim.serialization import serialize_value
 from agents.benchmark_traders.trader import TraderAgent
@@ -29,6 +29,8 @@ class BaseAMLAgent(TraderAgent):
     validation, and role-specific fast execution policy.
     """
 
+    LLM_STRATEGY_ROLE: str | None = None
+
     def __init__(
         self,
         instrument_exchange_map: dict[str, str],
@@ -37,7 +39,7 @@ class BaseAMLAgent(TraderAgent):
         profile: Optional[AgentProfile | Mapping[str, Any]] = None,
         memory: Optional[MemoryBackend] = None,
         observation_processor: Optional[ObservationProcessor] = None,
-        slow_strategist: Optional[SlowStrategist] = None,
+        slow_strategist: Optional[SlowStrategist | Mapping[str, Any]] = None,
         strategy_validator: Optional[Callable[[Any], Any]] = None,
         slow_loop_interval_seconds: Optional[int] = None,
         agent_id: Optional[str] = None,
@@ -54,9 +56,7 @@ class BaseAMLAgent(TraderAgent):
         self.profile = profile or {}
         self.memory = memory or LocalAgentMemory()
         self.observation_processor = observation_processor or ObservationProcessor()
-        if slow_strategist is None:
-            raise ValueError("BaseAMLAgent requires a slow_strategist.")
-        self.slow_strategist = slow_strategist
+        self.slow_strategist = self._build_slow_strategist(slow_strategist)
         self.strategy_validator = strategy_validator or validate_strategy_state
         self.strategy_state = self._validate_or_keep(strategy_state, is_initial=True)
 
@@ -80,6 +80,23 @@ class BaseAMLAgent(TraderAgent):
             f"strategist={type(self.slow_strategist).__name__}, "
             f"interval={self.slow_loop_interval}"
         )
+
+    def _build_slow_strategist(
+        self,
+        slow_strategist: Optional[SlowStrategist | Mapping[str, Any]],
+    ) -> SlowStrategist:
+        if isinstance(slow_strategist, Mapping):
+            if not self.LLM_STRATEGY_ROLE:
+                raise ValueError(
+                    f"{type(self).__name__} must define LLM_STRATEGY_ROLE to build "
+                    "a slow strategist from config."
+                )
+            return create_llm_strategist(self.LLM_STRATEGY_ROLE, slow_strategist)
+        if slow_strategist is not None:
+            return slow_strategist
+        if not self.LLM_STRATEGY_ROLE:
+            raise ValueError("BaseAMLAgent requires a slow_strategist.")
+        return create_llm_strategist(self.LLM_STRATEGY_ROLE)
 
     async def handle_time_tick(self, payload: dict[str, Any]) -> None:
         await super().handle_time_tick(payload)
