@@ -120,7 +120,9 @@ class AMLRetailTrader(BaseAMLAgent):
             )
 
     def _effective_retail_params(self, instrument: str) -> tuple[float, float]:
-        strategy = self.strategy_state
+        strategy = self.profile_modulator.modulate(
+            self.strategy_state, self._traits, self.behavioral_state
+        )
         pressure = event_pressure(self._active_events(), instrument)
         prices = price_series(self.price_history, instrument, self.prices.get(instrument, 0))
         momentum = momentum_signal(prices, lookback_ticks=5)

@@ -273,6 +273,24 @@ def build_agent_param_customizers(
             normalized["slow_loop_interval_seconds"] = interval_to_seconds(
                 params["slow_loop_interval"]
             )
+
+        # Wire new AML-Sim constructs from YAML into agent constructor kwargs
+        if "risk_limits" in params:
+            normalized["risk_overrides"] = dict(params["risk_limits"])
+
+        if "behavioral_traits" in params:
+            traits = dict(params["behavioral_traits"])
+            profile_cfg = dict(params.get("profile") or {})
+            profile_cfg.setdefault("behavioral_traits", traits)
+            normalized["profile"] = profile_cfg
+
+        if "alpha_strategies" in params:
+            normalized["alpha_strategies"] = list(params["alpha_strategies"])
+        if "blend_mode" in params:
+            normalized["blend_mode"] = str(params["blend_mode"])
+        if "strategy_weights" in params:
+            normalized["strategy_weights"] = dict(params["strategy_weights"])
+
         return normalized
 
     return {
@@ -702,8 +720,15 @@ def start_trader_processes(
 
             # Deterministic seed: derived from run_id and agent identity so
             # every re-run of the same scenario produces the same behaviour.
-            if agent_type == "Random_Trader":
-                instance_params["seed"] = _make_seed(run_id, unique_agent_id)
+            if agent_type in {
+                "Random_Trader",
+                "AML_Retail_Trader",
+                "AML_Informed_Trader",
+                "AML_Liquidity_Taker",
+            }:
+                instance_params.setdefault(
+                    "random_seed", _make_seed(run_id, unique_agent_id)
+                )
 
             process = Process(
                 target=_async_process_runner,

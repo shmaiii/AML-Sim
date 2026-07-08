@@ -102,7 +102,9 @@ class AMLInformedTrader(BaseAMLAgent):
             await self._trade_signal(instrument)
 
     async def _trade_signal(self, instrument: str) -> None:
-        strategy = self.strategy_state
+        strategy = self.profile_modulator.modulate(
+            self.strategy_state, self._traits, self.behavioral_state
+        )
         current_price = self._current_price(instrument)
         if current_price <= 0:
             return

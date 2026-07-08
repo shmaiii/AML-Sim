@@ -46,6 +46,22 @@ def build_observation_context(
         },
         "recent_fills": _recent_fills(agent, recent_fill_limit),
         "strategy_state": _strategy_state(agent),
+        "strategy_performance": serialize_mapping(
+            {
+                k: v.snapshot() if hasattr(v, "snapshot") else v
+                for k, v in getattr(agent, "strategy_performance", {}).items()
+            }
+        ),
+        "behavioral_state": (
+            getattr(agent, "behavioral_state", None).snapshot()
+            if hasattr(getattr(agent, "behavioral_state", None), "snapshot")
+            else {}
+        ),
+        "risk_status": (
+            getattr(agent, "risk_manager", None).snapshot()
+            if hasattr(getattr(agent, "risk_manager", None), "snapshot")
+            else {}
+        ),
         "memory": serialize_mapping(memory or {}),
         "events": [serialize_mapping(event) for event in (events or [])],
         "event_count": len(events or []),
