@@ -35,6 +35,9 @@ AML-Sim/
 │       ├── market_maker_trader.py      # AML market-maker agent
 │       ├── retail_trader.py            # AML retail trader agent
 │       ├── institutional_trader.py     # AML institutional trader agent
+│       ├── informed_trader.py          # AML informed trader agent
+│       ├── liquidity_taker.py          # AML liquidity-taking flow agent
+│       ├── shock_agent.py              # AML scenario shock/event broadcaster
 │       ├── models/
 │       │   ├── profile.py              # Stable role/personality profile models
 │       │   └── state.py                # Role-specific strategy state models
@@ -94,8 +97,16 @@ The AML agent layer currently includes these synthetic market participants:
   configurable buy bias and trade probability.
 - `AML_Institutional_Trader`: works toward target positions using sliced child
   orders.
+- `AML_Informed_Trader`: trades from a private/fundamental value signal when
+  the signal is strong enough.
+- `AML_Liquidity_Taker`: submits directional flow against available liquidity
+  with bounded size and inventory exposure.
+- `AML_Shock_Agent`: emits scheduled AML shock/event messages to target agents.
 - `aml_orderbook_replay.yaml`: runs a short synthetic AAPL order book scenario
   with one market maker, five retail traders, and one institutional trader.
+- `aml_agent_infra_smoke.yaml` and `aml_one_hour_live.yaml`: exercise the
+  broader AML agent set, including informed flow, liquidity-taking flow, and
+  scheduled shock events.
 
 These AML agents live in `aml_sim/agents/`. They still inherit StockSim's
 `TraderAgent` and use StockSim's order/message primitives, but AML-Sim owns
@@ -125,11 +136,10 @@ state:
 - Institutional fast loop works toward target positions using child order size,
   order type, and execution style.
 
-The slow loop currently uses a fixed JSON LLM test path through
-`aml_sim/agents/strategy/llm_slow_strategy.py`. This proves the LLM-shaped
-control flow before wiring a real LLM API client. The fixed responses are
-role-specific, so the market maker, retail trader, and institutional trader each
-receive different strategy updates.
+The slow loop uses `aml_sim/agents/strategy/llm_slow_strategy.py`. By default it
+uses fixed role-specific JSON responses so the control flow can be tested
+without spending API credits. Agents can opt into real OpenAI calls through
+scenario YAML by setting `slow_strategist.type: openai`.
 
 ### Strategy State And Validation
 
@@ -138,6 +148,8 @@ Role-specific strategy states live in `aml_sim/agents/models/state.py`:
 - `MarketMakerStrategyState`
 - `RetailStrategyState`
 - `InstitutionalStrategyState`
+- `InformedStrategyState`
+- `LiquidityTakerStrategyState`
 
 Before a strategy proposal is applied, `aml_sim/agents/strategy/validator.py`
 checks bounds such as trade probability, buy bias, quote size, spread, child
@@ -179,23 +191,28 @@ git submodule update --init --recursive
 Create and activate a Python environment from the AML-Sim root:
 
 ```bash
-python -m venv .venv
+python3.11 -m venv .venv
 source .venv/bin/activate
+python -m pip install --upgrade pip
 pip install -r requirements.txt
 ```
 
-For the current synthetic order book scenario, no Polygon, Alpha Vantage, or LLM
-API key is required. RabbitMQ is required.
+For the current synthetic order book scenario, no Polygon, Alpha Vantage, or
+OpenAI API key is required. RabbitMQ is required.
 
 Optional root `.env`:
 
 ```bash
 RABBITMQ_HOST=localhost
 LOG_DIR=logs
+OPENAI_API_KEY=sk-...
 ```
 
 `aml_runner.py` will also set `LOG_DIR` to the run-specific log directory and
 will pass `rabbitmq_host` from the scenario to StockSim.
+
+OpenAI is only used for scenarios or agents that explicitly configure
+`slow_strategist.type: openai`.
 
 ## Start RabbitMQ
 
@@ -276,6 +293,46 @@ python aml_runner.py scenarios/aml_orderbook_replay.yaml --run-id smoke_orderboo
 
 Use a new `--run-id` each time, because the runner intentionally refuses to
 overwrite an existing `.aml_runs/<run-id>` directory.
+
+## Run A Small OpenAI LLM Smoke Test
+
+`scenarios/aml_llm_api_smoke.yaml` enables real OpenAI slow-loop calls for only
+three agent groups to keep API usage small:
+
+```bash
+python aml_runner.py scenarios/aml_llm_api_smoke.yaml --dry-run
+python aml_runner.py scenarios/aml_llm_api_smoke.yaml --run-id llm_api_smoke
+```
+
+OpenAI defaults live at the AML scenario level because the LLM call belongs to
+AML-Sim, not StockSim:
+
+```yaml
+aml_config:
+  llm:
+    provider: openai
+    model: gpt-5.4
+    api_key_env: OPENAI_API_KEY
+    temperature: 0.2
+    timeout_seconds: 30
+    max_retries: 2
+```
+
+Each configured agent can opt into those defaults like this:
+
+```yaml
+slow_strategist:
+  type: openai
+```
+
+Agent-level `slow_strategist` values override `aml_config.llm`, so one agent can
+use a different model or temperature for an experiment without changing the
+global defaults.
+
+The OpenAI slow strategist receives profile, memory, observation, and current
+strategy state, then returns JSON strategy updates. It does not place orders
+directly; strategy updates still pass through AML validation before the fast
+loop can use them.
 
 ## Run From The Dashboard
 
