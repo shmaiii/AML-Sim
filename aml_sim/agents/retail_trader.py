@@ -14,10 +14,7 @@ from aml_sim.agents.base import BaseAMLAgent
 from aml_sim.agents.context.memory import MemoryBackend
 from aml_sim.agents.context.observation import ObservationProcessor
 from aml_sim.agents.models.profile import RetailProfile, coerce_profile
-from aml_sim.agents.strategy.llm_slow_strategy import (
-    SlowStrategist,
-    create_static_retail_llm_strategist,
-)
+from aml_sim.agents.strategy.llm_slow_strategy import SlowStrategist
 from aml_sim.agents.models.state import RetailStrategyState
 from aml_sim.agents.strategy.signals import clamp, event_pressure, momentum_signal, price_series
 from utils.orders import OrderType, Side
@@ -30,6 +27,8 @@ class AMLRetailTrader(BaseAMLAgent):
     Retail here means many small orders, noisy decisions, limited capital, and
     occasional overreaction. This first version is intentionally simple.
     """
+
+    LLM_STRATEGY_ROLE = "retail"
 
     def __init__(
         self,
@@ -46,7 +45,7 @@ class AMLRetailTrader(BaseAMLAgent):
         memory: Optional[MemoryBackend] = None,
         observation_processor: Optional[ObservationProcessor] = None,
         slow_loop_interval_seconds: Optional[int] = None,
-        slow_strategist: Optional[SlowStrategist] = None,
+        slow_strategist: Optional[SlowStrategist | Mapping[str, Any]] = None,
         agent_id: Optional[str] = None,
         rabbitmq_host: str = "localhost",
         **kwargs,
@@ -75,7 +74,7 @@ class AMLRetailTrader(BaseAMLAgent):
             profile=coerce_profile(profile, RetailProfile),
             memory=memory,
             observation_processor=observation_processor,
-            slow_strategist=slow_strategist or create_static_retail_llm_strategist(),
+            slow_strategist=self._build_slow_strategist(slow_strategist),
             slow_loop_interval_seconds=slow_loop_interval_seconds,
             agent_id=agent_id,
             rabbitmq_host=rabbitmq_host,

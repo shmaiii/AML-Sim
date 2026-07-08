@@ -13,10 +13,7 @@ from aml_sim.agents.base import BaseAMLAgent
 from aml_sim.agents.context.memory import MemoryBackend
 from aml_sim.agents.context.observation import ObservationProcessor
 from aml_sim.agents.models.profile import InstitutionalProfile, coerce_profile
-from aml_sim.agents.strategy.llm_slow_strategy import (
-    SlowStrategist,
-    create_static_institutional_llm_strategist,
-)
+from aml_sim.agents.strategy.llm_slow_strategy import SlowStrategist
 from aml_sim.agents.models.state import InstitutionalStrategyState
 from aml_sim.agents.strategy.signals import (
     clamp,
@@ -36,6 +33,8 @@ class AMLInstitutionalTrader(BaseAMLAgent):
     Institutional here means larger capital, slower cadence, target inventory,
     and sliced execution rather than one giant order.
     """
+
+    LLM_STRATEGY_ROLE = "institutional"
 
     def __init__(
         self,
@@ -57,7 +56,7 @@ class AMLInstitutionalTrader(BaseAMLAgent):
         memory: Optional[MemoryBackend] = None,
         observation_processor: Optional[ObservationProcessor] = None,
         slow_loop_interval_seconds: Optional[int] = None,
-        slow_strategist: Optional[SlowStrategist] = None,
+        slow_strategist: Optional[SlowStrategist | Mapping[str, Any]] = None,
         agent_id: Optional[str] = None,
         rabbitmq_host: str = "localhost",
         **kwargs,
@@ -95,7 +94,7 @@ class AMLInstitutionalTrader(BaseAMLAgent):
             profile=coerce_profile(profile, InstitutionalProfile),
             memory=memory,
             observation_processor=observation_processor,
-            slow_strategist=slow_strategist or create_static_institutional_llm_strategist(),
+            slow_strategist=self._build_slow_strategist(slow_strategist),
             slow_loop_interval_seconds=slow_loop_interval_seconds,
             agent_id=agent_id,
             rabbitmq_host=rabbitmq_host,
