@@ -132,6 +132,7 @@ class AMLRetailTrader(BaseAMLAgent):
 
         buy_bias = strategy.buy_bias
         buy_bias += pressure["directional_bias"] * strategy.sentiment_sensitivity * 0.25
+        buy_bias += pressure["sentiment_shift"] * strategy.sentiment_sensitivity * 0.15
         if prices and prices[-1] > 0:
             buy_bias += clamp(
                 (pressure["fundamental_price_shift"] / prices[-1])

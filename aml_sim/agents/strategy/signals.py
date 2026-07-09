@@ -6,6 +6,8 @@ from math import sqrt
 from statistics import mean
 from typing import Any, Mapping
 
+from aml_sim.shocks import resolve_event_effect
+
 
 def clamp(value: float, lower: float, upper: float) -> float:
     """Return value clipped to the inclusive lower/upper range."""
@@ -95,6 +97,15 @@ def event_pressure(events: list[Mapping[str, Any]], instrument: str) -> dict[str
     order_arrival_multiplier = 1.0
     risk_limit_multiplier = 1.0
     liquidity_multiplier = 1.0
+    volatility_multiplier = 1.0
+    spread_multiplier = 1.0
+    price_impact_multiplier = 1.0
+    rate_shift_bps = 0.0
+    yield_shift_bps = 0.0
+    funding_spread_bps = 0.0
+    credit_spread_bps = 0.0
+    sentiment_shift = 0.0
+    risk_aversion_shift = 0.0
 
     for event in events:
         if not event_applies_to(event, instrument):
@@ -108,18 +119,28 @@ def event_pressure(events: list[Mapping[str, Any]], instrument: str) -> dict[str
         except (TypeError, ValueError):
             direction = 0.0
 
+        effect = resolve_event_effect(event, instrument)
         max_severity = max(max_severity, severity)
         directional_bias += severity * direction
-        fundamental_price_shift += _event_float(event, "fundamental_price_shift", 0.0)
-        order_arrival_multiplier *= _event_float(event, "order_arrival_multiplier", 1.0)
+        fundamental_price_shift += effect["fundamental_price_shift"]
+        order_arrival_multiplier *= effect["order_arrival_multiplier"]
         risk_limit_multiplier = min(
             risk_limit_multiplier,
-            _event_float(event, "risk_limit_multiplier", 1.0),
+            effect["risk_limit_multiplier"],
         )
         liquidity_multiplier = min(
             liquidity_multiplier,
-            _event_float(event, "liquidity_multiplier", 1.0),
+            effect["liquidity_multiplier"],
         )
+        volatility_multiplier *= effect["volatility_multiplier"]
+        spread_multiplier *= effect["spread_multiplier"]
+        price_impact_multiplier *= effect["price_impact_multiplier"]
+        rate_shift_bps += effect["rate_shift_bps"]
+        yield_shift_bps += effect["yield_shift_bps"]
+        funding_spread_bps += effect["funding_spread_bps"]
+        credit_spread_bps += effect["credit_spread_bps"]
+        sentiment_shift += effect["sentiment_shift"]
+        risk_aversion_shift += effect["risk_aversion_shift"]
 
     return {
         "severity": clamp(max_severity, 0.0, 1.0),
@@ -128,14 +149,16 @@ def event_pressure(events: list[Mapping[str, Any]], instrument: str) -> dict[str
         "order_arrival_multiplier": clamp(order_arrival_multiplier, 0.05, 5.0),
         "risk_limit_multiplier": clamp(risk_limit_multiplier, 0.05, 2.0),
         "liquidity_multiplier": clamp(liquidity_multiplier, 0.05, 2.0),
+        "volatility_multiplier": clamp(volatility_multiplier, 0.05, 5.0),
+        "spread_multiplier": clamp(spread_multiplier, 0.05, 5.0),
+        "price_impact_multiplier": clamp(price_impact_multiplier, 0.05, 5.0),
+        "rate_shift_bps": rate_shift_bps,
+        "yield_shift_bps": yield_shift_bps,
+        "funding_spread_bps": funding_spread_bps,
+        "credit_spread_bps": credit_spread_bps,
+        "sentiment_shift": clamp(sentiment_shift, -1.0, 1.0),
+        "risk_aversion_shift": clamp(risk_aversion_shift, -1.0, 1.0),
     }
-
-
-def _event_float(event: Mapping[str, Any], key: str, default: float) -> float:
-    try:
-        return float(event.get(key, default))
-    except (TypeError, ValueError):
-        return default
 
 
 def target_from_signal(
