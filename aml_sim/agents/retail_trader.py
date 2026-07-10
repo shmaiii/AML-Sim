@@ -92,11 +92,12 @@ class AMLRetailTrader(BaseAMLAgent):
             await self._maybe_trade(instrument)
 
     async def _maybe_trade(self, instrument: str) -> None:
-        trade_probability, buy_bias = self._effective_retail_params(instrument)
+        pressure = event_pressure(self._active_events(), instrument)
+        trade_probability, buy_bias = self._effective_retail_params(instrument, pressure)
         if self.random.random() > trade_probability:
             return
 
-        quantity = self.random.randint(1, self._effective_max_order_size(instrument))
+        quantity = self.random.randint(1, self._effective_max_order_size(pressure))
         side = Side.BUY.value if self.random.random() < buy_bias else Side.SELL.value
 
         if side == Side.SELL.value:
@@ -119,9 +120,12 @@ class AMLRetailTrader(BaseAMLAgent):
                 f"for {quantity} {instrument}"
             )
 
-    def _effective_retail_params(self, instrument: str) -> tuple[float, float]:
+    def _effective_retail_params(
+        self,
+        instrument: str,
+        pressure: Mapping[str, float],
+    ) -> tuple[float, float]:
         strategy = self.strategy_state
-        pressure = event_pressure(self._active_events(), instrument)
         prices = price_series(self.price_history, instrument, self.prices.get(instrument, 0))
         momentum = momentum_signal(prices, lookback_ticks=5)
 
@@ -147,7 +151,6 @@ class AMLRetailTrader(BaseAMLAgent):
 
         return clamp(trade_probability, 0.0, 1.0), clamp(buy_bias, 0.0, 1.0)
 
-    def _effective_max_order_size(self, instrument: str) -> int:
-        pressure = event_pressure(self._active_events(), instrument)
+    def _effective_max_order_size(self, pressure: Mapping[str, float]) -> int:
         size = self.strategy_state.max_order_size * pressure["risk_limit_multiplier"]
         return max(1, int(size))
