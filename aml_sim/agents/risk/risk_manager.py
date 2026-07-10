@@ -103,21 +103,30 @@ class RiskManager:
                 return OrderVerdict.REJECTED, None
 
         # Position limit — check projected exposure after the order, not just
-        # the current position.  If the order would push past the cap, reduce
-        # it to fill only the remaining capacity (or reject if already capped).
+        # the current position.  Handles both continuation orders (same side)
+        # and reversal orders (crossing through zero) correctly.
         if portfolio_value > 0 and self.max_position_pct < 1.0:
             position_price = price or last_price or 1.0
             max_allowed = int(portfolio_value * self.max_position_pct / position_price)
-            # Determine the signed delta: BUY increases position, SELL decreases
-            delta = quantity if side.upper() == "BUY" else -quantity
-            projected = current_position + delta
-            if abs(projected) > max_allowed:
-                remaining = max(0, max_allowed - abs(current_position))
-                if remaining <= 0:
-                    return OrderVerdict.REJECTED, None
-                # Reduce quantity to exactly fill remaining capacity
-                adjusted = min(quantity, remaining)
-                return OrderVerdict.SIZE_REDUCED, adjusted
+
+            if side.upper() == "BUY":
+                projected = current_position + quantity
+                upper_bound = max_allowed
+                if projected > upper_bound:
+                    # Remaining capacity from current to upper bound
+                    remaining = max(0, upper_bound - current_position)
+                    if remaining <= 0:
+                        return OrderVerdict.REJECTED, None
+                    return OrderVerdict.SIZE_REDUCED, min(quantity, remaining)
+            else:  # SELL
+                projected = current_position - quantity
+                lower_bound = -max_allowed
+                if projected < lower_bound:
+                    # Remaining capacity from current to lower bound
+                    remaining = max(0, current_position - lower_bound)
+                    if remaining <= 0:
+                        return OrderVerdict.REJECTED, None
+                    return OrderVerdict.SIZE_REDUCED, min(quantity, remaining)
 
         # Single-order value limit
         # Use last_price fallback so MARKET orders are still checked.

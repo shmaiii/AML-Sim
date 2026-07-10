@@ -2,7 +2,10 @@
 import sys, os, copy, json
 from pathlib import Path
 
-sys.path.insert(0, os.path.join(os.getcwd(), 'simulators', 'StockSim'))
+_REPO_ROOT = Path(__file__).resolve().parent
+_STOCKSIM_DIR = _REPO_ROOT / "simulators" / "StockSim"
+sys.path.insert(0, str(_STOCKSIM_DIR))
+sys.path.insert(0, str(_REPO_ROOT))
 
 def test_suite(name):
     print(f'\n{"="*60}')
@@ -150,14 +153,14 @@ from aml_sim.scenario import AMLScenario, load_scenario
 
 # 5a: All scenarios load
 for s in ['aml_orderbook_replay.yaml', 'aml_agent_infra_smoke.yaml', 'aml_one_hour_live.yaml']:
-    sc = load_scenario(Path('scenarios') / s)
+    sc = load_scenario(_REPO_ROOT / 'scenarios' / s)
     assert isinstance(sc, AMLScenario)
     assert sc.stocksim_config.get('agents'), f'{s} has no agents'
 print(f'5a OK: all 3 scenarios load')
 
 # 5b: Report format compatibility — verify reporting handles both legacy (list)
 #     and enhanced (dict with "actions" key) formats
-temp_dir = Path('.aml_runs/_verify_temp/reports/agents')
+temp_dir = _REPO_ROOT / '.aml_runs/_verify_temp/reports/agents'
 temp_dir.mkdir(parents=True, exist_ok=True)
 try:
     # Write enhanced format (dict wrapper)
@@ -187,7 +190,7 @@ try:
     print(f'5b OK: combined report handles both formats, {combined["action_count"]} actions, {len(combined["agents"])} agents')
 finally:
     import shutil
-    shutil.rmtree(Path('.aml_runs/_verify_temp'), ignore_errors=True)
+    shutil.rmtree(_REPO_ROOT / '.aml_runs/_verify_temp', ignore_errors=True)
 
 print(f'\n{"="*60}')
 print(f'ALL TESTS PASSED - ZERO BUGS')

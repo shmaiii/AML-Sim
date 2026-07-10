@@ -9,7 +9,14 @@ Usage:  python test_all_paths.py
 import sys, os, copy, json, tempfile, shutil
 from pathlib import Path
 
-sys.path.insert(0, os.path.join(os.getcwd(), 'simulators', 'StockSim'))
+# Ensure StockSim is importable regardless of cwd
+_REPO_ROOT = Path(__file__).resolve().parent
+_STOCKSIM_DIR = _REPO_ROOT / "simulators" / "StockSim"
+if str(_STOCKSIM_DIR) not in sys.path:
+    sys.path.insert(0, str(_STOCKSIM_DIR))
+# Also ensure the AML-Sim root is importable
+if str(_REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(_REPO_ROOT))
 
 FAILED = []
 PASSED = 0
@@ -697,14 +704,14 @@ from aml_sim.scenario import AMLScenario, load_scenario
 
 # J1: All 3 scenarios load correctly
 for s_name in ['aml_orderbook_replay.yaml', 'aml_agent_infra_smoke.yaml', 'aml_one_hour_live.yaml']:
-    sc = load_scenario(Path('scenarios') / s_name)
+    sc = load_scenario(_REPO_ROOT / 'scenarios' / s_name)
     check(isinstance(sc, AMLScenario), f'J1a-{s_name}: returns AMLScenario')
     check(len(sc.stocksim_config.get('agents', {})) > 0, f'J1b-{s_name}: has agents')
     check(sc.aml_config is not None, f'J1c-{s_name}: has aml_config (upstream field)')
 
 # J2: Agent count verification in each scenario
 for s_name, expected_min in [('aml_orderbook_replay.yaml', 3), ('aml_agent_infra_smoke.yaml', 5), ('aml_one_hour_live.yaml', 4)]:
-    sc = load_scenario(Path('scenarios') / s_name)
+    sc = load_scenario(_REPO_ROOT / 'scenarios' / s_name)
     agents = sc.stocksim_config['agents']
     check(len(agents) >= expected_min, f'J2-{s_name}: >= {expected_min} agent groups')
 
