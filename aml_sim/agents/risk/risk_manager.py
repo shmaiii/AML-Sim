@@ -102,14 +102,22 @@ class RiskManager:
             if drawdown >= self.max_drawdown_pct:
                 return OrderVerdict.REJECTED, None
 
-        # Position limit
+        # Position limit — check projected exposure after the order, not just
+        # the current position.  If the order would push past the cap, reduce
+        # it to fill only the remaining capacity (or reject if already capped).
         if portfolio_value > 0 and self.max_position_pct < 1.0:
-            # Use last_price or price as denominator — prefer last_price as the
-            # more conservative estimator for market orders on the long side
             position_price = price or last_price or 1.0
             max_allowed = int(portfolio_value * self.max_position_pct / position_price)
-            if abs(current_position) >= max_allowed:
-                return OrderVerdict.REJECTED, None
+            # Determine the signed delta: BUY increases position, SELL decreases
+            delta = quantity if side.upper() == "BUY" else -quantity
+            projected = current_position + delta
+            if abs(projected) > max_allowed:
+                remaining = max(0, max_allowed - abs(current_position))
+                if remaining <= 0:
+                    return OrderVerdict.REJECTED, None
+                # Reduce quantity to exactly fill remaining capacity
+                adjusted = min(quantity, remaining)
+                return OrderVerdict.SIZE_REDUCED, adjusted
 
         # Single-order value limit
         # Use last_price fallback so MARKET orders are still checked.

@@ -196,13 +196,18 @@ def generate_trader_action_report(agent_reports_dir: Path, reports_dir: Path) ->
         agent_id = action_file.stem.removeprefix("trader_actions_")
         try:
             with action_file.open("r", encoding="utf-8") as handle:
-                agent_actions = json.load(handle)
+                raw = json.load(handle)
         except Exception as exc:
             print(f"Failed to read trader action file {action_file}: {exc}")
             continue
 
-        if not isinstance(agent_actions, list):
-            print(f"Skipping trader action file with non-list payload: {action_file}")
+        # Support both legacy (list) and enhanced (dict with "actions" key) formats
+        if isinstance(raw, list):
+            agent_actions = raw
+        elif isinstance(raw, dict) and "actions" in raw:
+            agent_actions = raw["actions"]
+        else:
+            print(f"Skipping trader action file with unrecognised payload: {action_file}")
             continue
 
         by_agent[agent_id] = {

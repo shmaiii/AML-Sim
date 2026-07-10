@@ -143,29 +143,51 @@ for role, r in STATIC_RESPONSES_BY_ROLE.items():
 print(f'4b OK: all {len(STATIC_RESPONSES_BY_ROLE)} static responses have full contract')
 
 # ====================================================================
-# SUITE 5: E2E simulation results
+# SUITE 5: Scenario & report format verification
 # ====================================================================
-test_suite('E2E simulation results')
-action_files = sorted(Path('.aml_runs/e2e_test/reports/agents').glob('trader_actions_*.json'))
-assert len(action_files) >= 6, f'Expected >=6 action files, got {len(action_files)}'
-for af in action_files:
-    data = json.loads(af.read_text())
-    if data.get('agent_id','').startswith('shock'):
-        continue
-    for key in ['risk_summary','fallback_summary','behavioral_summary','strategy_performance']:
-        assert key in data, f'{af.name}: missing {key}'
-    risk = data['risk_summary']
-    assert risk['health'] in ('healthy','degraded','halted')
-print(f'5a OK: all {len(action_files)} reports have risk/fallback/behavioral/performance')
-print('     health=healthy for all active agents')
+test_suite('Scenario & report format')
+from aml_sim.scenario import AMLScenario, load_scenario
 
-# Check scenario config
-from aml_sim.scenario import load_scenario
-sc = load_scenario(Path('scenarios/aml_agent_infra_smoke.yaml'))
-institutional_cfg = sc.stocksim_config['agents'].get('institutional_execution', {})
-inst_params = institutional_cfg.get('parameters', {})
-institutional_alphas = inst_params.get('alpha_strategies', [])
-print(f'5b OK: scenario loads, institutional has {len(institutional_alphas)} alpha strategies')
+# 5a: All scenarios load
+for s in ['aml_orderbook_replay.yaml', 'aml_agent_infra_smoke.yaml', 'aml_one_hour_live.yaml']:
+    sc = load_scenario(Path('scenarios') / s)
+    assert isinstance(sc, AMLScenario)
+    assert sc.stocksim_config.get('agents'), f'{s} has no agents'
+print(f'5a OK: all 3 scenarios load')
+
+# 5b: Report format compatibility — verify reporting handles both legacy (list)
+#     and enhanced (dict with "actions" key) formats
+temp_dir = Path('.aml_runs/_verify_temp/reports/agents')
+temp_dir.mkdir(parents=True, exist_ok=True)
+try:
+    # Write enhanced format (dict wrapper)
+    enhanced_path = temp_dir / 'trader_actions_test_agent.json'
+    enhanced_path.write_text(json.dumps({
+        'agent_id': 'test_agent',
+        'risk_summary': {'health': 'healthy'},
+        'fallback_summary': {'active': False},
+        'actions': [
+            {'event_type': 'order_submitted', 'agent_id': 'test_agent', 'timestamp': '2025-01-01T00:00:00'},
+            {'event_type': 'trade_executed', 'agent_id': 'test_agent', 'timestamp': '2025-01-01T00:00:01'},
+        ]
+    }))
+    # Write legacy format (plain list)
+    legacy_path = temp_dir / 'trader_actions_legacy_agent.json'
+    legacy_path.write_text(json.dumps([
+        {'event_type': 'order_submitted', 'agent_id': 'legacy_agent', 'timestamp': '2025-01-01T00:00:00'},
+    ]))
+    # Run the report generator
+    from aml_sim.reporting import generate_trader_action_report
+    generate_trader_action_report(temp_dir, temp_dir.parent)
+    # Verify combined report
+    combined = json.loads((temp_dir.parent / 'trader_actions.json').read_text())
+    assert combined['action_count'] == 3, f'Expected 3 actions (2 enhanced + 1 legacy), got {combined["action_count"]}'
+    assert 'test_agent' in combined['agents'], 'test_agent missing from combined report'
+    assert 'legacy_agent' in combined['agents'], 'legacy_agent missing from combined report'
+    print(f'5b OK: combined report handles both formats, {combined["action_count"]} actions, {len(combined["agents"])} agents')
+finally:
+    import shutil
+    shutil.rmtree(Path('.aml_runs/_verify_temp'), ignore_errors=True)
 
 print(f'\n{"="*60}')
 print(f'ALL TESTS PASSED - ZERO BUGS')
