@@ -271,7 +271,10 @@ class OpenAIJSONLLMClient:
         observation = context.get("observation", {})
         if not isinstance(observation, Mapping):
             observation = {}
-        agent_id = str(observation.get("agent_id") or "unknown_agent")
+        agent_context = observation.get("agent", {})
+        if not isinstance(agent_context, Mapping):
+            agent_context = {}
+        agent_id = str(agent_context.get("agent_id") or observation.get("agent_id") or "unknown_agent")
         safe_agent_id = "".join(
             character if character.isalnum() or character in {"-", "_"} else "_"
             for character in agent_id
