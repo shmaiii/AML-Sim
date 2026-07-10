@@ -127,12 +127,3 @@ class ProfileModulator:
         if isinstance(current, int):
             new_value = max(1, int(round(new_value)))
         setattr(obj, attr, new_value)
-
-    @staticmethod
-    def _add_if_present(obj: Any, attr: str, delta: float) -> None:
-        if not hasattr(obj, attr):
-            return
-        current = getattr(obj, attr)
-        if not isinstance(current, (int, float)):
-            return
-        setattr(obj, attr, current + delta)
