@@ -6,6 +6,7 @@ import inspect
 import json
 import os
 from dataclasses import asdict, fields, is_dataclass, replace
+from datetime import datetime, timezone
 from typing import Any, Mapping, Optional, Protocol
 
 from aml_sim.agents.models.profile import profile_to_dict
@@ -249,14 +250,49 @@ class OpenAIJSONLLMClient:
         response = await client.responses.create(
             model=self.model,
             instructions=self.system_prompt,
-            input=json.dumps(context, default=str),
+            input=(
+                "Return JSON only using the requested strategy update contract.\n\n"
+                f"Context JSON:\n{json.dumps(context, default=str)}"
+            ),
             temperature=self.temperature,
             text={"format": {"type": "json_object"}},
         )
         content = getattr(response, "output_text", None)
         if not content:
             raise LLMStrategyResponseError("OpenAI returned an empty strategy response.")
+        self._write_response_log(context=context, content=content)
         return content
+
+    def _write_response_log(self, *, context: Mapping[str, Any], content: str) -> None:
+        log_dir = os.getenv("LOG_DIR")
+        if not log_dir:
+            return
+
+        observation = context.get("observation", {})
+        if not isinstance(observation, Mapping):
+            observation = {}
+        agent_context = observation.get("agent", {})
+        if not isinstance(agent_context, Mapping):
+            agent_context = {}
+        agent_id = str(agent_context.get("agent_id") or observation.get("agent_id") or "unknown_agent")
+        safe_agent_id = "".join(
+            character if character.isalnum() or character in {"-", "_"} else "_"
+            for character in agent_id
+        )
+
+        output_dir = os.path.join(log_dir, "llm_responses")
+        os.makedirs(output_dir, exist_ok=True)
+        output_path = os.path.join(output_dir, f"{safe_agent_id}.jsonl")
+        record = {
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "provider": "openai",
+            "model": self.model,
+            "agent_id": agent_id,
+            "simulation_time": observation.get("current_time"),
+            "response": content,
+        }
+        with open(output_path, "a", encoding="utf-8") as handle:
+            handle.write(json.dumps(record, default=str) + "\n")
 
 
 DEFAULT_OPENAI_SLOW_STRATEGY_PROMPT = """
@@ -385,4 +421,3 @@ def create_llm_strategist(
         f"Unsupported slow_strategist type {strategist_type!r}. "
         "Use 'static' or 'openai'."
     )
-
