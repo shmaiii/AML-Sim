@@ -54,6 +54,7 @@ class AMLInformedTrader(BaseAMLAgent):
         slow_strategist: Optional[SlowStrategist | Mapping[str, Any]] = None,
         agent_id: Optional[str] = None,
         rabbitmq_host: str = "localhost",
+        risk_overrides: Optional[Mapping[str, Any]] = None,
         **kwargs: Any,
     ) -> None:
         trader_kwargs = {}
@@ -92,6 +93,16 @@ class AMLInformedTrader(BaseAMLAgent):
             **trader_kwargs,
         )
         self.random = random.Random(random_seed)
+        if risk_overrides:
+            for key, value in risk_overrides.items():
+                if hasattr(self.risk_manager, key):
+                    try:
+                        if key in {"max_order_rate", "max_consecutive_rejections", "cooldown_ticks"}:
+                            setattr(self.risk_manager, key, max(1, int(float(value))))
+                        else:
+                            setattr(self.risk_manager, key, float(value))
+                    except (TypeError, ValueError):
+                        pass
         self.logger.info(
             f"AMLInformedTrader {self.agent_id} initialized: "
             f"strategy_state={self.strategy_state}"
@@ -102,7 +113,9 @@ class AMLInformedTrader(BaseAMLAgent):
             await self._trade_signal(instrument)
 
     async def _trade_signal(self, instrument: str) -> None:
-        strategy = self.strategy_state
+        strategy = self.profile_modulator.modulate(
+            self.strategy_state, self._traits, self.behavioral_state
+        )
         current_price = self._current_price(instrument)
         if current_price <= 0:
             return

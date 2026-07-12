@@ -59,6 +59,7 @@ class AMLMarketMakerTrader(BaseAMLAgent):
         slow_strategist: Optional[SlowStrategist | Mapping[str, Any]] = None,
         agent_id: Optional[str] = None,
         rabbitmq_host: str = "localhost",
+        risk_overrides: Optional[Mapping[str, Any]] = None,
         **kwargs,
     ) -> None:
         trader_kwargs = {}
@@ -103,6 +104,18 @@ class AMLMarketMakerTrader(BaseAMLAgent):
         self.allow_short_selling = allow_short_selling
         self.quote_order_ids: set[str] = set()
 
+        # Apply risk overrides from YAML config
+        if risk_overrides:
+            for key, value in risk_overrides.items():
+                if hasattr(self.risk_manager, key):
+                    try:
+                        if key in {"max_order_rate", "max_consecutive_rejections", "cooldown_ticks"}:
+                            setattr(self.risk_manager, key, max(1, int(float(value))))
+                        else:
+                            setattr(self.risk_manager, key, float(value))
+                    except (TypeError, ValueError):
+                        pass
+
         self.logger.info(
             f"AMLMarketMakerTrader {self.agent_id} initialized: "
             f"strategy_state={self.strategy_state}"
@@ -140,7 +153,9 @@ class AMLMarketMakerTrader(BaseAMLAgent):
             self.quote_order_ids.discard(order_id)
 
     def _quote_prices(self, instrument: str) -> tuple[float, float]:
-        strategy = self.strategy_state
+        strategy = self.profile_modulator.modulate(
+            self.strategy_state, self._traits, self.behavioral_state
+        )
         inventory = self.long_qty[instrument] - self.short_qty[instrument]
         inventory_gap = inventory - strategy.target_inventory
         skew = inventory_gap * strategy.inventory_skew

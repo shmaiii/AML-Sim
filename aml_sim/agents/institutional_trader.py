@@ -1,8 +1,9 @@
 """
 AML Institutional Trader.
 
-Models a larger participant that tries to build or reduce a target position in
-child orders over time. Later this can become the LLM-directed strategy agent.
+Models a larger participant that uses pluggable alpha strategies (momentum,
+mean_reversion, breakout, volatility_regime, event_driven, etc.) to build or
+reduce target positions in child orders over time.
 """
 
 from __future__ import annotations
@@ -13,13 +14,18 @@ from aml_sim.agents.base import BaseAMLAgent
 from aml_sim.agents.context.memory import MemoryBackend
 from aml_sim.agents.context.observation import ObservationProcessor
 from aml_sim.agents.models.profile import InstitutionalProfile, coerce_profile
+from aml_sim.agents.strategy.alpha import AlphaContext, AlphaSignal
+from aml_sim.agents.strategy.composite import CompositeAlphaStrategy
 from aml_sim.agents.strategy.llm_slow_strategy import SlowStrategist
+from aml_sim.agents.strategy.performance import (
+    StrategyPerformance,
+    create_performance_tracker,
+)
+from aml_sim.agents.strategy.registry import StrategyRegistry
 from aml_sim.agents.models.state import InstitutionalStrategyState
 from aml_sim.agents.strategy.signals import (
     clamp,
     event_pressure,
-    mean_reversion_signal,
-    momentum_signal,
     price_series,
     target_from_signal,
 )
@@ -28,10 +34,12 @@ from utils.orders import OrderType, Side
 
 class AMLInstitutionalTrader(BaseAMLAgent):
     """
-    Basic institutional-style participant for synthetic AML markets.
+    Institutional participant with pluggable alpha strategies.
 
-    Institutional here means larger capital, slower cadence, target inventory,
-    and sliced execution rather than one giant order.
+    Instead of hardcoded if/elif for momentum/mean_reversion, this agent
+    builds a CompositeAlphaStrategy from the registry using the strategy
+    names and weights in its strategy state. The LLM slow-loop can add,
+    remove, and re-weight strategies at runtime.
     """
 
     LLM_STRATEGY_ROLE = "institutional"
@@ -46,6 +54,7 @@ class AMLInstitutionalTrader(BaseAMLAgent):
         alpha_strategy: str = "target_execution",
         alpha_strategies: Optional[list[str]] = None,
         strategy_weights: Optional[Dict[str, float]] = None,
+        blend_mode: str = "weighted_sum",
         lookback_ticks: int = 5,
         entry_threshold: float = 0.002,
         exit_threshold: float = 0.0005,
@@ -59,6 +68,7 @@ class AMLInstitutionalTrader(BaseAMLAgent):
         slow_strategist: Optional[SlowStrategist | Mapping[str, Any]] = None,
         agent_id: Optional[str] = None,
         rabbitmq_host: str = "localhost",
+        risk_overrides: Optional[Mapping[str, Any]] = None,
         **kwargs,
     ) -> None:
         trader_kwargs = {}
@@ -71,6 +81,15 @@ class AMLInstitutionalTrader(BaseAMLAgent):
             if param in kwargs:
                 trader_kwargs[param] = kwargs[param]
 
+        normalized_strategies = self._normalize_alpha_strategies(
+            alpha_strategy, alpha_strategies
+        )
+        normalized_weights = dict(strategy_weights or {})
+
+        strategy_performance = create_performance_tracker(
+            normalized_strategies + ["target_execution"]
+        )
+
         super().__init__(
             instrument_exchange_map=instrument_exchange_map,
             strategy_state=InstitutionalStrategyState(
@@ -79,11 +98,9 @@ class AMLInstitutionalTrader(BaseAMLAgent):
                 order_type=order_type.upper(),
                 limit_price=limit_price,
                 alpha_strategy=alpha_strategy,
-                alpha_strategies=self._normalize_alpha_strategies(
-                    alpha_strategy,
-                    alpha_strategies,
-                ),
-                strategy_weights=dict(strategy_weights or {}),
+                alpha_strategies=normalized_strategies,
+                strategy_weights=normalized_weights,
+                blend_mode=blend_mode,
                 lookback_ticks=lookback_ticks,
                 entry_threshold=entry_threshold,
                 exit_threshold=exit_threshold,
@@ -96,101 +113,182 @@ class AMLInstitutionalTrader(BaseAMLAgent):
             observation_processor=observation_processor,
             slow_strategist=self._build_slow_strategist(slow_strategist),
             slow_loop_interval_seconds=slow_loop_interval_seconds,
+            strategy_performance=strategy_performance,
             agent_id=agent_id,
             rabbitmq_host=rabbitmq_host,
             **trader_kwargs,
         )
+
+        if risk_overrides:
+            for key, value in risk_overrides.items():
+                if hasattr(self.risk_manager, key):
+                    try:
+                        if key in {"max_order_rate", "max_consecutive_rejections", "cooldown_ticks"}:
+                            setattr(self.risk_manager, key, max(1, int(float(value))))
+                        else:
+                            setattr(self.risk_manager, key, float(value))
+                    except (TypeError, ValueError):
+                        pass
 
         self.logger.info(
             f"AMLInstitutionalTrader {self.agent_id} initialized: "
             f"strategy_state={self.strategy_state}"
         )
 
+    # ------------------------------------------------------------------
+    # Fast loop
+    # ------------------------------------------------------------------
+
     async def run_fast_loop(self, observation: Mapping[str, Any]) -> None:
         for instrument in self.instrument_exchange_map.keys():
-            self._update_alpha_target(instrument, observation)
+            context = self._build_alpha_context(instrument, observation)
+            signal = self._generate_composite_signal(context)
+            self._update_target_from_signal(instrument, signal, context)
             await self._execute_toward_target(instrument)
 
-    def _normalize_alpha_strategies(
-        self,
-        alpha_strategy: str,
-        alpha_strategies: Optional[list[str]],
-    ) -> list[str]:
-        strategies = [
-            str(item).lower()
-            for item in (alpha_strategies or [alpha_strategy])
-            if str(item).strip()
-        ]
-        primary = str(alpha_strategy or "target_execution").lower()
-        if primary and primary not in strategies:
-            strategies.insert(0, primary)
-        return strategies or ["target_execution"]
+    # ------------------------------------------------------------------
+    # Alpha context & signal generation
+    # ------------------------------------------------------------------
 
-    def _update_alpha_target(self, instrument: str, observation: Mapping[str, Any]) -> None:
-        strategy = self.strategy_state
-        alpha_strategies = strategy.alpha_strategies or [strategy.alpha_strategy]
-        alpha_strategies = [str(item).lower() for item in alpha_strategies]
-        active_alpha_strategies = [
-            item for item in alpha_strategies if item != "target_execution"
-        ]
-        if not active_alpha_strategies:
-            return
-
+    def _build_alpha_context(
+        self, instrument: str, observation: Mapping[str, Any]
+    ) -> AlphaContext:
         fallback_price = self.prices.get(instrument, 0)
         prices = price_series(self.price_history, instrument, fallback_price)
-        signal = 0.0
-        signal_parts: dict[str, float] = {}
-        for alpha_strategy in active_alpha_strategies:
-            weight = float(strategy.strategy_weights.get(alpha_strategy, 1.0))
-            if alpha_strategy == "momentum":
-                raw_signal = momentum_signal(prices, strategy.lookback_ticks)
-            elif alpha_strategy == "mean_reversion":
-                raw_signal = mean_reversion_signal(prices, strategy.lookback_ticks)
-            else:
+        events = list(observation.get("events", []))
+        volume_history: list[float] = []
+        market = observation.get("market", {})
+        last_snapshot = market.get("last_market_snapshot", {})
+        inst_data = last_snapshot.get(instrument, {})
+        if isinstance(inst_data, dict):
+            vol = inst_data.get("volume")
+            if isinstance(vol, (int, float)):
+                volume_history = [float(vol)]
+
+        return AlphaContext(
+            prices=prices,
+            volume_history=volume_history,
+            current_position=(
+                self.long_qty[instrument] - self.short_qty[instrument]
+            ),
+            portfolio_value=self.portfolio_value or 0.0,
+            events=events,
+            current_strategy=self.strategy_state,
+            profile=self._traits,
+            instrument=instrument,
+            last_market_snapshot=last_snapshot,
+        )
+
+    def _generate_composite_signal(self, context: AlphaContext) -> AlphaSignal:
+        """Build a CompositeAlphaStrategy from the registry and generate a signal."""
+        strategy = self.strategy_state
+        active_names = list(strategy.alpha_strategies or [strategy.alpha_strategy])
+        active_names = [
+            name for name in active_names
+            if name.lower() != "target_execution"
+        ]
+
+        if not active_names:
+            return AlphaSignal(reason="institutional: no active alpha strategies")
+
+        strategies: list[tuple[Any, float]] = []
+        for name in active_names:
+            strategy_cls = StrategyRegistry.get(name)
+            if strategy_cls is None:
                 self.logger.warning(
-                    f"Unknown institutional alpha strategy {alpha_strategy!r}; skipping it."
+                    f"Strategy {name!r} not found in registry; skipping."
                 )
                 continue
-            weighted_signal = raw_signal * weight
-            signal += weighted_signal
-            signal_parts[alpha_strategy] = weighted_signal
+            weight = float(strategy.strategy_weights.get(name, 1.0))
+            try:
+                instance = strategy_cls()
+            except TypeError:
+                instance = strategy_cls(lookback_ticks=strategy.lookback_ticks) if name in ("momentum", "mean_reversion", "breakout", "volatility_regime") else strategy_cls()
+            strategies.append((instance, weight))
 
-        pressure = event_pressure(list(observation.get("events", [])), instrument)
-        signal += pressure["directional_bias"] * strategy.shock_reactivity * strategy.entry_threshold
-        if prices and prices[-1] > 0:
-            signal += (
+        if not strategies:
+            return AlphaSignal(reason="institutional: no strategies could be loaded")
+
+        composite = CompositeAlphaStrategy(
+            strategies=strategies,
+            blend_mode=getattr(strategy, "blend_mode", "weighted_sum"),
+        )
+
+        signal = composite.generate(context)
+
+        if signal.is_actionable and signal.strength > 0:
+            for name in active_names:
+                tracker = self.strategy_performance.get(name)
+                if tracker:
+                    tracker.record_signal(
+                        signal.direction,
+                        self.current_time.isoformat() if self.current_time else None,
+                    )
+
+        return signal
+
+    def _update_target_from_signal(
+        self,
+        instrument: str,
+        signal: AlphaSignal,
+        context: AlphaContext,
+    ) -> None:
+        """Convert the composite alpha signal into a target position."""
+        strategy = self.strategy_state
+
+        pressure = event_pressure(context.events, instrument)
+        combined_signal = signal.direction * signal.strength
+        combined_signal += pressure["directional_bias"] * strategy.shock_reactivity * strategy.entry_threshold
+        if context.prices and context.prices[-1] > 0:
+            combined_signal += (
                 pressure["fundamental_price_shift"]
-                / prices[-1]
+                / context.prices[-1]
                 * strategy.shock_reactivity
             )
 
-        effective_max_position = max(
+        effective_max = max(
             strategy.min_position,
             int(strategy.max_position * pressure["risk_limit_multiplier"]),
         )
-        effective_min_position = min(strategy.min_position, effective_max_position)
+        effective_min = min(strategy.min_position, effective_max)
 
         current_target = strategy.target_positions.get(instrument, 0)
-        if "target_execution" in alpha_strategies and abs(signal) <= strategy.exit_threshold:
-            next_target = min(current_target, effective_max_position)
+        active_names = [
+            n for n in (strategy.alpha_strategies or [])
+            if n.lower() != "target_execution"
+        ]
+
+        if "target_execution" in (strategy.alpha_strategies or []) and abs(combined_signal) <= strategy.exit_threshold:
+            next_target = min(current_target, effective_max)
         else:
             next_target = target_from_signal(
-                signal,
+                combined_signal,
                 current_target=current_target,
                 entry_threshold=strategy.entry_threshold,
                 exit_threshold=strategy.exit_threshold,
-                max_position=effective_max_position,
-                min_position=effective_min_position,
+                max_position=effective_max,
+                min_position=effective_min,
             )
 
-        strategy.signal_strength = signal
+        strategy.signal_strength = combined_signal
         strategy.target_positions[instrument] = next_target
+
         if next_target != current_target:
             self.logger.info(
                 f"AMLInstitutionalTrader {self.agent_id} alpha target update for {instrument}: "
-                f"strategies={signal_parts}, combined_signal={signal:.6f}, "
+                f"signal={combined_signal:.6f}, reason={signal.reason}, "
                 f"target {current_target} -> {next_target}"
             )
+
+        if signal.is_actionable:
+            for name in active_names:
+                tracker = self.strategy_performance.get(name)
+                if tracker:
+                    tracker.record_acted()
+
+    # ------------------------------------------------------------------
+    # Execution
+    # ------------------------------------------------------------------
 
     async def _execute_toward_target(self, instrument: str) -> None:
         strategy = self.strategy_state
@@ -215,7 +313,7 @@ class AMLInstitutionalTrader(BaseAMLAgent):
                 return
             quantity = min(quantity, held)
 
-        price = strategy.limit_price if strategy.order_type == OrderType.LIMIT.value else None
+        price = strategy.limit_price if str(strategy.order_type).upper() == "LIMIT" else None
         order_id = await self.place_order(
             instrument=instrument,
             side=side,
@@ -230,3 +328,22 @@ class AMLInstitutionalTrader(BaseAMLAgent):
                 f"{strategy.order_type} order for {quantity} {instrument} "
                 f"(current={current}, target={target})"
             )
+
+    # ------------------------------------------------------------------
+    # Helpers
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _normalize_alpha_strategies(
+        alpha_strategy: str,
+        alpha_strategies: Optional[list[str]],
+    ) -> list[str]:
+        strategies = [
+            str(item).lower()
+            for item in (alpha_strategies or [alpha_strategy])
+            if str(item).strip()
+        ]
+        primary = str(alpha_strategy or "target_execution").lower()
+        if primary and primary not in strategies:
+            strategies.insert(0, primary)
+        return strategies or ["target_execution"]
