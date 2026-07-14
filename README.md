@@ -101,7 +101,8 @@ The AML agent layer currently includes these synthetic market participants:
   the signal is strong enough.
 - `AML_Liquidity_Taker`: submits directional flow against available liquidity
   with bounded size and inventory exposure.
-- `AML_Shock_Agent`: emits scheduled AML shock/event messages to target agents.
+- `AML_Shock_Agent`: emits scheduled, announced, and random AML shock/event
+  messages to target agents.
 - `aml_orderbook_replay.yaml`: runs a short synthetic AAPL order book scenario
   with one market maker, five retail traders, and one institutional trader.
 - `aml_agent_infra_smoke.yaml` and `aml_one_hour_live.yaml`: exercise the
@@ -169,7 +170,35 @@ structured context package used by the slow loop. Today that package includes:
 - recent fills
 - current strategy state
 - memory context
-- future shock/event context
+- active shock/event context and known future/scheduled event context
+
+### Shock Agent
+
+`AML_Shock_Agent` is the scenario-level event broadcaster for market stress,
+news, policy, liquidity, and other uncertainty injections. It supports:
+
+- **Scheduled shocks** with `tick`/`time`, optional `notice_ticks` or
+  `announce_tick`, and separate announcement vs active phases.
+- **Unexpected shocks** through `random_events` templates with deterministic
+  `random_seed`, per-tick probability, max event count, and severity ranges.
+- **Systematic and non-systematic taxonomy** through fields such as
+  `shock_class`, `scope`, `trigger_type`, `visibility`, `surprise`, and
+  `expected_probability`.
+- **Cross-asset effects** through `affected_instruments`,
+  `affected_asset_classes`, `asset_class_effects`, and
+  `per_instrument_effects`.
+- **Central market state** through `initial_market_state`, `market_state`, and
+  `market_state_delta`.
+
+Supported effect fields include `fundamental_price_shift`,
+`order_arrival_multiplier`, `risk_limit_multiplier`, `liquidity_multiplier`,
+`volatility_multiplier`, `spread_multiplier`, `price_impact_multiplier`,
+`rate_shift_bps`, `yield_shift_bps`, `funding_spread_bps`,
+`credit_spread_bps`, `sentiment_shift`, and `risk_aversion_shift`. Current
+agents react mainly through price/fundamental pressure, order-arrival pressure,
+risk-limit pressure, liquidity withdrawal, spread/volatility widening, and
+sentiment shifts. The same event payload is included in the observation context
+so LLM slow loops can reason over active shocks and announced future events.
 
 ## Setup
 
@@ -378,7 +407,9 @@ For example, `scenarios/aml_one_hour_live.yaml` runs from 09:30 to 10:30 with
 the scenario clock reaches `end_time`, the run stops and the final reports are
 loaded. StockSim currently sleeps for roughly 5 wall-clock seconds per tick, so
 this one simulated hour usually takes about 10 wall-clock minutes plus
-startup/reporting overhead.
+startup/reporting overhead. Longer live scenarios should set
+`simulation.max_wall_time_seconds` high enough for the wall-clock runtime; the
+one-hour dashboard scenario uses 900 seconds.
 
 ## Working With The StockSim Submodule
 

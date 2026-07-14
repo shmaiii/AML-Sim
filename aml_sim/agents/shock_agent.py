@@ -2,9 +2,16 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from copy import deepcopy
+import random
 from typing import Any, Mapping, Optional
 
+from aml_sim.shocks import (
+    build_shock_payload,
+    safe_float,
+    safe_int,
+    stable_seed,
+)
 from agents.agent import Agent
 from utils.messages import MessageType
 from utils.time_utils import parse_datetime_utc
@@ -21,17 +28,35 @@ class AMLShockAgent(Agent):
     def __init__(
         self,
         scheduled_events: Optional[list[Mapping[str, Any]]] = None,
+        random_events: Optional[Mapping[str, Any]] = None,
         target_agent_ids: Optional[list[str]] = None,
+        instrument_metadata: Optional[Mapping[str, Mapping[str, Any]]] = None,
+        initial_market_state: Optional[Mapping[str, Any]] = None,
         default_duration_ticks: int = 10,
+        random_seed: Optional[int] = None,
         agent_id: Optional[str] = None,
         rabbitmq_host: str = "localhost",
         **_: Any,
     ) -> None:
         super().__init__(agent_id=agent_id, rabbitmq_host=rabbitmq_host)
         self.scheduled_events = [dict(event) for event in (scheduled_events or [])]
+        self.random_events_config = dict(random_events or {})
         self.target_agent_ids = list(target_agent_ids or [])
+        self.instrument_metadata = {
+            str(key): dict(value)
+            for key, value in (instrument_metadata or {}).items()
+            if isinstance(value, Mapping)
+        }
+        self.market_state = dict(initial_market_state or {})
         self.default_duration_ticks = default_duration_ticks
         self.emitted_event_ids: set[str] = set()
+        self.announced_event_ids: set[str] = set()
+        self.random_event_count = 0
+        self.random = random.Random(
+            random_seed
+            if random_seed is not None
+            else stable_seed(self.agent_id or "shock_agent", len(self.scheduled_events))
+        )
 
     async def _handle_regular_message(self, msg: dict[str, Any]) -> None:
         self.logger.debug(f"AMLShockAgent ignored message: {msg.get('type')}")
@@ -40,10 +65,39 @@ class AMLShockAgent(Agent):
         await super().handle_time_tick(payload)
         for index, event in enumerate(self.scheduled_events):
             event_id = str(event.get("id") or event.get("shock_id") or f"shock_{index}")
+            if (
+                event_id not in self.announced_event_ids
+                and event_id not in self.emitted_event_ids
+                and self._announcement_due(event, payload)
+            ):
+                await self._emit_event(
+                    event_id,
+                    event,
+                    payload,
+                    phase="announcement",
+                    trigger_type=str(event.get("trigger_type", "scheduled")),
+                )
+                self.announced_event_ids.add(event_id)
+
             if event_id in self.emitted_event_ids:
                 continue
             if self._event_due(event, payload):
-                await self._emit_event(event_id, event, payload)
+                await self._emit_event(
+                    event_id,
+                    event,
+                    payload,
+                    phase="active",
+                    trigger_type=str(event.get("trigger_type", "scheduled")),
+                )
+
+        for event_id, event in self._random_events_due(payload):
+            await self._emit_event(
+                event_id,
+                event,
+                payload,
+                phase="active",
+                trigger_type=str(event.get("trigger_type", "unexpected")),
+            )
 
     def _event_due(self, event: Mapping[str, Any], payload: Mapping[str, Any]) -> bool:
         tick_id = payload.get("tick_id")
@@ -64,16 +118,61 @@ class AMLShockAgent(Agent):
 
         return False
 
+    def _announcement_due(
+        self,
+        event: Mapping[str, Any],
+        payload: Mapping[str, Any],
+    ) -> bool:
+        if self._event_due(event, payload):
+            return False
+
+        tick_id = safe_int(payload.get("tick_id"))
+        announce_tick = safe_int(event.get("announce_tick", event.get("announcement_tick")))
+        if tick_id is not None and announce_tick is not None:
+            return tick_id >= announce_tick
+
+        notice_ticks = safe_int(event.get("notice_ticks"))
+        event_tick = safe_int(event.get("tick", event.get("tick_id")))
+        if tick_id is not None and notice_ticks is not None and event_tick is not None:
+            return tick_id >= max(0, event_tick - notice_ticks)
+
+        announce_time = event.get("announce_at") or event.get("announcement_time")
+        current_time = payload.get("current_time")
+        if announce_time and current_time:
+            try:
+                return parse_datetime_utc(str(current_time)) >= parse_datetime_utc(str(announce_time))
+            except ValueError:
+                return False
+
+        return False
+
     async def _emit_event(
         self,
         event_id: str,
         event: Mapping[str, Any],
         payload: Mapping[str, Any],
+        *,
+        phase: str,
+        trigger_type: str,
     ) -> None:
-        shock_payload = self._build_payload(event_id, event, payload)
+        shock_payload = build_shock_payload(
+            event_id,
+            event,
+            payload,
+            default_duration_ticks=self.default_duration_ticks,
+            instrument_metadata=self.instrument_metadata,
+            market_state=self.market_state,
+            phase=phase,
+            trigger_type=trigger_type,
+        )
+        if phase == "active":
+            self._apply_market_state_update(event, shock_payload)
+            shock_payload["market_state"] = deepcopy(self.market_state)
+
         if not self.target_agent_ids:
             self.logger.warning(f"AMLShockAgent has no targets for shock {event_id}")
-            self.emitted_event_ids.add(event_id)
+            if phase == "active":
+                self.emitted_event_ids.add(event_id)
             return
 
         for target_agent_id in self.target_agent_ids:
@@ -83,73 +182,110 @@ class AMLShockAgent(Agent):
                 shock_payload,
             )
 
-        self.emitted_event_ids.add(event_id)
+        if phase == "active":
+            self.emitted_event_ids.add(event_id)
         self.logger.info(
-            f"AMLShockAgent emitted {event_id} to {len(self.target_agent_ids)} targets: "
-            f"type={shock_payload['shock_type']}, severity={shock_payload['severity']}, "
-            f"direction={shock_payload['direction']}"
+            f"AMLShockAgent emitted {phase} {event_id} to {len(self.target_agent_ids)} targets: "
+            f"type={shock_payload['shock_type']}, class={shock_payload['shock_class']}, "
+            f"severity={shock_payload['severity']}, direction={shock_payload['direction']}"
         )
 
-    def _build_payload(
+    def _random_events_due(
         self,
-        event_id: str,
-        event: Mapping[str, Any],
         payload: Mapping[str, Any],
-    ) -> dict[str, Any]:
-        current_time = payload.get("current_time")
-        timestamp = current_time
-        if isinstance(current_time, datetime):
-            timestamp = current_time.isoformat()
+    ) -> list[tuple[str, dict[str, Any]]]:
+        config = self.random_events_config
+        if not config or not bool(config.get("enabled", False)):
+            return []
 
-        severity = _clamp(_safe_float(event.get("severity", 0.5), 0.5), 0.0, 1.0)
-        direction = _clamp(_safe_float(event.get("direction", 0.0), 0.0), -1.0, 1.0)
-        fundamental_shift = _safe_float(
-            event.get("fundamental_price_shift"),
-            direction
-            * severity
-            * _safe_float(event.get("fundamental_price_shift_per_severity"), 1.0),
+        max_events = safe_int(config.get("max_events"), 0)
+        if max_events is not None and max_events > 0 and self.random_event_count >= max_events:
+            return []
+
+        tick_id = safe_int(payload.get("tick_id"))
+        start_tick = safe_int(config.get("start_tick"))
+        end_tick = safe_int(config.get("end_tick"))
+        if tick_id is not None:
+            if start_tick is not None and tick_id < start_tick:
+                return []
+            if end_tick is not None and tick_id > end_tick:
+                return []
+
+        probability = safe_float(
+            config.get("probability_per_tick", config.get("probability", 0.0)),
+            0.0,
         )
-        order_arrival_multiplier = _safe_float(
-            event.get("order_arrival_multiplier"),
-            1.0 + (severity * 1.25),
+        if probability <= 0 or self.random.random() > min(1.0, probability):
+            return []
+
+        template = self._pick_random_template(config.get("templates", []))
+        if template is None:
+            return []
+
+        event = deepcopy(template)
+        event.setdefault("trigger_type", "unexpected")
+        event.setdefault("scheduled", False)
+        event.setdefault("surprise", 1.0)
+        self._materialize_random_ranges(event)
+        event["tick"] = tick_id
+        event_id = str(
+            event.get("id")
+            or event.get("shock_id")
+            or f"random_{event.get('shock_type', 'shock')}_{tick_id}_{self.random_event_count + 1}"
         )
-        if "risk_limit_multiplier" in event:
-            risk_limit_multiplier = _safe_float(event.get("risk_limit_multiplier"), 1.0)
-        elif direction < 0:
-            risk_limit_multiplier = 1.0 - (severity * 0.55)
-        else:
-            risk_limit_multiplier = 1.0 + (severity * 0.25)
+        self.random_event_count += 1
+        return [(event_id, event)]
 
-        liquidity_multiplier = _safe_float(
-            event.get("liquidity_multiplier"),
-            1.0 - (severity * 0.5),
-        )
+    def _pick_random_template(self, templates: Any) -> dict[str, Any] | None:
+        if not isinstance(templates, list) or not templates:
+            return None
+        clean_templates = [template for template in templates if isinstance(template, Mapping)]
+        if not clean_templates:
+            return None
+        weights = [max(0.0, safe_float(template.get("weight", 1.0), 1.0)) for template in clean_templates]
+        if sum(weights) <= 0:
+            return dict(self.random.choice(clean_templates))
+        return dict(self.random.choices(clean_templates, weights=weights, k=1)[0])
 
-        return {
-            "event_type": "AML_SHOCK",
-            "shock_id": event_id,
-            "shock_type": event.get("shock_type", event.get("type", "generic_shock")),
-            "timestamp": timestamp,
-            "tick_id": payload.get("tick_id"),
-            "emitted_tick_id": payload.get("tick_id"),
-            "severity": severity,
-            "direction": direction,
-            "fundamental_price_shift": round(fundamental_shift, 4),
-            "order_arrival_multiplier": round(_clamp(order_arrival_multiplier, 0.05, 5.0), 4),
-            "risk_limit_multiplier": round(_clamp(risk_limit_multiplier, 0.05, 2.0), 4),
-            "liquidity_multiplier": round(_clamp(liquidity_multiplier, 0.05, 2.0), 4),
-            "affected_instruments": list(event.get("affected_instruments", event.get("instruments", []))),
-            "duration_ticks": int(event.get("duration_ticks", self.default_duration_ticks)),
-            "message": event.get("message", ""),
-        }
+    def _materialize_random_ranges(self, event: dict[str, Any]) -> None:
+        severity_range = event.pop("severity_range", None)
+        if isinstance(severity_range, (list, tuple)) and len(severity_range) >= 2:
+            low = safe_float(severity_range[0], 0.0)
+            high = safe_float(severity_range[1], low)
+            event["severity"] = self.random.uniform(min(low, high), max(low, high))
 
+        direction_choices = event.pop("direction_choices", None)
+        if isinstance(direction_choices, (list, tuple)) and direction_choices:
+            event["direction"] = self.random.choice(direction_choices)
 
-def _safe_float(value: Any, default: float) -> float:
-    try:
-        return float(value)
-    except (TypeError, ValueError):
-        return default
+    def _apply_market_state_update(
+        self,
+        event: Mapping[str, Any],
+        shock_payload: Mapping[str, Any],
+    ) -> None:
+        absolute_state = event.get("market_state", event.get("state", {}))
+        if isinstance(absolute_state, Mapping):
+            self.market_state.update(deepcopy(dict(absolute_state)))
 
+        state_delta = event.get("market_state_delta", event.get("state_delta", {}))
+        if isinstance(state_delta, Mapping):
+            for key, value in state_delta.items():
+                self._add_market_state_delta(str(key), value)
 
-def _clamp(value: float, lower: float, upper: float) -> float:
-    return max(lower, min(upper, value))
+        self._add_market_state_delta("policy_rate_bps", shock_payload.get("rate_shift_bps", 0.0))
+        self._add_market_state_delta("yield_curve_shift_bps", shock_payload.get("yield_shift_bps", 0.0))
+        self._add_market_state_delta("funding_spread_bps", shock_payload.get("funding_spread_bps", 0.0))
+        self._add_market_state_delta("credit_spread_bps", shock_payload.get("credit_spread_bps", 0.0))
+        self._add_market_state_delta("risk_aversion", shock_payload.get("risk_aversion_shift", 0.0))
+
+        liquidity_multiplier = safe_float(shock_payload.get("liquidity_multiplier", 1.0), 1.0)
+        if liquidity_multiplier != 1.0:
+            current_liquidity = safe_float(self.market_state.get("liquidity_index", 1.0), 1.0)
+            self.market_state["liquidity_index"] = round(current_liquidity * liquidity_multiplier, 4)
+
+    def _add_market_state_delta(self, key: str, value: Any) -> None:
+        delta = safe_float(value, 0.0)
+        if delta == 0.0:
+            return
+        current = safe_float(self.market_state.get(key, 0.0), 0.0)
+        self.market_state[key] = round(current + delta, 4)

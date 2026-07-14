@@ -139,16 +139,32 @@ stocksim_config:
       count: 1
       parameters:
         default_duration_ticks: 8
+        initial_market_state:
+          policy_rate_bps: 425
+          liquidity_index: 1.0
+          risk_aversion: 0.0
         scheduled_events:
           - id: smoke_negative_news
             tick: 3
+            notice_ticks: 1
             shock_type: negative_news
+            shock_class: non_systematic
+            scope: micro
+            trigger_type: scheduled
+            visibility: public
             severity: 0.7
             direction: -1
-            fundamental_price_shift: -0.8
-            order_arrival_multiplier: 1.8
-            risk_limit_multiplier: 0.6
-            liquidity_multiplier: 0.5
+            surprise: 0.35
+            expected_probability: 0.8
+            effects:
+              fundamental_price_shift: -0.8
+              order_arrival_multiplier: 1.8
+              risk_limit_multiplier: 0.6
+              liquidity_multiplier: 0.5
+              volatility_multiplier: 1.6
+              spread_multiplier: 1.35
+            market_state_delta:
+              risk_aversion: 0.25
             affected_instruments:
               - AAPL
             duration_ticks: 8

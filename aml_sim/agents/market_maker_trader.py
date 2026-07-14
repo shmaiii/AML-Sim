@@ -31,6 +31,7 @@ class AMLMarketMakerTrader(BaseAMLAgent):
     """
 
     LLM_STRATEGY_ROLE = "market_maker"
+    STALE_CANCEL_ERROR = "Unable to cancel order. It may already be filled or canceled."
 
     def __init__(
         self,
@@ -102,6 +103,7 @@ class AMLMarketMakerTrader(BaseAMLAgent):
         )
         self.allow_short_selling = allow_short_selling
         self.quote_order_ids: set[str] = set()
+        self.pending_quote_cancel_order_ids: set[str] = set()
 
         self.logger.info(
             f"AMLMarketMakerTrader {self.agent_id} initialized: "
@@ -136,8 +138,25 @@ class AMLMarketMakerTrader(BaseAMLAgent):
     async def _cancel_existing_quotes(self) -> None:
         for order_id in list(self.quote_order_ids):
             if order_id in self.pending_orders:
-                await self.cancel_order(order_id)
+                cancel_sent = await self.cancel_order(order_id)
+                if cancel_sent:
+                    self.pending_quote_cancel_order_ids.add(order_id)
             self.quote_order_ids.discard(order_id)
+
+    async def _handle_order_cancellation_confirmation(self, payload: dict[str, Any]) -> None:
+        order_id = payload.get("order_id")
+        if order_id:
+            self.pending_quote_cancel_order_ids.discard(str(order_id))
+        await super()._handle_order_cancellation_confirmation(payload)
+
+    async def _handle_error(self, error_msg: str) -> None:
+        if self.STALE_CANCEL_ERROR in str(error_msg):
+            self.logger.debug(
+                "Ignoring stale quote cancellation response; quote was likely "
+                "filled or canceled before the exchange processed the cancel."
+            )
+            return
+        await super()._handle_error(error_msg)
 
     def _quote_prices(self, instrument: str) -> tuple[float, float]:
         strategy = self.strategy_state
@@ -154,8 +173,13 @@ class AMLMarketMakerTrader(BaseAMLAgent):
         )
         midpoint = max(0.01, strategy.fair_price - skew + shock_mid_adjustment)
         dynamic_spread = strategy.spread
-        dynamic_spread *= 1 + (volatility * strategy.volatility_sensitivity)
+        dynamic_spread *= 1 + (
+            volatility
+            * pressure["volatility_multiplier"]
+            * strategy.volatility_sensitivity
+        )
         dynamic_spread *= 1 + (pressure["severity"] * strategy.shock_spread_multiplier)
+        dynamic_spread *= pressure["spread_multiplier"]
         dynamic_spread = min(strategy.max_spread, max(strategy.min_spread, dynamic_spread))
         half_spread = max(0.01, dynamic_spread / 2)
         bid = max(0.01, midpoint - half_spread)
@@ -240,6 +264,10 @@ class AMLMarketMakerTrader(BaseAMLAgent):
         )
 
     async def on_trade_execution(self, msg: Dict[str, Any]) -> None:
+        order_id = msg.get("order_id")
+        if order_id:
+            self.quote_order_ids.discard(str(order_id))
+            self.pending_quote_cancel_order_ids.discard(str(order_id))
         await super().on_trade_execution(msg)
         self.logger.debug(
             f"AMLMarketMakerTrader {self.agent_id} inventory after trade: "

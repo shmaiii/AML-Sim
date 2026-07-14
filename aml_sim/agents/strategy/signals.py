@@ -4,7 +4,28 @@ from __future__ import annotations
 
 from math import sqrt
 from statistics import mean
-from typing import Any, Mapping
+from typing import Any, Callable, Mapping
+
+
+EffectResolver = Callable[[Mapping[str, Any], str], Mapping[str, float]]
+
+_EFFECT_DEFAULTS: dict[str, float] = {
+    "fundamental_price_shift": 0.0,
+    "order_arrival_multiplier": 1.0,
+    "risk_limit_multiplier": 1.0,
+    "liquidity_multiplier": 1.0,
+    "volatility_multiplier": 1.0,
+    "spread_multiplier": 1.0,
+    "price_impact_multiplier": 1.0,
+    "rate_shift_bps": 0.0,
+    "yield_shift_bps": 0.0,
+    "funding_spread_bps": 0.0,
+    "credit_spread_bps": 0.0,
+    "correlation_shift": 0.0,
+    "sentiment_shift": 0.0,
+    "risk_aversion_shift": 0.0,
+}
+_EFFECT_KEYS = tuple(_EFFECT_DEFAULTS.keys())
 
 
 def clamp(value: float, lower: float, upper: float) -> float:
@@ -82,7 +103,11 @@ def event_applies_to(event: Mapping[str, Any], instrument: str) -> bool:
     return instrument in affected
 
 
-def event_pressure(events: list[Mapping[str, Any]], instrument: str) -> dict[str, float]:
+def event_pressure(
+    events: list[Mapping[str, Any]],
+    instrument: str,
+    effect_resolver: EffectResolver | None = None,
+) -> dict[str, float]:
     """
     Aggregate active event pressure for an instrument.
 
@@ -95,6 +120,15 @@ def event_pressure(events: list[Mapping[str, Any]], instrument: str) -> dict[str
     order_arrival_multiplier = 1.0
     risk_limit_multiplier = 1.0
     liquidity_multiplier = 1.0
+    volatility_multiplier = 1.0
+    spread_multiplier = 1.0
+    price_impact_multiplier = 1.0
+    rate_shift_bps = 0.0
+    yield_shift_bps = 0.0
+    funding_spread_bps = 0.0
+    credit_spread_bps = 0.0
+    sentiment_shift = 0.0
+    risk_aversion_shift = 0.0
 
     for event in events:
         if not event_applies_to(event, instrument):
@@ -108,18 +142,32 @@ def event_pressure(events: list[Mapping[str, Any]], instrument: str) -> dict[str
         except (TypeError, ValueError):
             direction = 0.0
 
+        effect = (
+            effect_resolver(event, instrument)
+            if effect_resolver is not None
+            else _resolve_event_effect(event, instrument)
+        )
         max_severity = max(max_severity, severity)
         directional_bias += severity * direction
-        fundamental_price_shift += _event_float(event, "fundamental_price_shift", 0.0)
-        order_arrival_multiplier *= _event_float(event, "order_arrival_multiplier", 1.0)
+        fundamental_price_shift += _effect_float(effect, "fundamental_price_shift")
+        order_arrival_multiplier *= _effect_float(effect, "order_arrival_multiplier")
         risk_limit_multiplier = min(
             risk_limit_multiplier,
-            _event_float(event, "risk_limit_multiplier", 1.0),
+            _effect_float(effect, "risk_limit_multiplier"),
         )
         liquidity_multiplier = min(
             liquidity_multiplier,
-            _event_float(event, "liquidity_multiplier", 1.0),
+            _effect_float(effect, "liquidity_multiplier"),
         )
+        volatility_multiplier *= _effect_float(effect, "volatility_multiplier")
+        spread_multiplier *= _effect_float(effect, "spread_multiplier")
+        price_impact_multiplier *= _effect_float(effect, "price_impact_multiplier")
+        rate_shift_bps += _effect_float(effect, "rate_shift_bps")
+        yield_shift_bps += _effect_float(effect, "yield_shift_bps")
+        funding_spread_bps += _effect_float(effect, "funding_spread_bps")
+        credit_spread_bps += _effect_float(effect, "credit_spread_bps")
+        sentiment_shift += _effect_float(effect, "sentiment_shift")
+        risk_aversion_shift += _effect_float(effect, "risk_aversion_shift")
 
     return {
         "severity": clamp(max_severity, 0.0, 1.0),
@@ -128,12 +176,86 @@ def event_pressure(events: list[Mapping[str, Any]], instrument: str) -> dict[str
         "order_arrival_multiplier": clamp(order_arrival_multiplier, 0.05, 5.0),
         "risk_limit_multiplier": clamp(risk_limit_multiplier, 0.05, 2.0),
         "liquidity_multiplier": clamp(liquidity_multiplier, 0.05, 2.0),
+        "volatility_multiplier": clamp(volatility_multiplier, 0.05, 5.0),
+        "spread_multiplier": clamp(spread_multiplier, 0.05, 5.0),
+        "price_impact_multiplier": clamp(price_impact_multiplier, 0.05, 5.0),
+        "rate_shift_bps": rate_shift_bps,
+        "yield_shift_bps": yield_shift_bps,
+        "funding_spread_bps": funding_spread_bps,
+        "credit_spread_bps": credit_spread_bps,
+        "sentiment_shift": clamp(sentiment_shift, -1.0, 1.0),
+        "risk_aversion_shift": clamp(risk_aversion_shift, -1.0, 1.0),
     }
 
 
-def _event_float(event: Mapping[str, Any], key: str, default: float) -> float:
+def _resolve_event_effect(event: Mapping[str, Any], instrument: str) -> dict[str, float]:
+    """Resolve event effects without requiring the shock module at import time."""
+    effects = dict(_EFFECT_DEFAULTS)
+    _merge_effects(effects, event)
+
+    nested = event.get("effects")
+    if isinstance(nested, Mapping):
+        _merge_effects(effects, nested)
+
+    instrument_effects = event.get("instrument_effects")
+    if isinstance(instrument_effects, Mapping):
+        specific = instrument_effects.get(instrument)
+        if isinstance(specific, Mapping):
+            _merge_effects(effects, specific)
+
+    return _clamp_effects(effects)
+
+
+def _merge_effects(target: dict[str, float], source: Mapping[str, Any]) -> None:
+    for key in _EFFECT_KEYS:
+        if key in source:
+            target[key] = _safe_float(source.get(key), target[key])
+
+
+def _clamp_effects(effects: Mapping[str, float]) -> dict[str, float]:
+    clean = dict(effects)
+    for key in (
+        "order_arrival_multiplier",
+        "volatility_multiplier",
+        "spread_multiplier",
+        "price_impact_multiplier",
+    ):
+        clean[key] = clamp(
+            _safe_float(clean.get(key), _EFFECT_DEFAULTS[key]),
+            0.05,
+            5.0,
+        )
+    for key in ("risk_limit_multiplier", "liquidity_multiplier"):
+        clean[key] = clamp(
+            _safe_float(clean.get(key), _EFFECT_DEFAULTS[key]),
+            0.05,
+            2.0,
+        )
+    clean["correlation_shift"] = clamp(
+        _safe_float(clean.get("correlation_shift"), 0.0),
+        -1.0,
+        1.0,
+    )
+    clean["sentiment_shift"] = clamp(
+        _safe_float(clean.get("sentiment_shift"), 0.0),
+        -1.0,
+        1.0,
+    )
+    clean["risk_aversion_shift"] = clamp(
+        _safe_float(clean.get("risk_aversion_shift"), 0.0),
+        -1.0,
+        1.0,
+    )
+    return clean
+
+
+def _effect_float(effect: Mapping[str, Any], key: str) -> float:
+    return _safe_float(effect.get(key), _EFFECT_DEFAULTS[key])
+
+
+def _safe_float(value: Any, default: float = 0.0) -> float:
     try:
-        return float(event.get(key, default))
+        return float(value)
     except (TypeError, ValueError):
         return default
 
