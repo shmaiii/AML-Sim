@@ -122,10 +122,13 @@ class BaseAMLAgent(TraderAgent):
             self.next_action_time = current_time + self.action_interval
 
     def build_observation(self) -> dict[str, Any]:
+        active_events = self._active_events()
+        known_events = self._known_events()
         fresh_observation = self.observation_processor.build_context(
             self,
             profile=self.profile,
-            events=self._active_events(),
+            events=active_events,
+            known_events=known_events,
         )
         memory_context = self.memory.retrieve_context(
             self.agent_id,
@@ -135,7 +138,8 @@ class BaseAMLAgent(TraderAgent):
             self,
             profile=self.profile,
             memory=memory_context,
-            events=self._active_events(),
+            events=active_events,
+            known_events=known_events,
         )
 
     def slow_loop_due(self) -> bool:
@@ -201,7 +205,7 @@ class BaseAMLAgent(TraderAgent):
     async def _handle_regular_message(self, msg: dict[str, Any]) -> None:
         if msg.get("type") == MessageType.STATUS_UPDATE.value:
             payload = msg.get("payload", {}) or {}
-            if payload.get("event_type") == "AML_SHOCK":
+            if payload.get("event_type") in {"AML_SHOCK", "AML_MARKET_EVENT"}:
                 self._handle_aml_event(payload)
                 return
 
@@ -313,18 +317,30 @@ class BaseAMLAgent(TraderAgent):
                 "event_type": "event_observed",
                 "shock_id": observed.get("shock_id"),
                 "shock_type": observed.get("shock_type"),
+                "shock_class": observed.get("shock_class"),
+                "scope": observed.get("scope"),
+                "phase": observed.get("phase"),
+                "trigger_type": observed.get("trigger_type"),
+                "visibility": observed.get("visibility"),
                 "severity": observed.get("severity"),
                 "direction": observed.get("direction"),
                 "fundamental_price_shift": observed.get("fundamental_price_shift"),
                 "order_arrival_multiplier": observed.get("order_arrival_multiplier"),
                 "risk_limit_multiplier": observed.get("risk_limit_multiplier"),
                 "liquidity_multiplier": observed.get("liquidity_multiplier"),
+                "volatility_multiplier": observed.get("volatility_multiplier"),
+                "spread_multiplier": observed.get("spread_multiplier"),
+                "rate_shift_bps": observed.get("rate_shift_bps"),
+                "yield_shift_bps": observed.get("yield_shift_bps"),
                 "affected_instruments": observed.get("affected_instruments"),
+                "affected_asset_classes": observed.get("affected_asset_classes"),
+                "market_state": observed.get("market_state"),
             }
         )
         self.logger.info(
             f"{self.agent_id} observed AML shock: "
-            f"type={observed.get('shock_type')}, severity={observed.get('severity')}, "
+            f"type={observed.get('shock_type')}, phase={observed.get('phase')}, "
+            f"severity={observed.get('severity')}, "
             f"direction={observed.get('direction')}"
         )
 
@@ -333,18 +349,31 @@ class BaseAMLAgent(TraderAgent):
         current_tick = self.current_tick_id
 
         for event in self.recent_events:
+            if str(event.get("phase", "active")).lower() not in {"active", "shock"}:
+                continue
             duration = event.get("duration_ticks")
-            start_tick = event.get("tick_id", event.get("emitted_tick_id"))
+            start_tick = event.get("effective_tick_id", event.get("tick_id", event.get("emitted_tick_id")))
+            expiry_tick = event.get("expiry_tick_id")
             if current_tick is None or duration is None or start_tick is None:
                 active.append(event)
                 continue
             try:
-                if int(current_tick) <= int(start_tick) + int(duration):
+                current_tick_int = int(current_tick)
+                start_tick_int = int(start_tick)
+                expiry_tick_int = (
+                    int(expiry_tick)
+                    if expiry_tick is not None
+                    else start_tick_int + int(duration)
+                )
+                if start_tick_int <= current_tick_int <= expiry_tick_int:
                     active.append(event)
             except (TypeError, ValueError):
                 active.append(event)
 
         return active[-20:]
+
+    def _known_events(self) -> list[dict[str, Any]]:
+        return self.recent_events[-50:]
 
     def _record_price(self, instrument: Any, price: Any) -> None:
         if not instrument:

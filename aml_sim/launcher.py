@@ -15,6 +15,7 @@ from typing import Any, Callable, Iterator
 
 from aml_sim.runs import AMLRun
 from aml_sim.scenario import AMLScenario
+from aml_sim.shocks import normalize_instrument_metadata
 
 logger = logging.getLogger(__name__)
 
@@ -391,6 +392,7 @@ def run_stocksim_components(
 
     # --- Trader processes ---
     instrument_exchange_map = build_instrument_exchange_map(exchange_mode, instruments)
+    instrument_metadata = normalize_instrument_metadata(instruments, exchanges_config)
     agent_custom_params = build_agent_param_customizers(
         interval_to_seconds=interval_to_seconds,
     )
@@ -399,6 +401,7 @@ def run_stocksim_components(
         agent_type_mapping=agent_type_mapping,
         agent_custom_params=agent_custom_params,
         instrument_exchange_map=instrument_exchange_map,
+        instrument_metadata=instrument_metadata,
         rabbitmq_host=rabbitmq_host,
         aml_config=aml_config or {},
         run_id=aml_run.run_id,
@@ -445,9 +448,17 @@ def run_stocksim_components(
     signal.signal(signal.SIGINT, _on_shutdown_signal)
     signal.signal(signal.SIGTERM, _on_shutdown_signal)
 
+    process_timeout_seconds = float(
+        simulation_config.get("max_wall_time_seconds", 300)
+    )
+    logger.info(
+        "Waiting up to %.1fs wall-clock for simulation processes to finish.",
+        process_timeout_seconds,
+    )
+
     exit_code = 0
     try:
-        _join_all_with_timeout(all_processes, timeout=300)
+        _join_all_with_timeout(all_processes, timeout=process_timeout_seconds)
     except KeyboardInterrupt:
         terminate_processes(all_processes)
         exit_code = 130
@@ -643,6 +654,7 @@ def start_trader_processes(
     agent_type_mapping: dict[str, type],
     agent_custom_params: dict[str, Callable[[dict[str, Any]], dict[str, Any]]],
     instrument_exchange_map: dict[str, str],
+    instrument_metadata: dict[str, dict[str, Any]],
     rabbitmq_host: str,
     *,
     aml_config: dict[str, Any] | None = None,
@@ -699,6 +711,7 @@ def start_trader_processes(
             instance_params["rabbitmq_host"] = rabbitmq_host
             if agent_type == "AML_Shock_Agent":
                 instance_params.setdefault("target_agent_ids", shock_target_agent_ids)
+                instance_params.setdefault("instrument_metadata", instrument_metadata)
 
             # Deterministic seed: derived from run_id and agent identity so
             # every re-run of the same scenario produces the same behaviour.

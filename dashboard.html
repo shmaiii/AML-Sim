@@ -1726,15 +1726,17 @@
         const tick = line.match(/Received TIME_TICK message: ([^ ]+)/);
         if (tick) currentTick = tick[1];
 
-        const emitted = line.match(/AMLShockAgent emitted ([^ ]+) to (\d+) targets: type=([^,]+), severity=([^,]+), direction=([^ ]+)/);
+        const emitted = line.match(/AMLShockAgent emitted (?:(announcement|active) )?([^ ]+) to (\d+) targets: type=([^,]+)(?:, class=([^,]+))?, severity=([^,]+), direction=([^ ]+)/);
         if (!emitted) continue;
         events.push({
           event_type: "shock_emitted",
-          shock_id: emitted[1],
-          target_count: Number(emitted[2]),
-          shock_type: emitted[3],
-          severity: Number(emitted[4]),
-          direction: Number(emitted[5]),
+          phase: emitted[1] || "active",
+          shock_id: emitted[2],
+          target_count: Number(emitted[3]),
+          shock_type: emitted[4],
+          shock_class: emitted[5] || "",
+          severity: Number(emitted[6]),
+          direction: Number(emitted[7]),
           affected_instruments: currentInstruments(),
           agent_id: "shock_agent",
           timestamp: currentTick || wallTime
@@ -2085,13 +2087,14 @@
       el("shockMeta").textContent = `${integer.format(shockEvents.length)} observations`;
       el("shockTimeline").innerHTML = shockEvents.map((event) => {
         const severity = Math.max(0, Math.min(1, Number(event.severity ?? 0)));
+        const phase = event.phase ? `${event.phase} ` : "";
         return `
           <div class="event-row shock">
             <div class="event-top">
               <strong>${escapeHtml(shortTime(event.timestamp))}</strong>
               <span>${escapeHtml(compactAgent(event.agent_id || ""))}</span>
             </div>
-            <div class="event-main">${escapeHtml(event.shock_type || "shock")} on ${escapeHtml((event.affected_instruments || []).join(", ") || "market")}</div>
+            <div class="event-main">${escapeHtml(`${phase}${event.shock_type || "shock"}`)} on ${escapeHtml((event.affected_instruments || []).join(", ") || "market")}</div>
             <div class="severity" style="--severity:${severity * 100}%"><i></i><span>${Math.round(severity * 100)}%</span></div>
           </div>
         `;
@@ -2114,7 +2117,7 @@
           type: "shock",
           time: event.timestamp,
           agent: compactAgent(event.agent_id),
-          text: `${event.shock_type || "shock"} observed`
+          text: `${event.phase ? `${event.phase} ` : ""}${event.shock_type || "shock"} observed`
         }))
       ].sort((a, b) => String(a.time).localeCompare(String(b.time))).slice(-34).reverse();
 

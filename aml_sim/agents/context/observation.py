@@ -18,6 +18,7 @@ def build_observation_context(
     profile: Optional[Mapping[str, Any]] = None,
     memory: Optional[Mapping[str, Any]] = None,
     events: Optional[list[Mapping[str, Any]]] = None,
+    known_events: Optional[list[Mapping[str, Any]]] = None,
     recent_fill_limit: int = DEFAULT_RECENT_FILL_LIMIT,
 ) -> dict[str, Any]:
     """
@@ -29,6 +30,8 @@ def build_observation_context(
     """
 
     instruments = list(getattr(agent, "instrument_exchange_map", {}).keys())
+    active_events = [serialize_mapping(event) for event in (events or [])]
+    observed_events = [serialize_mapping(event) for event in (known_events or events or [])]
 
     return {
         "agent": _build_agent_context(agent, profile),
@@ -47,8 +50,19 @@ def build_observation_context(
         "recent_fills": _recent_fills(agent, recent_fill_limit),
         "strategy_state": _strategy_state(agent),
         "memory": serialize_mapping(memory or {}),
-        "events": [serialize_mapping(event) for event in (events or [])],
-        "event_count": len(events or []),
+        "events": active_events,
+        "event_count": len(active_events),
+        "event_context": {
+            "active": active_events,
+            "known": observed_events,
+            "calendar": [
+                event
+                for event in observed_events
+                if str(event.get("phase", "")).lower()
+                in {"announcement", "scheduled", "expectation"}
+            ],
+            "latest": observed_events[-1] if observed_events else None,
+        },
     }
 
 
@@ -65,12 +79,14 @@ class ObservationProcessor:
         profile: Optional[Mapping[str, Any]] = None,
         memory: Optional[Mapping[str, Any]] = None,
         events: Optional[list[Mapping[str, Any]]] = None,
+        known_events: Optional[list[Mapping[str, Any]]] = None,
     ) -> dict[str, Any]:
         return build_observation_context(
             agent,
             profile=profile,
             memory=memory,
             events=events,
+            known_events=known_events,
             recent_fill_limit=self.recent_fill_limit,
         )
 

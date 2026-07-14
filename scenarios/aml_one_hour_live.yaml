@@ -141,16 +141,73 @@ stocksim_config:
       count: 1
       parameters:
         default_duration_ticks: 12
+        random_seed: 20250301
+        initial_market_state:
+          policy_rate_bps: 425
+          liquidity_index: 1.0
+          risk_aversion: 0.0
+          credit_spread_bps: 90
+        random_events:
+          enabled: true
+          probability_per_tick: 0.025
+          max_events: 2
+          start_tick: 10
+          end_tick: 105
+          templates:
+            - shock_type: unexpected_order_flow
+              shock_class: non_systematic
+              scope: micro
+              weight: 2.0
+              severity_range: [0.25, 0.55]
+              direction_choices: [-1, 1]
+              effects:
+                order_arrival_multiplier: 1.65
+                risk_limit_multiplier: 0.82
+                liquidity_multiplier: 0.72
+                volatility_multiplier: 1.35
+                spread_multiplier: 1.2
+              affected_instruments:
+                - AAPL
+              duration_ticks: 8
+              message: Unexpected burst of aggressive order flow.
+            - shock_type: funding_stress
+              shock_class: systematic
+              scope: market_structure
+              weight: 1.0
+              severity_range: [0.35, 0.65]
+              direction: -1
+              effects:
+                order_arrival_multiplier: 1.35
+                risk_limit_multiplier: 0.68
+                liquidity_multiplier: 0.55
+                volatility_multiplier: 1.5
+                spread_multiplier: 1.45
+                funding_spread_bps: 18
+                risk_aversion_shift: 0.35
+              affected_asset_classes:
+                - stock
+              duration_ticks: 10
+              message: Unexpected funding stress reduces risk appetite and displayed liquidity.
         scheduled_events:
           - id: live_opening_negative_news
             tick: 20
+            notice_ticks: 4
             shock_type: negative_news
+            shock_class: non_systematic
+            scope: micro
+            trigger_type: scheduled
+            visibility: public
             severity: 0.55
             direction: -1
-            fundamental_price_shift: -0.9
-            order_arrival_multiplier: 1.55
-            risk_limit_multiplier: 0.72
-            liquidity_multiplier: 0.65
+            surprise: 0.35
+            expected_probability: 0.75
+            effects:
+              fundamental_price_shift: -0.9
+              order_arrival_multiplier: 1.55
+              risk_limit_multiplier: 0.72
+              liquidity_multiplier: 0.65
+              volatility_multiplier: 1.45
+              spread_multiplier: 1.25
             affected_instruments:
               - AAPL
             duration_ticks: 12
@@ -158,25 +215,47 @@ stocksim_config:
           - id: live_liquidity_stress
             tick: 60
             shock_type: liquidity_stress
+            shock_class: systematic
+            scope: market_structure
+            trigger_type: unexpected
+            visibility: public
             severity: 0.7
             direction: -1
-            fundamental_price_shift: -0.65
-            order_arrival_multiplier: 1.9
-            risk_limit_multiplier: 0.55
-            liquidity_multiplier: 0.4
+            surprise: 0.9
+            effects:
+              fundamental_price_shift: -0.65
+              order_arrival_multiplier: 1.9
+              risk_limit_multiplier: 0.55
+              liquidity_multiplier: 0.4
+              volatility_multiplier: 1.8
+              spread_multiplier: 1.7
+              risk_aversion_shift: 0.4
+            market_state_delta:
+              risk_aversion: 0.4
             affected_instruments:
               - AAPL
             duration_ticks: 16
             message: Mid-session liquidity stress event.
           - id: live_recovery_news
             tick: 95
+            notice_ticks: 3
             shock_type: positive_recovery_news
+            shock_class: non_systematic
+            scope: micro
+            trigger_type: scheduled
+            visibility: public
             severity: 0.45
             direction: 1
-            fundamental_price_shift: 0.8
-            order_arrival_multiplier: 1.35
-            risk_limit_multiplier: 1.1
-            liquidity_multiplier: 0.85
+            surprise: 0.3
+            expected_probability: 0.65
+            effects:
+              fundamental_price_shift: 0.8
+              order_arrival_multiplier: 1.35
+              risk_limit_multiplier: 1.1
+              liquidity_multiplier: 0.85
+              volatility_multiplier: 1.25
+              spread_multiplier: 1.1
+              sentiment_shift: 0.35
             affected_instruments:
               - AAPL
             duration_ticks: 10
@@ -186,6 +265,7 @@ stocksim_config:
     start_time: "2025-03-01T09:30:00+00:00"
     end_time: "2025-03-01T10:30:00+00:00"
     tick_interval: 30s
+    max_wall_time_seconds: 900
     expected_exchange_agent_count: 1
 
   environment:
