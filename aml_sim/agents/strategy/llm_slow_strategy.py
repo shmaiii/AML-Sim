@@ -10,6 +10,10 @@ from datetime import datetime, timezone
 from typing import Any, Mapping, Optional, Protocol
 
 from aml_sim.agents.models.profile import profile_to_dict
+from aml_sim.agents.strategy.constants import (
+    DEFAULT_OPENAI_SLOW_STRATEGY_PROMPT,
+    STATIC_RESPONSES_BY_ROLE,
+)
 
 
 class SlowStrategist(Protocol):
@@ -293,98 +297,6 @@ class OpenAIJSONLLMClient:
         }
         with open(output_path, "a", encoding="utf-8") as handle:
             handle.write(json.dumps(record, default=str) + "\n")
-
-
-DEFAULT_OPENAI_SLOW_STRATEGY_PROMPT = """
-You are the slow-loop strategy module for one AML-Sim trading agent.
-
-You must return valid JSON only. Do not place orders. Do not include prose
-outside JSON. You may only propose updates to fields already present in
-current_strategy. The fast loop and StockSim execution layer will decide
-whether and how orders are placed.
-
-Return this shape:
-{
-  "strategy_updates": {
-    "<existing_strategy_field>": "<new_value>"
-  },
-  "confidence": 0.0,
-  "reason": "brief reason for the strategy update"
-}
-
-Use the profile, memory, observation, market/portfolio/order context, recent
-fills, shocks/events, and current_strategy to propose conservative bounded
-updates. If there is no good reason to change behavior, return an empty
-strategy_updates object with a short reason.
-""".strip()
-
-
-STATIC_MARKET_MAKER_RESPONSE = {
-    "strategy_updates": {
-        "risk_mode": "normal",
-        "spread": 0.25,
-        "quote_size": 100,
-        "inventory_skew": 0.0015,
-    },
-    "confidence": 0.75,
-    "reason": "Static market-maker LLM test response: quote slightly wider and manage inventory conservatively.",
-}
-
-
-STATIC_RETAIL_RESPONSE = {
-    "strategy_updates": {
-        "risk_mode": "normal",
-        "trade_probability": 0.35,
-        "buy_bias": 0.52,
-        "herding_tendency": 0.15,
-        "panic_level": 0.05,
-    },
-    "confidence": 0.7,
-    "reason": "Static retail LLM test response: slightly active, mildly bullish, low panic.",
-}
-
-
-STATIC_INSTITUTIONAL_RESPONSE = {
-    "strategy_updates": {
-        "risk_mode": "normal",
-        "child_order_size": 100,
-        "execution_style": "sliced",
-        "urgency": 0.6,
-    },
-    "confidence": 0.78,
-    "reason": "Static institutional LLM test response: keep sliced execution with moderate urgency.",
-}
-
-
-STATIC_INFORMED_RESPONSE = {
-    "strategy_updates": {
-        "risk_mode": "normal",
-        "trade_probability": 0.38,
-        "information_edge": 0.72,
-    },
-    "confidence": 0.74,
-    "reason": "Static informed-trader LLM test response: keep trading only when the private value signal is strong.",
-}
-
-
-STATIC_LIQUIDITY_TAKER_RESPONSE = {
-    "strategy_updates": {
-        "risk_mode": "normal",
-        "flow_intensity": 0.38,
-        "aggression": 0.75,
-    },
-    "confidence": 0.7,
-    "reason": "Static liquidity-taker LLM test response: maintain steady aggressive flow with bounded size.",
-}
-
-
-STATIC_RESPONSES_BY_ROLE = {
-    "market_maker": STATIC_MARKET_MAKER_RESPONSE,
-    "retail": STATIC_RETAIL_RESPONSE,
-    "institutional": STATIC_INSTITUTIONAL_RESPONSE,
-    "informed": STATIC_INFORMED_RESPONSE,
-    "liquidity_taker": STATIC_LIQUIDITY_TAKER_RESPONSE,
-}
 
 
 def create_llm_strategist(
