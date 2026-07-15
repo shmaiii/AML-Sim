@@ -6,14 +6,17 @@ from aml_sim.agents.strategy.llm_slow_strategy import (
     LLMStrategistConfigurationError,
     LLMStrategyResponseError,
     OpenAIJSONLLMClient,
+    SlowStrategist,
+    StaticJSONLLMClient,
+    create_llm_strategist,
+)
+from aml_sim.agents.strategy.constants.static_responses import (
     STATIC_INFORMED_RESPONSE,
     STATIC_INSTITUTIONAL_RESPONSE,
     STATIC_LIQUIDITY_TAKER_RESPONSE,
     STATIC_MARKET_MAKER_RESPONSE,
     STATIC_RETAIL_RESPONSE,
-    SlowStrategist,
-    StaticJSONLLMClient,
-    create_llm_strategist,
+    STATIC_RESPONSES_BY_ROLE,
 )
 from aml_sim.agents.strategy.validator import (
     DEFAULT_STRATEGY_LIMITS,
@@ -34,6 +37,7 @@ __all__ = [
     "STATIC_LIQUIDITY_TAKER_RESPONSE",
     "STATIC_MARKET_MAKER_RESPONSE",
     "STATIC_RETAIL_RESPONSE",
+    "STATIC_RESPONSES_BY_ROLE",
     "SlowStrategist",
     "StaticJSONLLMClient",
     "StrategyValidationError",

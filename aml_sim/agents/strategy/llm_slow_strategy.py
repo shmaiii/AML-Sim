@@ -13,6 +13,7 @@ from aml_sim.agents.models.profile import profile_to_dict
 from aml_sim.agents.strategy.constants import (
     DEFAULT_OPENAI_SLOW_STRATEGY_PROMPT,
     STATIC_RESPONSES_BY_ROLE,
+    build_role_prompt,
 )
 
 
@@ -315,13 +316,20 @@ def create_llm_strategist(
         return LLMStrategist(client=StaticJSONLLMClient(response))
 
     if strategist_type in {"openai", "openai_json"}:
+        role_overrides = config.get("role_prompt") or config.get("role_prompts")
+        if role_overrides is not None and not isinstance(role_overrides, Mapping):
+            raise LLMStrategistConfigurationError(
+                "slow_strategist role_prompt must be a mapping when provided."
+            )
+        system_prompt = build_role_prompt(role, role_overrides=role_overrides)
+
         client = OpenAIJSONLLMClient(
             model=str(config.get("model", "gpt-4o-mini")),
             api_key_env=str(config.get("api_key_env", "OPENAI_API_KEY")),
             temperature=float(config.get("temperature", 0.2)),
             timeout_seconds=float(config.get("timeout_seconds", 30.0)),
             max_retries=int(config.get("max_retries", 2)),
-            system_prompt=config.get("system_prompt") or config.get("prompt"),
+            system_prompt=system_prompt,
         )
         allowed_fields = config.get("allowed_strategy_fields")
         return LLMStrategist(
