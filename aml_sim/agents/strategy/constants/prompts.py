@@ -37,6 +37,10 @@ Use the profile, memory, observation, market/portfolio/order context, recent
 fills, shocks/events, and current_strategy to propose conservative bounded
 updates. If there is no good reason to change behavior, return an empty
 strategy_updates object with a short reason.
+
+Active shocks/events may include seen_before=true. Treat these as previously
+observed context rather than newly arrived information. They may still be
+relevant if market state, fills, inventory, prices, or risk conditions changed.
 """.strip()
 
 
