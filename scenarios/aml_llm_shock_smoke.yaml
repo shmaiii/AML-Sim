@@ -1,0 +1,150 @@
+name: aml_llm_shock_smoke
+description: >
+  Compact AML smoke test for OpenAI slow-loop strategy calls with a scheduled
+  shock. This keeps the run short while exercising shock delivery, observation
+  context, LLM strategy updates, and fast-loop reactions.
+rabbitmq_host: localhost
+
+aml_config:
+  llm:
+    provider: openai
+    model: gpt-5.4
+    api_key_env: OPENAI_API_KEY
+    temperature: 0.2
+    timeout_seconds: 30
+    max_retries: 2
+
+stocksim_config:
+  exchange_mode: orderbook
+
+  instruments:
+    - AAPL
+
+  exchanges:
+    AAPL:
+      data_source: synthetic
+      symbol_type: stock
+      candle_interval: 1d
+      warmup_candles: 0
+
+  agents:
+    market_maker:
+      type: AML_Market_Maker
+      count: 1
+      parameters:
+        initial_cash: 500000
+        action_interval: 30s
+        slow_loop_interval: 1m
+        fair_price: 100.0
+        spread: 0.2
+        min_spread: 0.05
+        max_spread: 1.5
+        quote_size: 50
+        quote_levels: 3
+        target_inventory: 2500
+        inventory_skew: 0.001
+        max_inventory: 4000
+        min_inventory: 250
+        volatility_sensitivity: 5.0
+        shock_spread_multiplier: 1.25
+        shock_price_adjustment: 0.45
+        liquidity_withdrawal_sensitivity: 0.35
+        initial_positions:
+          AAPL: 2500
+        initial_cost_basis:
+          AAPL: 100.0
+        slow_strategist:
+          type: openai
+
+    retail_population:
+      type: AML_Retail_Trader
+      count: 1
+      parameters:
+        initial_cash: 25000
+        action_interval: 30s
+        slow_loop_interval: 1m
+        trade_probability: 0.4
+        max_order_size: 6
+        buy_bias: 0.52
+        herding_tendency: 0.35
+        panic_level: 0.4
+        sentiment_sensitivity: 0.65
+        shock_sensitivity: 0.8
+        initial_positions:
+          AAPL: 5
+        initial_cost_basis:
+          AAPL: 100.0
+        slow_strategist:
+          type: openai
+
+    institutional_execution:
+      type: AML_Institutional_Trader
+      count: 1
+      parameters:
+        initial_cash: 300000
+        action_interval: 1m
+        slow_loop_interval: 1m
+        target_positions:
+          AAPL: 120
+        child_order_size: 25
+        order_type: MARKET
+        alpha_strategy: target_execution
+        max_position: 150
+        min_position: 0
+        shock_reactivity: 0.7
+        initial_positions:
+          AAPL: 0
+        initial_cost_basis:
+          AAPL: 100.0
+        slow_strategist:
+          type: openai
+
+    shock_agent:
+      type: AML_Shock_Agent
+      count: 1
+      parameters:
+        default_duration_ticks: 4
+        random_seed: 20250301
+        initial_market_state:
+          policy_rate_bps: 425
+          liquidity_index: 1.0
+          risk_aversion: 0.0
+          credit_spread_bps: 90
+        random_events:
+          enabled: false
+        scheduled_events:
+          - id: smoke_negative_news
+            tick: 2
+            shock_type: negative_news
+            shock_class: non_systematic
+            scope: micro
+            trigger_type: scheduled
+            visibility: public
+            severity: 0.6
+            direction: -1
+            surprise: 0.7
+            expected_probability: 0.35
+            effects:
+              fundamental_price_shift: -0.9
+              order_arrival_multiplier: 1.6
+              risk_limit_multiplier: 0.7
+              liquidity_multiplier: 0.65
+              volatility_multiplier: 1.5
+              spread_multiplier: 1.3
+              sentiment_shift: -0.45
+            affected_instruments:
+              - AAPL
+            duration_ticks: 4
+            message: Compact smoke-test negative news shock.
+
+  simulation:
+    start_time: "2025-03-01T09:30:00+00:00"
+    end_time: "2025-03-01T09:33:00+00:00"
+    tick_interval: 30s
+    max_wall_time_seconds: 180
+    expected_exchange_agent_count: 1
+    startup_grace_seconds: 5
+
+  environment:
+    rabbitmq_host: localhost
+    log_level: INFO
