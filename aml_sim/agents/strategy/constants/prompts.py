@@ -3,6 +3,7 @@
 from typing import Mapping, Optional
 
 from aml_sim.agents.strategy.constants.role_prompts import ROLE_PROMPTS
+from aml_sim.agents.strategy.constants.risk_modes import format_risk_mode_definitions
 
 DEFAULT_OPENAI_SLOW_STRATEGY_PROMPT = """
 You are controlling the slow strategic thinking of one AML-Sim trading agent.
@@ -38,10 +39,17 @@ fills, shocks/events, and current_strategy to propose conservative bounded
 updates. If there is no good reason to change behavior, return an empty
 strategy_updates object with a short reason.
 
+risk_mode is a controlled summary label. If you update risk_mode, it must be
+one of:
+{RISK_MODE_DEFINITIONS}
+
+Use reason for nuanced wording like defensive, cautious, nervous, or high
+conviction. Use role-specific numeric fields for actual behavior changes.
+
 Active shocks/events may include seen_before=true. Treat these as previously
 observed context rather than newly arrived information. They may still be
 relevant if market state, fills, inventory, prices, or risk conditions changed.
-""".strip()
+""".replace("{RISK_MODE_DEFINITIONS}", format_risk_mode_definitions()).strip()
 
 
 ROLE_PROMPT_TEMPLATE = """
