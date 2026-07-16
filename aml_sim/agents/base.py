@@ -613,12 +613,22 @@ class BaseAMLAgent(TraderAgent):
         }
 
     def stop(self) -> None:
-        self._export_action_events()
+        self._export_decision_artifacts()
         super().stop()
 
-    def _export_action_events(self) -> None:
+    def _export_decision_artifacts(self) -> None:
         output_dir = os.getenv("METRICS_OUTPUT_DIR", "metrics")
         os.makedirs(output_dir, exist_ok=True)
+        decision_context_dir = os.getenv(
+            "DECISION_CONTEXT_DIR",
+            os.path.join(output_dir, "decision_context"),
+        )
+        agent_dir = os.path.join(decision_context_dir, self.agent_id)
+        os.makedirs(agent_dir, exist_ok=True)
+        self._export_action_events(output_dir=output_dir)
+        self._export_memory_events(agent_dir=agent_dir)
+
+    def _export_action_events(self, *, output_dir: str) -> None:
         output_file = os.path.join(output_dir, f"trader_actions_{self.agent_id}.json")
         try:
             with open(output_file, "w", encoding="utf-8") as handle:
@@ -626,6 +636,19 @@ class BaseAMLAgent(TraderAgent):
             self.logger.info(f"AML trader actions exported to {output_file}")
         except Exception as exc:
             self.logger.error(f"Failed to export AML trader actions: {exc}")
+
+    def _export_memory_events(self, *, agent_dir: str) -> None:
+        output_file = os.path.join(agent_dir, "memory.json")
+        try:
+            if hasattr(self.memory, "export_agent_memory"):
+                memory_payload = self.memory.export_agent_memory(self.agent_id)
+            else:
+                memory_payload = self.memory.retrieve_context(self.agent_id)
+            with open(output_file, "w", encoding="utf-8") as handle:
+                json.dump(serialize_value(memory_payload), handle, indent=2)
+            self.logger.info(f"AML agent memory exported to {output_file}")
+        except Exception as exc:
+            self.logger.error(f"Failed to export AML agent memory: {exc}")
 
     @abstractmethod
     async def run_fast_loop(self, observation: Mapping[str, Any]) -> None:

@@ -317,6 +317,7 @@ def launch_stocksim(
     env_updates = load_env_file(env_file)
     env_updates["LOG_DIR"] = str(aml_run.logs_dir)
     env_updates["METRICS_OUTPUT_DIR"] = str(aml_run.reports_dir / "agents")
+    env_updates["DECISION_CONTEXT_DIR"] = str(aml_run.run_dir / "decision_context")
     env_updates["RABBITMQ_HOST"] = rabbitmq_host
 
     logger.info("Launching StockSim components from AML-Sim")

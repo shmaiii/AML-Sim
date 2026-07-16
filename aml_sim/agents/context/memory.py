@@ -35,6 +35,9 @@ class MemoryBackend(Protocol):
     ) -> dict[str, Any]:
         """Retrieve memory context to include in an LLM prompt."""
 
+    def export_agent_memory(self, agent_id: str) -> dict[str, Any]:
+        """Export all stored memory for one agent."""
+
 
 @dataclass
 class MemoryEvent:
@@ -87,6 +90,15 @@ class LocalAgentMemory:
             ),
         }
 
+    def export_agent_memory(self, agent_id: str) -> dict[str, Any]:
+        events = self.events_by_agent.get(agent_id, [])
+        return {
+            "backend": "local",
+            "agent_id": agent_id,
+            "event_count": len(events),
+            "events": [serialize_value(event) for event in events],
+        }
+
 
 class ZepAgentMemory:
     """
@@ -124,6 +136,9 @@ class ZepAgentMemory:
         observation: Optional[Mapping[str, Any]] = None,
         limit: int = DEFAULT_MEMORY_LIMIT,
     ) -> dict[str, Any]:
+        raise NotImplementedError("Zep memory backend is not implemented yet.")
+
+    def export_agent_memory(self, agent_id: str) -> dict[str, Any]:
         raise NotImplementedError("Zep memory backend is not implemented yet.")
 
 
