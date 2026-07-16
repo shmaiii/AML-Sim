@@ -76,6 +76,7 @@ class BaseAMLAgent(TraderAgent):
         self.slow_loop_seen_event_ids: set[Any] = set()
         self.market_state: dict[str, Any] = {}
         self.market_state_baseline: dict[str, Any] = {}
+        self.slow_loop_seen_event_ids: set[Any] = set()
         self.price_history: dict[str, list[dict[str, Any]]] = {
             instrument: [] for instrument in self.instrument_exchange_map.keys()
         }
@@ -455,6 +456,11 @@ class BaseAMLAgent(TraderAgent):
             event_id is not None and event_id in self.slow_loop_seen_event_ids,
         )
         self._update_market_state_from_payload(observed)
+        event_id = self._event_memory_id(observed)
+        observed.setdefault(
+            "seen_before",
+            event_id is not None and event_id in self.slow_loop_seen_event_ids,
+        )
         self.recent_events.append(observed)
         self.recent_events = self.recent_events[-50:]
         self._record_action_event(
