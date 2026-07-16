@@ -41,6 +41,10 @@ def build_observation_context(
                 getattr(agent, "last_market_snapshot", {})
             ),
             "price_history": serialize_mapping(getattr(agent, "price_history", {})),
+            "state": serialize_mapping(getattr(agent, "market_state", {})),
+            "state_baseline": serialize_mapping(
+                getattr(agent, "market_state_baseline", {})
+            ),
         },
         "portfolio": _build_portfolio_context(agent, instruments),
         "orders": {

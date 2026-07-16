@@ -15,7 +15,7 @@ from aml_sim.agents.context.observation import ObservationProcessor
 from aml_sim.agents.models.profile import MarketMakerProfile, coerce_profile
 from aml_sim.agents.strategy.llm_slow_strategy import SlowStrategist
 from aml_sim.agents.models.state import MarketMakerStrategyState
-from aml_sim.agents.strategy.signals import event_pressure, price_series, realized_volatility
+from aml_sim.agents.strategy.signals import price_series, realized_volatility
 from utils.orders import OrderType, Side
 
 
@@ -163,7 +163,7 @@ class AMLMarketMakerTrader(BaseAMLAgent):
         inventory = self.long_qty[instrument] - self.short_qty[instrument]
         inventory_gap = inventory - strategy.target_inventory
         skew = inventory_gap * strategy.inventory_skew
-        pressure = event_pressure(self._active_events(), instrument)
+        pressure = self._market_pressure(instrument)
         prices = price_series(self.price_history, instrument, self.prices.get(instrument, strategy.fair_price))
         volatility = realized_volatility(prices, lookback_ticks=10)
 
@@ -250,14 +250,14 @@ class AMLMarketMakerTrader(BaseAMLAgent):
 
     def _quote_size(self, instrument: str) -> int:
         strategy = self.strategy_state
-        pressure = event_pressure(self._active_events(), instrument)
+        pressure = self._market_pressure(instrument)
         size_multiplier = 1 - (pressure["severity"] * strategy.liquidity_withdrawal_sensitivity)
         size_multiplier *= pressure["liquidity_multiplier"]
         size_multiplier *= pressure["risk_limit_multiplier"]
         return max(1, int(strategy.quote_size * max(0.05, size_multiplier)))
 
     def _effective_max_inventory(self, instrument: str) -> int:
-        pressure = event_pressure(self._active_events(), instrument)
+        pressure = self._market_pressure(instrument)
         return max(
             self.strategy_state.min_inventory,
             int(self.strategy_state.max_inventory * pressure["risk_limit_multiplier"]),

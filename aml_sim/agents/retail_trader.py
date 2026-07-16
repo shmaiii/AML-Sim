@@ -16,7 +16,7 @@ from aml_sim.agents.context.observation import ObservationProcessor
 from aml_sim.agents.models.profile import RetailProfile, coerce_profile
 from aml_sim.agents.strategy.llm_slow_strategy import SlowStrategist
 from aml_sim.agents.models.state import RetailStrategyState
-from aml_sim.agents.strategy.signals import clamp, event_pressure, momentum_signal, price_series
+from aml_sim.agents.strategy.signals import clamp, momentum_signal, price_series
 from utils.orders import OrderType, Side
 
 
@@ -92,7 +92,7 @@ class AMLRetailTrader(BaseAMLAgent):
             await self._maybe_trade(instrument)
 
     async def _maybe_trade(self, instrument: str) -> None:
-        pressure = event_pressure(self._active_events(), instrument)
+        pressure = self._market_pressure(instrument)
         trade_probability, buy_bias = self._effective_retail_params(instrument, pressure)
         if self.random.random() > trade_probability:
             return

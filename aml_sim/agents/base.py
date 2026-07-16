@@ -14,6 +14,7 @@ from aml_sim.agents.context.memory import LocalAgentMemory, MemoryBackend
 from aml_sim.agents.context.observation import ObservationProcessor
 from aml_sim.agents.models.profile import AgentProfile
 from aml_sim.agents.strategy.llm_slow_strategy import SlowStrategist, create_llm_strategist
+from aml_sim.agents.strategy.signals import event_pressure
 from aml_sim.agents.strategy.validator import StrategyValidationError, validate_strategy_state
 from aml_sim.serialization import serialize_value
 from agents.benchmark_traders.trader import TraderAgent
@@ -72,6 +73,8 @@ class BaseAMLAgent(TraderAgent):
         self.next_slow_loop_time = None
         self.action_events: list[dict[str, Any]] = []
         self.recent_events: list[dict[str, Any]] = []
+        self.market_state: dict[str, Any] = {}
+        self.market_state_baseline: dict[str, Any] = {}
         self.price_history: dict[str, list[dict[str, Any]]] = {
             instrument: [] for instrument in self.instrument_exchange_map.keys()
         }
@@ -208,6 +211,9 @@ class BaseAMLAgent(TraderAgent):
             if payload.get("event_type") in {"AML_SHOCK", "AML_MARKET_EVENT"}:
                 self._handle_aml_event(payload)
                 return
+            if payload.get("event_type") == "AML_MARKET_STATE":
+                self._handle_market_state_update(payload)
+                return
 
         await super()._handle_regular_message(msg)
 
@@ -310,6 +316,7 @@ class BaseAMLAgent(TraderAgent):
         observed = serialize_value(dict(event))
         observed.setdefault("observed_at", self.current_time.isoformat() if self.current_time else None)
         observed.setdefault("observed_tick_id", self.current_tick_id)
+        self._update_market_state_from_payload(observed)
         self.recent_events.append(observed)
         self.recent_events = self.recent_events[-50:]
         self._record_action_event(
@@ -335,6 +342,7 @@ class BaseAMLAgent(TraderAgent):
                 "affected_instruments": observed.get("affected_instruments"),
                 "affected_asset_classes": observed.get("affected_asset_classes"),
                 "market_state": observed.get("market_state"),
+                "market_state_baseline": observed.get("market_state_baseline"),
             }
         )
         self.logger.info(
@@ -343,6 +351,27 @@ class BaseAMLAgent(TraderAgent):
             f"severity={observed.get('severity')}, "
             f"direction={observed.get('direction')}"
         )
+
+    def _handle_market_state_update(self, payload: Mapping[str, Any]) -> None:
+        previous_state = dict(self.market_state)
+        self._update_market_state_from_payload(payload)
+        if self.market_state == previous_state:
+            return
+        self._record_action_event(
+            {
+                "event_type": "market_state_updated",
+                "market_state": self.market_state,
+                "market_state_baseline": self.market_state_baseline,
+            }
+        )
+
+    def _update_market_state_from_payload(self, payload: Mapping[str, Any]) -> None:
+        state = payload.get("market_state")
+        if isinstance(state, Mapping):
+            self.market_state = dict(serialize_value(state))
+        baseline = payload.get("market_state_baseline")
+        if isinstance(baseline, Mapping):
+            self.market_state_baseline = dict(serialize_value(baseline))
 
     def _active_events(self) -> list[dict[str, Any]]:
         active: list[dict[str, Any]] = []
@@ -372,6 +401,15 @@ class BaseAMLAgent(TraderAgent):
 
         return active[-20:]
 
+    def _market_pressure(self, instrument: str) -> dict[str, float]:
+        """Combine live shock effects with the current central market state."""
+        return event_pressure(
+            self._active_events(),
+            instrument,
+            market_state=self.market_state,
+            market_state_baseline=self.market_state_baseline,
+        )
+
     def _known_events(self) -> list[dict[str, Any]]:
         return self.recent_events[-50:]
 
@@ -398,9 +436,17 @@ class BaseAMLAgent(TraderAgent):
 
     def _portfolio_snapshot(self) -> dict[str, Any]:
         instruments = list(self.instrument_exchange_map.keys())
+        unrealized_pnl = self.get_unrealized_pnl()
+        exposure = self.get_portfolio_exposure()
         return {
             "cash": self.cash,
             "portfolio_value": self.portfolio_value,
+            "unrealized_pnl": round(sum(unrealized_pnl.values()), 2),
+            "total_pnl": round(
+                sum(self.realized_pnl.values()) + sum(unrealized_pnl.values()),
+                2,
+            ),
+            **exposure,
             "positions": {
                 instrument: {
                     "long": self.long_qty[instrument],
@@ -408,6 +454,17 @@ class BaseAMLAgent(TraderAgent):
                     "net": self.long_qty[instrument] - self.short_qty[instrument],
                     "last_price": self.prices[instrument],
                     "realized_pnl": self.realized_pnl[instrument],
+                    "unrealized_pnl": unrealized_pnl.get(instrument, 0.0),
+                    "total_pnl": round(
+                        self.realized_pnl[instrument]
+                        + unrealized_pnl.get(instrument, 0.0),
+                        2,
+                    ),
+                    "market_value": round(
+                        (self.long_qty[instrument] - self.short_qty[instrument])
+                        * self.prices[instrument],
+                        2,
+                    ),
                 }
                 for instrument in instruments
             },

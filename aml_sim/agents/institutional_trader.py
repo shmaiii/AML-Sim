@@ -17,7 +17,6 @@ from aml_sim.agents.strategy.llm_slow_strategy import SlowStrategist
 from aml_sim.agents.models.state import InstitutionalStrategyState
 from aml_sim.agents.strategy.signals import (
     clamp,
-    event_pressure,
     mean_reversion_signal,
     momentum_signal,
     price_series,
@@ -155,7 +154,7 @@ class AMLInstitutionalTrader(BaseAMLAgent):
             signal += weighted_signal
             signal_parts[alpha_strategy] = weighted_signal
 
-        pressure = event_pressure(list(observation.get("events", [])), instrument)
+        pressure = self._market_pressure(instrument)
         signal += pressure["directional_bias"] * strategy.shock_reactivity * strategy.entry_threshold
         if prices and prices[-1] > 0:
             signal += (
@@ -202,7 +201,7 @@ class AMLInstitutionalTrader(BaseAMLAgent):
             return
 
         side = Side.BUY.value if gap > 0 else Side.SELL.value
-        pressure = event_pressure(self._active_events(), instrument)
+        pressure = self._market_pressure(instrument)
         child_size = strategy.child_order_size
         child_size *= clamp(pressure["order_arrival_multiplier"], 0.25, 2.0)
         child_size *= pressure["risk_limit_multiplier"]

@@ -11,7 +11,7 @@ from aml_sim.agents.context.observation import ObservationProcessor
 from aml_sim.agents.models.profile import LiquidityTakerProfile, coerce_profile
 from aml_sim.agents.models.state import LiquidityTakerStrategyState
 from aml_sim.agents.strategy.llm_slow_strategy import SlowStrategist
-from aml_sim.agents.strategy.signals import clamp, event_pressure
+from aml_sim.agents.strategy.signals import clamp
 from utils.orders import OrderType, Side
 
 
@@ -80,7 +80,7 @@ class AMLLiquidityTaker(BaseAMLAgent):
 
     async def _maybe_take_liquidity(self, instrument: str) -> None:
         strategy = self.strategy_state
-        pressure = event_pressure(self._active_events(), instrument)
+        pressure = self._market_pressure(instrument)
         participation = strategy.flow_intensity
         participation *= pressure["order_arrival_multiplier"]
         participation += pressure["severity"] * strategy.shock_sensitivity * 0.25
