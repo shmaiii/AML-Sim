@@ -107,6 +107,9 @@ def event_pressure(
     events: list[Mapping[str, Any]],
     instrument: str,
     effect_resolver: EffectResolver | None = None,
+    *,
+    market_state: Mapping[str, Any] | None = None,
+    market_state_baseline: Mapping[str, Any] | None = None,
 ) -> dict[str, float]:
     """
     Aggregate active event pressure for an instrument.
@@ -169,6 +172,36 @@ def event_pressure(
         sentiment_shift += _effect_float(effect, "sentiment_shift")
         risk_aversion_shift += _effect_float(effect, "risk_aversion_shift")
 
+    state_effect = market_state_pressure(
+        _state_without_active_event_contributions(
+            market_state,
+            events,
+            instrument,
+        ),
+        market_state_baseline,
+    )
+    max_severity = max(max_severity, state_effect["severity"])
+    directional_bias += state_effect["directional_bias"]
+    fundamental_price_shift += state_effect["fundamental_price_shift"]
+    order_arrival_multiplier *= state_effect["order_arrival_multiplier"]
+    risk_limit_multiplier = min(
+        risk_limit_multiplier,
+        state_effect["risk_limit_multiplier"],
+    )
+    liquidity_multiplier = min(
+        liquidity_multiplier,
+        state_effect["liquidity_multiplier"],
+    )
+    volatility_multiplier *= state_effect["volatility_multiplier"]
+    spread_multiplier *= state_effect["spread_multiplier"]
+    price_impact_multiplier *= state_effect["price_impact_multiplier"]
+    rate_shift_bps += state_effect["rate_shift_bps"]
+    yield_shift_bps += state_effect["yield_shift_bps"]
+    funding_spread_bps += state_effect["funding_spread_bps"]
+    credit_spread_bps += state_effect["credit_spread_bps"]
+    sentiment_shift += state_effect["sentiment_shift"]
+    risk_aversion_shift += state_effect["risk_aversion_shift"]
+
     return {
         "severity": clamp(max_severity, 0.0, 1.0),
         "directional_bias": clamp(directional_bias, -1.0, 1.0),
@@ -186,6 +219,132 @@ def event_pressure(
         "sentiment_shift": clamp(sentiment_shift, -1.0, 1.0),
         "risk_aversion_shift": clamp(risk_aversion_shift, -1.0, 1.0),
     }
+
+
+def market_state_pressure(
+    market_state: Mapping[str, Any] | None,
+    market_state_baseline: Mapping[str, Any] | None = None,
+) -> dict[str, float]:
+    """Translate persistent central conditions into bounded trading pressure.
+
+    Event effects model the immediate incident. This helper adds the slower
+    background effects of a changed policy rate, funding conditions, credit
+    conditions, liquidity, and risk appetite after the event itself expires.
+    """
+    if not market_state:
+        return dict(_EFFECT_DEFAULTS)
+
+    baseline = market_state_baseline or {}
+    liquidity = max(0.01, _safe_float(market_state.get("liquidity_index"), 1.0))
+    baseline_liquidity = max(
+        0.01,
+        _safe_float(baseline.get("liquidity_index"), 1.0),
+    )
+    liquidity_ratio = clamp(liquidity / baseline_liquidity, 0.05, 2.0)
+
+    rate_delta = _state_delta(market_state, baseline, "policy_rate_bps")
+    yield_delta = _state_delta(market_state, baseline, "yield_curve_shift_bps")
+    funding_delta = _state_delta(market_state, baseline, "funding_spread_bps")
+    credit_delta = _state_delta(market_state, baseline, "credit_spread_bps")
+    risk_delta = _state_delta(market_state, baseline, "risk_aversion")
+
+    liquidity_stress = max(0.0, 1.0 - liquidity_ratio)
+    rate_stress = max(0.0, rate_delta) / 100.0
+    yield_stress = max(0.0, yield_delta) / 100.0
+    funding_stress = max(0.0, funding_delta) / 100.0
+    credit_stress = max(0.0, credit_delta) / 100.0
+    risk_stress = max(0.0, risk_delta)
+    stress = clamp(
+        0.55 * liquidity_stress
+        + 0.20 * risk_stress
+        + 0.15 * funding_stress
+        + 0.10 * credit_stress
+        + 0.08 * rate_stress
+        + 0.05 * yield_stress,
+        0.0,
+        1.0,
+    )
+
+    return {
+        "severity": stress,
+        "directional_bias": clamp(
+            -0.12 * (rate_delta / 100.0)
+            - 0.08 * (yield_delta / 100.0)
+            - 0.10 * (funding_delta / 100.0)
+            - 0.08 * (credit_delta / 100.0),
+            -0.5,
+            0.5,
+        ),
+        "fundamental_price_shift": 0.0,
+        "order_arrival_multiplier": clamp(1.0 + (0.25 * stress), 0.5, 1.5),
+        "risk_limit_multiplier": clamp(1.0 - (0.55 * stress), 0.25, 1.0),
+        "liquidity_multiplier": liquidity_ratio,
+        "volatility_multiplier": clamp(1.0 + (0.80 * stress), 1.0, 2.0),
+        "spread_multiplier": clamp(1.0 + (1.00 * stress), 1.0, 2.25),
+        "price_impact_multiplier": clamp(1.0 + (0.70 * stress), 1.0, 2.0),
+        "rate_shift_bps": rate_delta,
+        "yield_shift_bps": yield_delta,
+        "funding_spread_bps": funding_delta,
+        "credit_spread_bps": credit_delta,
+        "sentiment_shift": clamp(-0.25 * risk_stress, -0.25, 0.0),
+        "risk_aversion_shift": clamp(risk_delta, -1.0, 1.0),
+    }
+
+
+def _state_delta(
+    market_state: Mapping[str, Any],
+    baseline: Mapping[str, Any],
+    key: str,
+) -> float:
+    return _safe_float(market_state.get(key), 0.0) - _safe_float(
+        baseline.get(key),
+        0.0,
+    )
+
+
+def _state_without_active_event_contributions(
+    market_state: Mapping[str, Any] | None,
+    events: list[Mapping[str, Any]],
+    instrument: str,
+) -> Mapping[str, Any] | None:
+    """Remove active effects already represented by the event pressure itself."""
+    if not market_state:
+        return market_state
+
+    adjusted = dict(market_state)
+    state_keys = (
+        ("policy_rate_bps", "rate_shift_bps"),
+        ("yield_curve_shift_bps", "yield_shift_bps"),
+        ("funding_spread_bps", "funding_spread_bps"),
+        ("credit_spread_bps", "credit_spread_bps"),
+        ("risk_aversion", "risk_aversion_shift"),
+    )
+    for event in events:
+        if not event_applies_to(event, instrument):
+            continue
+        contribution = event.get("market_state_contribution")
+        if not isinstance(contribution, Mapping):
+            continue
+
+        for state_key, effect_key in state_keys:
+            if _effect_float(event, effect_key) == 0.0:
+                continue
+            delta = _safe_float(contribution.get(state_key), 0.0)
+            if delta != 0.0:
+                adjusted[state_key] = _safe_float(adjusted.get(state_key), 0.0) - delta
+
+        liquidity_multiplier = _effect_float(event, "liquidity_multiplier")
+        state_multiplier = _safe_float(
+            contribution.get("liquidity_multiplier"),
+            1.0,
+        )
+        if liquidity_multiplier != 1.0 and state_multiplier > 0:
+            adjusted["liquidity_index"] = (
+                _safe_float(adjusted.get("liquidity_index"), 1.0)
+                / state_multiplier
+            )
+
+    return adjusted
 
 
 def _resolve_event_effect(event: Mapping[str, Any], instrument: str) -> dict[str, float]:

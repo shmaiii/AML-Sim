@@ -42,6 +42,14 @@ def _format_simulation_duration(start_str: str, end_str: str) -> str:
         return "unknown"
 
 
+def _uses_openai_slow_loop(agent_config: dict[str, Any]) -> bool:
+    """Return whether an AML agent is configured with an enabled OpenAI strategist."""
+    strategist = agent_config.get("parameters", {}).get("slow_strategist", {})
+    if not isinstance(strategist, dict) or not strategist.get("enabled", True):
+        return False
+    return str(strategist.get("type", "")).lower() in {"openai", "openai_json"}
+
+
 def generate_post_simulation_artifacts(config: dict[str, Any]) -> None:
     """
     Generate StockSim-style artifacts from AML-Sim.
@@ -151,14 +159,14 @@ def generate_post_simulation_artifacts(config: dict[str, Any]) -> None:
             },
             "research_metrics": {
                 "llm_agents": sum(
-                    1
+                    agent.get("count", 1)
                     for agent in config.get("agents", {}).values()
-                    if agent.get("type") == "LLMTradingAgent"
+                    if _uses_openai_slow_loop(agent)
                 ),
                 "benchmark_agents": sum(
-                    1
+                    agent.get("count", 1)
                     for agent in config.get("agents", {}).values()
-                    if agent.get("type") != "LLMTradingAgent"
+                    if not _uses_openai_slow_loop(agent)
                 ),
                 "multi_market": len(
                     {

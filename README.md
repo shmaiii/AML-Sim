@@ -188,7 +188,8 @@ news, policy, liquidity, and other uncertainty injections. It supports:
   `affected_asset_classes`, `asset_class_effects`, and
   `per_instrument_effects`.
 - **Central market state** through `initial_market_state`, `market_state`, and
-  `market_state_delta`.
+  `market_state_delta`. Temporary impacts revert after their event duration;
+  structural changes can use `state_persistence: permanent`.
 
 Supported effect fields include `fundamental_price_shift`,
 `order_arrival_multiplier`, `risk_limit_multiplier`, `liquidity_multiplier`,
@@ -199,6 +200,9 @@ agents react mainly through price/fundamental pressure, order-arrival pressure,
 risk-limit pressure, liquidity withdrawal, spread/volatility widening, and
 sentiment shifts. The same event payload is included in the observation context
 so LLM slow loops can reason over active shocks and announced future events.
+The observation also carries the current central market state and its baseline,
+which the fast loops use for ongoing rate, funding, credit, liquidity, and risk
+conditions after an individual shock has expired.
 
 ## Setup
 
