@@ -6,6 +6,7 @@ from copy import deepcopy
 import random
 from typing import Any, Mapping, Optional
 
+from aml_sim.market_state import MarketStateEngine
 from aml_sim.shocks import (
     build_shock_payload,
     safe_float,
@@ -47,7 +48,10 @@ class AMLShockAgent(Agent):
             for key, value in (instrument_metadata or {}).items()
             if isinstance(value, Mapping)
         }
-        self.market_state = dict(initial_market_state or {})
+        self.market_state_engine = MarketStateEngine(initial_market_state)
+        self.market_state_baseline = dict(self.market_state_engine.baseline)
+        self.market_state = dict(self.market_state_engine.current_state)
+        self._last_broadcast_market_state: dict[str, Any] | None = None
         self.default_duration_ticks = default_duration_ticks
         self.emitted_event_ids: set[str] = set()
         self.announced_event_ids: set[str] = set()
@@ -63,6 +67,8 @@ class AMLShockAgent(Agent):
 
     async def handle_time_tick(self, payload: dict[str, Any]) -> None:
         await super().handle_time_tick(payload)
+        tick_id = safe_int(payload.get("tick_id"), 0) or 0
+        self.market_state = self.market_state_engine.snapshot(tick_id)
         for index, event in enumerate(self.scheduled_events):
             event_id = str(event.get("id") or event.get("shock_id") or f"shock_{index}")
             if (
@@ -98,6 +104,9 @@ class AMLShockAgent(Agent):
                 phase="active",
                 trigger_type=str(event.get("trigger_type", "unexpected")),
             )
+
+        self.market_state = self.market_state_engine.snapshot(tick_id)
+        await self._broadcast_market_state_if_changed(payload)
 
     def _event_due(self, event: Mapping[str, Any], payload: Mapping[str, Any]) -> bool:
         tick_id = payload.get("tick_id")
@@ -166,8 +175,24 @@ class AMLShockAgent(Agent):
             trigger_type=trigger_type,
         )
         if phase == "active":
-            self._apply_market_state_update(event, shock_payload)
-            shock_payload["market_state"] = deepcopy(self.market_state)
+            current_tick = safe_int(payload.get("tick_id"), 0) or 0
+            previous_market_state = dict(self.market_state)
+            self.market_state_engine.register(
+                event_id,
+                event,
+                shock_payload,
+                current_tick_id=current_tick,
+                default_duration_ticks=self.default_duration_ticks,
+            )
+            self.market_state = self.market_state_engine.snapshot(current_tick)
+            shock_payload["market_state"] = dict(self.market_state)
+            shock_payload["market_state_contribution"] = (
+                self._market_state_contribution(
+                    previous_market_state,
+                    self.market_state,
+                )
+            )
+        shock_payload["market_state_baseline"] = dict(self.market_state_baseline)
 
         if not self.target_agent_ids:
             self.logger.warning(f"AMLShockAgent has no targets for shock {event_id}")
@@ -184,11 +209,72 @@ class AMLShockAgent(Agent):
 
         if phase == "active":
             self.emitted_event_ids.add(event_id)
+            # The active payload already carries this state snapshot. Subsequent
+            # state-only messages are reserved for decay/recovery changes.
+            self._last_broadcast_market_state = dict(self.market_state)
         self.logger.info(
             f"AMLShockAgent emitted {phase} {event_id} to {len(self.target_agent_ids)} targets: "
             f"type={shock_payload['shock_type']}, class={shock_payload['shock_class']}, "
             f"severity={shock_payload['severity']}, direction={shock_payload['direction']}"
         )
+
+    async def _broadcast_market_state_if_changed(
+        self,
+        payload: Mapping[str, Any],
+    ) -> None:
+        if not self.target_agent_ids or self.market_state == self._last_broadcast_market_state:
+            return
+
+        current_time = payload.get("current_time")
+        timestamp = (
+            current_time.isoformat()
+            if hasattr(current_time, "isoformat")
+            else current_time
+        )
+        state_payload = {
+            "event_type": "AML_MARKET_STATE",
+            "timestamp": timestamp,
+            "tick_id": safe_int(payload.get("tick_id"), 0),
+            "market_state": dict(self.market_state),
+            "market_state_baseline": dict(self.market_state_baseline),
+        }
+        for target_agent_id in self.target_agent_ids:
+            await self.send_message(
+                target_agent_id,
+                MessageType.STATUS_UPDATE,
+                state_payload,
+            )
+        self._last_broadcast_market_state = dict(self.market_state)
+
+    @staticmethod
+    def _market_state_contribution(
+        previous_state: Mapping[str, Any],
+        current_state: Mapping[str, Any],
+    ) -> dict[str, float]:
+        """Describe the active event's incremental central-state change."""
+        contribution: dict[str, float] = {}
+        for key in (
+            "policy_rate_bps",
+            "yield_curve_shift_bps",
+            "funding_spread_bps",
+            "credit_spread_bps",
+            "risk_aversion",
+        ):
+            delta = safe_float(current_state.get(key), 0.0) - safe_float(
+                previous_state.get(key),
+                0.0,
+            )
+            if delta != 0.0:
+                contribution[key] = round(delta, 4)
+
+        previous_liquidity = safe_float(previous_state.get("liquidity_index"), 1.0)
+        current_liquidity = safe_float(current_state.get("liquidity_index"), 1.0)
+        if previous_liquidity > 0 and current_liquidity != previous_liquidity:
+            contribution["liquidity_multiplier"] = round(
+                current_liquidity / previous_liquidity,
+                4,
+            )
+        return contribution
 
     def _random_events_due(
         self,
@@ -257,35 +343,3 @@ class AMLShockAgent(Agent):
         direction_choices = event.pop("direction_choices", None)
         if isinstance(direction_choices, (list, tuple)) and direction_choices:
             event["direction"] = self.random.choice(direction_choices)
-
-    def _apply_market_state_update(
-        self,
-        event: Mapping[str, Any],
-        shock_payload: Mapping[str, Any],
-    ) -> None:
-        absolute_state = event.get("market_state", event.get("state", {}))
-        if isinstance(absolute_state, Mapping):
-            self.market_state.update(deepcopy(dict(absolute_state)))
-
-        state_delta = event.get("market_state_delta", event.get("state_delta", {}))
-        if isinstance(state_delta, Mapping):
-            for key, value in state_delta.items():
-                self._add_market_state_delta(str(key), value)
-
-        self._add_market_state_delta("policy_rate_bps", shock_payload.get("rate_shift_bps", 0.0))
-        self._add_market_state_delta("yield_curve_shift_bps", shock_payload.get("yield_shift_bps", 0.0))
-        self._add_market_state_delta("funding_spread_bps", shock_payload.get("funding_spread_bps", 0.0))
-        self._add_market_state_delta("credit_spread_bps", shock_payload.get("credit_spread_bps", 0.0))
-        self._add_market_state_delta("risk_aversion", shock_payload.get("risk_aversion_shift", 0.0))
-
-        liquidity_multiplier = safe_float(shock_payload.get("liquidity_multiplier", 1.0), 1.0)
-        if liquidity_multiplier != 1.0:
-            current_liquidity = safe_float(self.market_state.get("liquidity_index", 1.0), 1.0)
-            self.market_state["liquidity_index"] = round(current_liquidity * liquidity_multiplier, 4)
-
-    def _add_market_state_delta(self, key: str, value: Any) -> None:
-        delta = safe_float(value, 0.0)
-        if delta == 0.0:
-            return
-        current = safe_float(self.market_state.get(key, 0.0), 0.0)
-        self.market_state[key] = round(current + delta, 4)

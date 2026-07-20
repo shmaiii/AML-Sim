@@ -13,7 +13,6 @@ from aml_sim.agents.models.state import InformedStrategyState
 from aml_sim.agents.strategy.llm_slow_strategy import SlowStrategist
 from aml_sim.agents.strategy.signals import (
     clamp,
-    event_pressure,
     momentum_signal,
     price_series,
 )
@@ -107,7 +106,7 @@ class AMLInformedTrader(BaseAMLAgent):
         if current_price <= 0:
             return
 
-        pressure = event_pressure(self._active_events(), instrument)
+        pressure = self._market_pressure(instrument)
         fair_value = max(
             0.01,
             strategy.fair_value_anchor
