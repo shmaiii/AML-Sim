@@ -73,8 +73,11 @@ class BaseAMLAgent(TraderAgent):
         self.next_slow_loop_time = None
         self.action_events: list[dict[str, Any]] = []
         self.recent_events: list[dict[str, Any]] = []
+
+        self.slow_loop_seen_event_ids: set[Any] = set()
         self.market_state: dict[str, Any] = {}
         self.market_state_baseline: dict[str, Any] = {}
+
         self.price_history: dict[str, list[dict[str, Any]]] = {
             instrument: [] for instrument in self.instrument_exchange_map.keys()
         }
@@ -175,11 +178,143 @@ class BaseAMLAgent(TraderAgent):
             )
 
         after = self._strategy_snapshot(self.strategy_state)
+        self._remember_slow_loop_decision(
+            observation=observation,
+            before=before,
+            after=after,
+        )
+        self._mark_observed_events_seen_by_slow_loop(observation)
         self.logger.info(
             f"{self.agent_id} slow loop completed: "
             f"strategist={type(self.slow_strategist).__name__}, "
             f"before={before}, after={after}"
         )
+
+    def _remember_slow_loop_decision(
+        self,
+        *,
+        observation: Mapping[str, Any],
+        before: Mapping[str, Any],
+        after: Mapping[str, Any],
+    ) -> None:
+        event_context = observation.get("event_context", {})
+        if not isinstance(event_context, Mapping):
+            event_context = {}
+
+        active_events = self._as_event_list(event_context.get("active"))
+        known_events = self._as_event_list(event_context.get("known"))
+        changed = dict(before) != dict(after)
+        confidence = self._numeric_strategy_field(after, "confidence")
+        low_confidence = confidence is not None and confidence <= 0.3
+        unseen_active_events = [
+            event
+            for event in active_events
+            if not bool(event.get("seen_before", False))
+        ]
+
+        if not changed and not unseen_active_events and not low_confidence:
+            return
+
+        primary_event = self._primary_memory_event(active_events, known_events)
+        payload = {
+            "strategy_changed": changed,
+            "event_context_present": bool(active_events or known_events),
+            "possible_event_influence": changed and bool(active_events or known_events),
+            "strategy_before": dict(before),
+            "strategy_after": dict(after),
+            "confidence": confidence,
+            "reason": after.get("reason"),
+            "active_event_ids": [
+                self._event_memory_id(event) for event in active_events
+            ],
+            "unseen_active_event_ids": [
+                self._event_memory_id(event) for event in unseen_active_events
+            ],
+            "known_event_ids": [
+                self._event_memory_id(event) for event in known_events
+            ],
+            "primary_event": primary_event,
+        }
+        self.memory.add_event(
+            self.agent_id,
+            "slow_loop_decision",
+            payload,
+            timestamp=self.current_time,
+        )
+
+    def _as_event_list(self, events: Any) -> list[dict[str, Any]]:
+        if not isinstance(events, list):
+            return []
+        return [
+            dict(event)
+            for event in events
+            if isinstance(event, Mapping)
+        ]
+
+    def _mark_observed_events_seen_by_slow_loop(
+        self,
+        observation: Mapping[str, Any],
+    ) -> None:
+        event_context = observation.get("event_context", {})
+        if not isinstance(event_context, Mapping):
+            return
+
+        for event in self._as_event_list(event_context.get("active")):
+            event_id = self._event_memory_id(event)
+            if event_id is not None:
+                self.slow_loop_seen_event_ids.add(event_id)
+                self._mark_recent_event_seen(event_id)
+
+    def _mark_recent_event_seen(self, event_id: Any) -> None:
+        for event in self.recent_events:
+            if self._event_memory_id(event) == event_id:
+                event["seen_before"] = True
+
+    def _primary_memory_event(
+        self,
+        active_events: list[dict[str, Any]],
+        known_events: list[dict[str, Any]],
+    ) -> Optional[dict[str, Any]]:
+        if active_events:
+            event = active_events[-1]
+        elif known_events:
+            event = known_events[-1]
+        else:
+            event = None
+        if event is None:
+            return None
+        return {
+            "event_id": self._event_memory_id(event),
+            "shock_type": event.get("shock_type"),
+            "shock_class": event.get("shock_class"),
+            "scope": event.get("scope"),
+            "phase": event.get("phase"),
+            "severity": event.get("severity"),
+            "direction": event.get("direction"),
+            "message": event.get("message"),
+        }
+
+    def _event_memory_id(self, event: Mapping[str, Any]) -> Any:
+        return (
+            event.get("shock_id")
+            or event.get("id")
+            or event.get("event_id")
+            or event.get("emitted_tick_id")
+            or event.get("tick_id")
+        )
+
+    def _numeric_strategy_field(
+        self,
+        strategy_snapshot: Mapping[str, Any],
+        field_name: str,
+    ) -> Optional[float]:
+        try:
+            value = strategy_snapshot.get(field_name)
+            if value is None:
+                return None
+            return float(value)
+        except (TypeError, ValueError):
+            return None
 
     def _validate_or_keep(self, proposal: Any, *, is_initial: bool = False) -> Any:
         try:
@@ -316,7 +451,14 @@ class BaseAMLAgent(TraderAgent):
         observed = serialize_value(dict(event))
         observed.setdefault("observed_at", self.current_time.isoformat() if self.current_time else None)
         observed.setdefault("observed_tick_id", self.current_tick_id)
+
         self._update_market_state_from_payload(observed)
+        event_id = self._event_memory_id(observed)
+        observed.setdefault(
+            "seen_before",
+            event_id is not None and event_id in self.slow_loop_seen_event_ids,
+        )
+
         self.recent_events.append(observed)
         self.recent_events = self.recent_events[-50:]
         self._record_action_event(
