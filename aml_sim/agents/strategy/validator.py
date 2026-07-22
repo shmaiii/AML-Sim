@@ -5,6 +5,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
+from aml_sim.agents.strategy.constants.risk_modes import ALLOWED_RISK_MODES
+
 
 class StrategyValidationError(ValueError):
     """Raised when an agent strategy state violates AML bounds."""
@@ -21,7 +23,7 @@ class StrategyValidationLimits:
     max_position: int = 10_000_000
     min_confidence: float = 0.0
     max_confidence: float = 1.0
-    allowed_risk_modes: tuple[str, ...] = ("conservative", "normal", "aggressive")
+    allowed_risk_modes: tuple[str, ...] = ALLOWED_RISK_MODES
     allowed_alpha_strategies: tuple[str, ...] = (
         "target_execution",
         "momentum",
