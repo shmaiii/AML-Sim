@@ -269,8 +269,8 @@ class OpenAIJSONLLMClient:
         return content
 
     def _write_response_log(self, *, context: Mapping[str, Any], content: str) -> None:
-        log_dir = os.getenv("LOG_DIR")
-        if not log_dir:
+        decision_context_dir = os.getenv("DECISION_CONTEXT_DIR")
+        if not decision_context_dir:
             return
 
         observation = context.get("observation", {})
@@ -284,10 +284,6 @@ class OpenAIJSONLLMClient:
             character if character.isalnum() or character in {"-", "_"} else "_"
             for character in agent_id
         )
-
-        output_dir = os.path.join(log_dir, "llm_responses")
-        os.makedirs(output_dir, exist_ok=True)
-        output_path = os.path.join(output_dir, f"{safe_agent_id}.jsonl")
         record = {
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "provider": "openai",
@@ -296,7 +292,10 @@ class OpenAIJSONLLMClient:
             "simulation_time": observation.get("current_time"),
             "response": content,
         }
-        with open(output_path, "a", encoding="utf-8") as handle:
+        agent_dir = os.path.join(decision_context_dir, safe_agent_id)
+        os.makedirs(agent_dir, exist_ok=True)
+        agent_output_path = os.path.join(agent_dir, "llm_responses.jsonl")
+        with open(agent_output_path, "a", encoding="utf-8") as handle:
             handle.write(json.dumps(record, default=str) + "\n")
 
 
