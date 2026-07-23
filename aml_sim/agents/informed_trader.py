@@ -45,6 +45,7 @@ class AMLInformedTrader(BaseAMLAgent):
         shock_reactivity: float = 0.8,
         order_type: str = OrderType.MARKET.value,
         limit_offset: float = 0.03,
+        risk_mode: str = "normal",
         random_seed: Optional[int] = None,
         profile: Optional[InformedProfile | Mapping[str, Any]] = None,
         memory: Optional[MemoryBackend] = None,
@@ -68,6 +69,7 @@ class AMLInformedTrader(BaseAMLAgent):
         super().__init__(
             instrument_exchange_map=instrument_exchange_map,
             strategy_state=InformedStrategyState(
+                risk_mode=risk_mode,
                 fair_value_anchor=fair_value_anchor,
                 information_edge=information_edge,
                 trade_probability=trade_probability,
@@ -107,6 +109,7 @@ class AMLInformedTrader(BaseAMLAgent):
             return
 
         pressure = self._market_pressure(instrument)
+        risk_policy = self._risk_policy()
         fair_value = max(
             0.01,
             strategy.fair_value_anchor
@@ -123,11 +126,15 @@ class AMLInformedTrader(BaseAMLAgent):
         signal = value_signal + timing_signal + shock_signal
         strategy.signal_strength = signal
 
-        if abs(signal) < strategy.signal_threshold:
+        effective_signal_threshold = (
+            strategy.signal_threshold * risk_policy.signal_threshold_multiplier
+        )
+        if abs(signal) < effective_signal_threshold:
             return
 
         participation = strategy.trade_probability
         participation *= pressure["order_arrival_multiplier"]
+        participation *= risk_policy.participation_multiplier
         participation *= 0.5 + (strategy.information_edge * 0.5)
         if self.random.random() > clamp(participation, 0.0, 1.0):
             return
@@ -174,12 +181,24 @@ class AMLInformedTrader(BaseAMLAgent):
         pressure: Mapping[str, float],
     ) -> int:
         strategy = self.strategy_state
+        risk_policy = self._risk_policy()
         current_position = self.long_qty[instrument] - self.short_qty[instrument]
         max_position = max(
             strategy.min_position,
-            int(strategy.max_position * pressure["risk_limit_multiplier"]),
+            int(
+                strategy.max_position
+                * pressure["risk_limit_multiplier"]
+                * risk_policy.position_limit_multiplier
+            ),
         )
-        max_size = max(1, int(strategy.max_order_size * pressure["risk_limit_multiplier"]))
+        max_size = max(
+            1,
+            int(
+                strategy.max_order_size
+                * pressure["risk_limit_multiplier"]
+                * risk_policy.order_size_multiplier
+            ),
+        )
         quantity = self.random.randint(1, max_size)
 
         if side == Side.BUY.value:

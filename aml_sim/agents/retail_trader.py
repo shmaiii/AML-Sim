@@ -40,6 +40,7 @@ class AMLRetailTrader(BaseAMLAgent):
         panic_level: float = 0.0,
         sentiment_sensitivity: float = 0.4,
         shock_sensitivity: float = 0.4,
+        risk_mode: str = "normal",
         random_seed: Optional[int] = None,
         profile: Optional[RetailProfile | Mapping[str, Any]] = None,
         memory: Optional[MemoryBackend] = None,
@@ -63,6 +64,7 @@ class AMLRetailTrader(BaseAMLAgent):
         super().__init__(
             instrument_exchange_map=instrument_exchange_map,
             strategy_state=RetailStrategyState(
+                risk_mode=risk_mode,
                 trade_probability=trade_probability,
                 max_order_size=max(1, max_order_size),
                 buy_bias=buy_bias,
@@ -126,6 +128,7 @@ class AMLRetailTrader(BaseAMLAgent):
         pressure: Mapping[str, float],
     ) -> tuple[float, float]:
         strategy = self.strategy_state
+        risk_policy = self._risk_policy()
         prices = price_series(self.price_history, instrument, self.prices.get(instrument, 0))
         momentum = momentum_signal(prices, lookback_ticks=5)
 
@@ -133,6 +136,7 @@ class AMLRetailTrader(BaseAMLAgent):
         trade_probability *= pressure["order_arrival_multiplier"]
         trade_probability += pressure["severity"] * strategy.shock_sensitivity * 0.35
         trade_probability += min(abs(momentum) * strategy.herding_tendency * 10, 0.2)
+        trade_probability *= risk_policy.participation_multiplier
 
         buy_bias = strategy.buy_bias
         buy_bias += pressure["directional_bias"] * strategy.sentiment_sensitivity * 0.25
@@ -152,5 +156,7 @@ class AMLRetailTrader(BaseAMLAgent):
         return clamp(trade_probability, 0.0, 1.0), clamp(buy_bias, 0.0, 1.0)
 
     def _effective_max_order_size(self, pressure: Mapping[str, float]) -> int:
-        size = self.strategy_state.max_order_size * pressure["risk_limit_multiplier"]
+        size = self.strategy_state.max_order_size
+        size *= pressure["risk_limit_multiplier"]
+        size *= self._risk_policy().order_size_multiplier
         return max(1, int(size))
