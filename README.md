@@ -157,6 +157,73 @@ checks bounds such as trade probability, buy bias, quote size, spread, child
 order size, confidence, and risk mode. If validation fails, the agent keeps its
 previous strategy state and logs the rejection.
 
+### Risk Modes And Fast-Loop Policy
+
+Every AML strategy state defaults to `risk_mode: normal`. Experiments can set a
+different initial posture in an agent's YAML parameters:
+
+```yaml
+parameters:
+  risk_mode: conservative
+```
+
+For an OpenAI slow strategist with an explicit `allowed_strategy_fields`
+allowlist, include `risk_mode` to let the LLM change the posture dynamically:
+
+```yaml
+slow_strategist:
+  type: openai
+  allowed_strategy_fields:
+    - risk_mode
+```
+
+Risk modes map to a normalized risk-aversion value, `gamma`:
+
+| Risk mode | `gamma` |
+| --- | ---: |
+| `risk_off` | 3.00 |
+| `conservative` | 1.50 |
+| `normal` | 1.00 |
+| `opportunistic` | 0.75 |
+| `aggressive` | 0.50 |
+
+The shared fast-loop policy derives these values from `gamma`:
+
+- participation multiplier: `clamp(1 / gamma, 0.25, 1.50)`
+- order-size multiplier: `clamp(1 / sqrt(gamma), 0.40, 1.40)`
+- position-limit multiplier: `clamp(1 / gamma, 0.25, 1.00)`
+- signal-threshold multiplier: `clamp(sqrt(gamma), 0.70, 2.00)`
+
+`clamp(value, minimum, maximum)` restricts a result to the stated range.
+`normal` therefore produces `1.0` multipliers and preserves existing behavior.
+The policy is composed with, rather than substituted for, event pressure:
+
+```text
+effective fast-loop behavior =
+    configured strategy × event pressure × risk-mode policy
+```
+
+The common preference produces role-specific behavior:
+
+- market makers adjust quote size, maximum inventory, spread, and
+  inventory-based price skew;
+- retail traders adjust participation probability and maximum order size;
+- informed traders adjust participation, order size, position limit, and the
+  signal strength required to trade;
+- liquidity takers adjust participation, order size, and inventory limit;
+- institutional traders use smaller child orders when adding exposure, but
+  higher risk aversion accelerates child orders that reduce existing exposure.
+
+The relationships are informed by Merton-style portfolio choice,
+Avellaneda-Stoikov market making, and Almgren-Chriss execution. The mode values
+are normalized simulation categories because those source models use
+differently scaled risk parameters.
+
+Slow-loop memory records `strategy_before` and `strategy_after`, including
+`risk_mode`. Submitted, rejected, and executed order artifacts record both the
+strategy state and the derived `risk_policy`, so experiments can verify which
+policy was active for each action.
+
 ### Observation Context For LLM Strategy
 
 The observation processor in `aml_sim/agents/context/observation.py` builds the
