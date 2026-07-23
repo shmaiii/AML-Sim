@@ -29,6 +29,7 @@ class AMLLiquidityTaker(BaseAMLAgent):
         inventory_limit: int = 500,
         shock_sensitivity: float = 0.7,
         aggression: float = 0.75,
+        risk_mode: str = "normal",
         random_seed: Optional[int] = None,
         profile: Optional[LiquidityTakerProfile | Mapping[str, Any]] = None,
         memory: Optional[MemoryBackend] = None,
@@ -52,6 +53,7 @@ class AMLLiquidityTaker(BaseAMLAgent):
         super().__init__(
             instrument_exchange_map=instrument_exchange_map,
             strategy_state=LiquidityTakerStrategyState(
+                risk_mode=risk_mode,
                 flow_intensity=flow_intensity,
                 buy_bias=buy_bias,
                 max_order_size=max(1, max_order_size),

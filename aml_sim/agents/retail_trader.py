@@ -40,6 +40,7 @@ class AMLRetailTrader(BaseAMLAgent):
         panic_level: float = 0.0,
         sentiment_sensitivity: float = 0.4,
         shock_sensitivity: float = 0.4,
+        risk_mode: str = "normal",
         random_seed: Optional[int] = None,
         profile: Optional[RetailProfile | Mapping[str, Any]] = None,
         memory: Optional[MemoryBackend] = None,
@@ -63,6 +64,7 @@ class AMLRetailTrader(BaseAMLAgent):
         super().__init__(
             instrument_exchange_map=instrument_exchange_map,
             strategy_state=RetailStrategyState(
+                risk_mode=risk_mode,
                 trade_probability=trade_probability,
                 max_order_size=max(1, max_order_size),
                 buy_bias=buy_bias,

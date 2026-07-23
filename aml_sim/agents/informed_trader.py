@@ -45,6 +45,7 @@ class AMLInformedTrader(BaseAMLAgent):
         shock_reactivity: float = 0.8,
         order_type: str = OrderType.MARKET.value,
         limit_offset: float = 0.03,
+        risk_mode: str = "normal",
         random_seed: Optional[int] = None,
         profile: Optional[InformedProfile | Mapping[str, Any]] = None,
         memory: Optional[MemoryBackend] = None,
@@ -68,6 +69,7 @@ class AMLInformedTrader(BaseAMLAgent):
         super().__init__(
             instrument_exchange_map=instrument_exchange_map,
             strategy_state=InformedStrategyState(
+                risk_mode=risk_mode,
                 fair_value_anchor=fair_value_anchor,
                 information_edge=information_edge,
                 trade_probability=trade_probability,

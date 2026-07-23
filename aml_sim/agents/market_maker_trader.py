@@ -52,6 +52,7 @@ class AMLMarketMakerTrader(BaseAMLAgent):
         shock_spread_multiplier: float = 1.0,
         shock_price_adjustment: float = 0.5,
         liquidity_withdrawal_sensitivity: float = 0.25,
+        risk_mode: str = "normal",
         allow_short_selling: bool = False,
         profile: Optional[MarketMakerProfile | Mapping[str, Any]] = None,
         memory: Optional[MemoryBackend] = None,
@@ -75,6 +76,7 @@ class AMLMarketMakerTrader(BaseAMLAgent):
         super().__init__(
             instrument_exchange_map=instrument_exchange_map,
             strategy_state=MarketMakerStrategyState(
+                risk_mode=risk_mode,
                 fair_price=fair_price,
                 spread=spread,
                 min_spread=min_spread,

@@ -51,6 +51,7 @@ class AMLInstitutionalTrader(BaseAMLAgent):
         max_position: int = 500,
         min_position: int = 0,
         shock_reactivity: float = 0.5,
+        risk_mode: str = "normal",
         profile: Optional[InstitutionalProfile | Mapping[str, Any]] = None,
         memory: Optional[MemoryBackend] = None,
         observation_processor: Optional[ObservationProcessor] = None,
@@ -73,6 +74,7 @@ class AMLInstitutionalTrader(BaseAMLAgent):
         super().__init__(
             instrument_exchange_map=instrument_exchange_map,
             strategy_state=InstitutionalStrategyState(
+                risk_mode=risk_mode,
                 target_positions=dict(target_positions or {}),
                 child_order_size=child_order_size,
                 order_type=order_type.upper(),
