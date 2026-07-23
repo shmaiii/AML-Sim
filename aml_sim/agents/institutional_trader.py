@@ -155,6 +155,7 @@ class AMLInstitutionalTrader(BaseAMLAgent):
             signal_parts[alpha_strategy] = weighted_signal
 
         pressure = self._market_pressure(instrument)
+        risk_policy = self._risk_policy()
         signal += pressure["directional_bias"] * strategy.shock_reactivity * strategy.entry_threshold
         if prices and prices[-1] > 0:
             signal += (
@@ -165,19 +166,29 @@ class AMLInstitutionalTrader(BaseAMLAgent):
 
         effective_max_position = max(
             strategy.min_position,
-            int(strategy.max_position * pressure["risk_limit_multiplier"]),
+            int(
+                strategy.max_position
+                * pressure["risk_limit_multiplier"]
+                * risk_policy.position_limit_multiplier
+            ),
         )
         effective_min_position = min(strategy.min_position, effective_max_position)
+        effective_entry_threshold = (
+            strategy.entry_threshold * risk_policy.signal_threshold_multiplier
+        )
+        effective_exit_threshold = (
+            strategy.exit_threshold * risk_policy.signal_threshold_multiplier
+        )
 
         current_target = strategy.target_positions.get(instrument, 0)
-        if "target_execution" in alpha_strategies and abs(signal) <= strategy.exit_threshold:
+        if "target_execution" in alpha_strategies and abs(signal) <= effective_exit_threshold:
             next_target = min(current_target, effective_max_position)
         else:
             next_target = target_from_signal(
                 signal,
                 current_target=current_target,
-                entry_threshold=strategy.entry_threshold,
-                exit_threshold=strategy.exit_threshold,
+                entry_threshold=effective_entry_threshold,
+                exit_threshold=effective_exit_threshold,
                 max_position=effective_max_position,
                 min_position=effective_min_position,
             )
@@ -193,18 +204,35 @@ class AMLInstitutionalTrader(BaseAMLAgent):
 
     async def _execute_toward_target(self, instrument: str) -> None:
         strategy = self.strategy_state
-        target = strategy.target_positions.get(instrument, 0)
         current = self.long_qty[instrument] - self.short_qty[instrument]
+        pressure = self._market_pressure(instrument)
+        risk_policy = self._risk_policy()
+        effective_max_position = max(
+            strategy.min_position,
+            int(
+                strategy.max_position
+                * pressure["risk_limit_multiplier"]
+                * risk_policy.position_limit_multiplier
+            ),
+        )
+        target = min(
+            strategy.target_positions.get(instrument, 0),
+            effective_max_position,
+        )
         gap = target - current
 
         if gap == 0:
             return
 
         side = Side.BUY.value if gap > 0 else Side.SELL.value
-        pressure = self._market_pressure(instrument)
+        next_position = current + (1 if side == Side.BUY.value else -1)
+        reduces_exposure = abs(next_position) < abs(current)
         child_size = strategy.child_order_size
         child_size *= clamp(pressure["order_arrival_multiplier"], 0.25, 2.0)
         child_size *= pressure["risk_limit_multiplier"]
+        child_size *= risk_policy.execution_size_multiplier(
+            reduces_exposure=reduces_exposure,
+        )
         quantity = min(abs(gap), max(1, int(child_size)))
 
         if side == Side.SELL.value:

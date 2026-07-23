@@ -162,8 +162,13 @@ class AMLMarketMakerTrader(BaseAMLAgent):
         strategy = self.strategy_state
         inventory = self.long_qty[instrument] - self.short_qty[instrument]
         inventory_gap = inventory - strategy.target_inventory
-        skew = inventory_gap * strategy.inventory_skew
         pressure = self._market_pressure(instrument)
+        risk_policy = self._risk_policy()
+        skew = (
+            inventory_gap
+            * strategy.inventory_skew
+            * risk_policy.inventory_skew_multiplier
+        )
         prices = price_series(self.price_history, instrument, self.prices.get(instrument, strategy.fair_price))
         volatility = realized_volatility(prices, lookback_ticks=10)
 
@@ -180,6 +185,7 @@ class AMLMarketMakerTrader(BaseAMLAgent):
         )
         dynamic_spread *= 1 + (pressure["severity"] * strategy.shock_spread_multiplier)
         dynamic_spread *= pressure["spread_multiplier"]
+        dynamic_spread *= risk_policy.market_maker_spread_multiplier
         dynamic_spread = min(strategy.max_spread, max(strategy.min_spread, dynamic_spread))
         half_spread = max(0.01, dynamic_spread / 2)
         bid = max(0.01, midpoint - half_spread)
@@ -251,16 +257,23 @@ class AMLMarketMakerTrader(BaseAMLAgent):
     def _quote_size(self, instrument: str) -> int:
         strategy = self.strategy_state
         pressure = self._market_pressure(instrument)
+        risk_policy = self._risk_policy()
         size_multiplier = 1 - (pressure["severity"] * strategy.liquidity_withdrawal_sensitivity)
         size_multiplier *= pressure["liquidity_multiplier"]
         size_multiplier *= pressure["risk_limit_multiplier"]
+        size_multiplier *= risk_policy.order_size_multiplier
         return max(1, int(strategy.quote_size * max(0.05, size_multiplier)))
 
     def _effective_max_inventory(self, instrument: str) -> int:
         pressure = self._market_pressure(instrument)
+        risk_policy = self._risk_policy()
         return max(
             self.strategy_state.min_inventory,
-            int(self.strategy_state.max_inventory * pressure["risk_limit_multiplier"]),
+            int(
+                self.strategy_state.max_inventory
+                * pressure["risk_limit_multiplier"]
+                * risk_policy.position_limit_multiplier
+            ),
         )
 
     async def on_trade_execution(self, msg: Dict[str, Any]) -> None:

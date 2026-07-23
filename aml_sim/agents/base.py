@@ -13,6 +13,7 @@ from typing import Any, Callable, Mapping, Optional
 from aml_sim.agents.context.memory import LocalAgentMemory, MemoryBackend
 from aml_sim.agents.context.observation import ObservationProcessor
 from aml_sim.agents.models.profile import AgentProfile
+from aml_sim.agents.strategy.constants.risk_modes import RiskModePolicy, risk_mode_policy
 from aml_sim.agents.strategy.llm_slow_strategy import SlowStrategist, create_llm_strategist
 from aml_sim.agents.strategy.signals import event_pressure
 from aml_sim.agents.strategy.validator import StrategyValidationError, validate_strategy_state
@@ -551,6 +552,11 @@ class BaseAMLAgent(TraderAgent):
             market_state=self.market_state,
             market_state_baseline=self.market_state_baseline,
         )
+
+    def _risk_policy(self) -> RiskModePolicy:
+        """Return the persistent slow-loop posture used by fast-loop decisions."""
+
+        return risk_mode_policy(getattr(self.strategy_state, "risk_mode", "normal"))
 
     def _known_events(self) -> list[dict[str, Any]]:
         return self.recent_events[-50:]

@@ -81,10 +81,12 @@ class AMLLiquidityTaker(BaseAMLAgent):
     async def _maybe_take_liquidity(self, instrument: str) -> None:
         strategy = self.strategy_state
         pressure = self._market_pressure(instrument)
+        risk_policy = self._risk_policy()
         participation = strategy.flow_intensity
         participation *= pressure["order_arrival_multiplier"]
         participation += pressure["severity"] * strategy.shock_sensitivity * 0.25
         participation *= 0.5 + (strategy.aggression * 0.5)
+        participation *= risk_policy.participation_multiplier
 
         if self.random.random() > clamp(participation, 0.0, 1.0):
             return
@@ -116,13 +118,22 @@ class AMLLiquidityTaker(BaseAMLAgent):
         pressure: Mapping[str, float],
     ) -> int:
         strategy = self.strategy_state
+        risk_policy = self._risk_policy()
         max_size = strategy.max_order_size
         max_size *= pressure["risk_limit_multiplier"]
         max_size *= clamp(pressure["order_arrival_multiplier"], 0.25, 2.0)
+        max_size *= risk_policy.order_size_multiplier
         quantity = self.random.randint(1, max(1, int(max_size)))
 
         current_position = self.long_qty[instrument] - self.short_qty[instrument]
-        inventory_limit = max(0, int(strategy.inventory_limit * pressure["risk_limit_multiplier"]))
+        inventory_limit = max(
+            0,
+            int(
+                strategy.inventory_limit
+                * pressure["risk_limit_multiplier"]
+                * risk_policy.position_limit_multiplier
+            ),
+        )
         if side == Side.BUY.value:
             return min(quantity, max(0, inventory_limit - current_position))
 
