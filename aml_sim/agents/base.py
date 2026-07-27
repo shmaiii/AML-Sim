@@ -13,6 +13,7 @@ from typing import Any, Callable, Mapping, Optional
 from aml_sim.agents.context.memory import LocalAgentMemory, MemoryBackend
 from aml_sim.agents.context.observation import ObservationProcessor
 from aml_sim.agents.models.profile import AgentProfile
+from aml_sim.agents.strategy.constants.risk_modes import RiskModePolicy, risk_mode_policy
 from aml_sim.agents.strategy.llm_slow_strategy import SlowStrategist, create_llm_strategist
 from aml_sim.agents.strategy.signals import event_pressure
 from aml_sim.agents.strategy.validator import StrategyValidationError, validate_strategy_state
@@ -391,6 +392,7 @@ class BaseAMLAgent(TraderAgent):
                 "price": price,
                 "explanation": explanation,
                 "strategy_state": self._strategy_snapshot(self.strategy_state),
+                "risk_policy": self._risk_policy_snapshot(),
                 "portfolio_before": before,
                 "portfolio_after": self._portfolio_snapshot(),
             }
@@ -418,6 +420,7 @@ class BaseAMLAgent(TraderAgent):
                 "explanation": trade_data.get("explanation"),
                 "raw_trade": dict(trade_data),
                 "strategy_state": self._strategy_snapshot(self.strategy_state),
+                "risk_policy": self._risk_policy_snapshot(),
                 "portfolio_before": before,
                 "portfolio_after": self._portfolio_snapshot(),
             }
@@ -551,6 +554,28 @@ class BaseAMLAgent(TraderAgent):
             market_state=self.market_state,
             market_state_baseline=self.market_state_baseline,
         )
+
+    def _risk_policy(self) -> RiskModePolicy:
+        """Return the persistent slow-loop posture used by fast-loop decisions."""
+
+        return risk_mode_policy(getattr(self.strategy_state, "risk_mode", "normal"))
+
+    def _risk_policy_snapshot(self) -> dict[str, float | str]:
+        """Describe the derived policy active for one recorded trading action."""
+
+        policy = self._risk_policy()
+        return {
+            "risk_mode": str(getattr(self.strategy_state, "risk_mode", "normal")),
+            "risk_aversion": policy.risk_aversion,
+            "participation_multiplier": policy.participation_multiplier,
+            "order_size_multiplier": policy.order_size_multiplier,
+            "position_limit_multiplier": policy.position_limit_multiplier,
+            "signal_threshold_multiplier": policy.signal_threshold_multiplier,
+            "market_maker_spread_multiplier": (
+                policy.market_maker_spread_multiplier
+            ),
+            "inventory_skew_multiplier": policy.inventory_skew_multiplier,
+        }
 
     def _known_events(self) -> list[dict[str, Any]]:
         return self.recent_events[-50:]

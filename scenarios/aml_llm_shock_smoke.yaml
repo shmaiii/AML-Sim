@@ -34,6 +34,7 @@ stocksim_config:
       parameters:
         initial_cash: 500000
         action_interval: 30s
+        risk_mode: conservative
         slow_loop_interval: 1m
         fair_price: 100.0
         spread: 0.2
@@ -62,6 +63,7 @@ stocksim_config:
       parameters:
         initial_cash: 25000
         action_interval: 30s
+        risk_mode: aggressive
         slow_loop_interval: 1m
         trade_probability: 0.4
         max_order_size: 6
@@ -83,6 +85,7 @@ stocksim_config:
       parameters:
         initial_cash: 300000
         action_interval: 1m
+        risk_mode: risk_off
         slow_loop_interval: 1m
         target_positions:
           AAPL: 120

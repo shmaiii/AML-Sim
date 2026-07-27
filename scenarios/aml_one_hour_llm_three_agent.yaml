@@ -59,6 +59,7 @@ stocksim_config:
         slow_strategist:
           type: openai
           allowed_strategy_fields:
+            - risk_mode
             - confidence
             - reason
             - updated_at
@@ -94,6 +95,7 @@ stocksim_config:
         slow_strategist:
           type: openai
           allowed_strategy_fields:
+            - risk_mode
             - confidence
             - reason
             - updated_at
@@ -134,6 +136,7 @@ stocksim_config:
         slow_strategist:
           type: openai
           allowed_strategy_fields:
+            - risk_mode
             - confidence
             - reason
             - updated_at
