@@ -74,6 +74,7 @@ class BaseAMLAgent(TraderAgent):
         self.next_slow_loop_time = None
         self.action_events: list[dict[str, Any]] = []
         self.recent_events: list[dict[str, Any]] = []
+        self.fast_loop_state: dict[str, dict[str, Any]] = {}
 
         self.slow_loop_seen_event_ids: set[Any] = set()
         self.market_state: dict[str, Any] = {}
@@ -118,15 +119,27 @@ class BaseAMLAgent(TraderAgent):
             self.next_slow_loop_time = current_time
 
         observation = self.build_observation()
+        slow_loop_executed = False
 
         if self.slow_loop_due():
             await self.run_slow_loop(observation)
+            slow_loop_executed = True
             self.next_slow_loop_time = current_time + self.slow_loop_interval
             observation = self.build_observation()
 
-        if current_time >= self.next_action_time:
-            await self.run_fast_loop(observation)
-            self.next_action_time = current_time + self.action_interval
+        fast_loop_executed = current_time >= self.next_action_time
+        action_start_index = len(self.action_events)
+        try:
+            if fast_loop_executed:
+                self.fast_loop_state = {}
+                await self.run_fast_loop(observation)
+                self.next_action_time = current_time + self.action_interval
+        finally:
+            self._record_agent_state_tick(
+                slow_loop_executed=slow_loop_executed,
+                fast_loop_executed=fast_loop_executed,
+                tick_actions=self.action_events[action_start_index:],
+            )
 
     def build_observation(self) -> dict[str, Any]:
         active_events = self._active_events()
@@ -449,6 +462,118 @@ class BaseAMLAgent(TraderAgent):
         event.setdefault("agent_id", self.agent_id)
         event.setdefault("timestamp", self.current_time.isoformat() if self.current_time else None)
         self.action_events.append(serialize_value(event))
+
+    def _record_agent_state_tick(
+        self,
+        *,
+        slow_loop_executed: bool,
+        fast_loop_executed: bool,
+        tick_actions: list[dict[str, Any]],
+    ) -> None:
+        """Record the compact state needed for post-shock recovery analysis."""
+
+        orders = [
+            action
+            for action in tick_actions
+            if action.get("event_type") in {"order_submitted", "order_rejected"}
+        ]
+        submitted = [
+            action
+            for action in orders
+            if action.get("event_type") == "order_submitted"
+        ]
+        rejected = [
+            action
+            for action in orders
+            if action.get("event_type") == "order_rejected"
+        ]
+        portfolio = self._portfolio_snapshot()
+        positions = {
+            instrument: {
+                key: values.get(key)
+                for key in ("long", "short", "net", "last_price")
+            }
+            for instrument, values in portfolio["positions"].items()
+        }
+        unrealized_pnl = portfolio["unrealized_pnl"]
+        total_pnl = portfolio["total_pnl"]
+        active_events = self._active_events()
+        active_shock_ids = [
+            event_id
+            for event in active_events
+            if (event_id := self._event_memory_id(event)) is not None
+        ]
+        self._record_action_event(
+            {
+                "event_type": "agent_state_tick",
+                "tick_id": self.current_tick_id,
+                "slow_loop_executed": slow_loop_executed,
+                "fast_loop_executed": fast_loop_executed,
+                "submitted_order_count": len(submitted),
+                "rejected_order_count": len(rejected),
+                "fast_loop_order_attempted": bool(orders),
+                "fast_loop_participated": bool(submitted),
+                "order_sides": [action.get("side") for action in submitted],
+                "order_types": [
+                    action.get("order_type") for action in submitted
+                ],
+                "order_quantities": [
+                    action.get("quantity") for action in submitted
+                ],
+                "risk_mode": str(
+                    getattr(self.strategy_state, "risk_mode", "normal")
+                ),
+                "portfolio_value": portfolio["portfolio_value"],
+                "cash": portfolio["cash"],
+                "realized_pnl": round(total_pnl - unrealized_pnl, 2),
+                "unrealized_pnl": unrealized_pnl,
+                "total_pnl": total_pnl,
+                "gross_exposure": portfolio["gross_exposure"],
+                "net_exposure": portfolio["net_exposure"],
+                "positions": positions,
+                "market": self._compact_market_snapshot(),
+                "active_shock_ids": active_shock_ids,
+                "role": self.LLM_STRATEGY_ROLE,
+                "fast_loop_state": self.fast_loop_state,
+            }
+        )
+
+    def _compact_market_snapshot(self) -> dict[str, dict[str, Any]]:
+        """Keep only top-of-book and trade-window fields needed by recovery metrics."""
+
+        compact: dict[str, dict[str, Any]] = {}
+        for instrument in self.instrument_exchange_map:
+            snapshot = self.last_market_snapshot.get(instrument)
+            if not isinstance(snapshot, Mapping):
+                compact[instrument] = {}
+                continue
+            data = snapshot.get("data")
+            if not isinstance(data, Mapping):
+                data = {}
+            compact[instrument] = {
+                "close": data.get("close"),
+                "volume": data.get("volume"),
+                "best_bid": snapshot.get("best_bid"),
+                "bid_quantity": snapshot.get("bid_quantity"),
+                "best_ask": snapshot.get("best_ask"),
+                "ask_quantity": snapshot.get("ask_quantity"),
+            }
+        return compact
+
+    def _update_fast_loop_state(
+        self,
+        instrument: str,
+        **values: Any,
+    ) -> None:
+        """Expose values already calculated by the active fast-loop policy."""
+
+        self.fast_loop_state.setdefault(instrument, {}).update(values)
+
+    @staticmethod
+    def _position_limit_utilization(position: int, limit: int) -> float | None:
+        if limit <= 0:
+            return None
+        return round(abs(position) / limit, 6)
 
     def _handle_aml_event(self, event: Mapping[str, Any]) -> None:
         observed = serialize_value(dict(event))

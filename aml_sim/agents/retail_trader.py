@@ -96,10 +96,19 @@ class AMLRetailTrader(BaseAMLAgent):
     async def _maybe_trade(self, instrument: str) -> None:
         pressure = self._market_pressure(instrument)
         trade_probability, buy_bias = self._effective_retail_params(instrument, pressure)
+        effective_order_cap = self._effective_max_order_size(pressure)
+        self._update_fast_loop_state(
+            instrument,
+            effective_participation_probability=trade_probability,
+            effective_buy_probability=buy_bias,
+            effective_order_size_cap=effective_order_cap,
+            preferred_order_type=OrderType.MARKET.value,
+            sell_constrained=self.long_qty[instrument] <= 0,
+        )
         if self.random.random() > trade_probability:
             return
 
-        quantity = self.random.randint(1, self._effective_max_order_size(pressure))
+        quantity = self.random.randint(1, effective_order_cap)
         side = Side.BUY.value if self.random.random() < buy_bias else Side.SELL.value
 
         if side == Side.SELL.value:
