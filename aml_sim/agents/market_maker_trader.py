@@ -114,6 +114,11 @@ class AMLMarketMakerTrader(BaseAMLAgent):
 
     async def run_fast_loop(self, observation: Mapping[str, Any]) -> None:
         await self._refresh_quotes()
+        for instrument in self.instrument_exchange_map:
+            self._update_fast_loop_state(
+                instrument,
+                active_quote_order_count=len(self.quote_order_ids),
+            )
 
     async def _refresh_quotes(self) -> None:
         await self._cancel_existing_quotes()
@@ -192,7 +197,16 @@ class AMLMarketMakerTrader(BaseAMLAgent):
         half_spread = max(0.01, dynamic_spread / 2)
         bid = max(0.01, midpoint - half_spread)
         ask = max(bid + 0.01, midpoint + half_spread)
-        return round(bid, 2), round(ask, 2)
+        rounded_bid, rounded_ask = round(bid, 2), round(ask, 2)
+        self._update_fast_loop_state(
+            instrument,
+            target_inventory=strategy.target_inventory,
+            target_distance=abs(inventory - strategy.target_inventory),
+            effective_bid=rounded_bid,
+            effective_ask=rounded_ask,
+            effective_spread=round(rounded_ask - rounded_bid, 6),
+        )
+        return rounded_bid, rounded_ask
 
     def _quote_ladder(self, instrument: str) -> list[tuple[float, float, int]]:
         strategy = self.strategy_state
@@ -216,6 +230,7 @@ class AMLMarketMakerTrader(BaseAMLAgent):
         max_inventory = self._effective_max_inventory(instrument)
         current_inventory = self.long_qty[instrument] - self.short_qty[instrument]
         if current_inventory >= max_inventory:
+            self._update_fast_loop_state(instrument, buy_constrained=True)
             self.logger.debug(f"Skipping bid for {instrument}: max inventory reached")
             return
         quantity = min(quantity, max(0, max_inventory - current_inventory))
@@ -236,6 +251,7 @@ class AMLMarketMakerTrader(BaseAMLAgent):
     async def _place_ask(self, instrument: str, price: float, quantity: int, level: int) -> None:
         held = self.long_qty[instrument]
         if held <= self.strategy_state.min_inventory and not self.allow_short_selling:
+            self._update_fast_loop_state(instrument, sell_constrained=True)
             self.logger.debug(f"Skipping ask for {instrument}: min inventory reached")
             return
 
@@ -264,12 +280,22 @@ class AMLMarketMakerTrader(BaseAMLAgent):
         size_multiplier *= pressure["liquidity_multiplier"]
         size_multiplier *= pressure["risk_limit_multiplier"]
         size_multiplier *= risk_policy.order_size_multiplier
-        return max(1, int(strategy.quote_size * max(0.05, size_multiplier)))
+        effective_size = max(
+            1,
+            int(strategy.quote_size * max(0.05, size_multiplier)),
+        )
+        self._update_fast_loop_state(
+            instrument,
+            configured_quote_size=strategy.quote_size,
+            effective_quote_size=effective_size,
+            quote_levels=strategy.quote_levels,
+        )
+        return effective_size
 
     def _effective_max_inventory(self, instrument: str) -> int:
         pressure = self._market_pressure(instrument)
         risk_policy = self._risk_policy()
-        return max(
+        effective_limit = max(
             self.strategy_state.min_inventory,
             int(
                 self.strategy_state.max_inventory
@@ -277,6 +303,21 @@ class AMLMarketMakerTrader(BaseAMLAgent):
                 * risk_policy.position_limit_multiplier
             ),
         )
+        inventory = self.long_qty[instrument] - self.short_qty[instrument]
+        self._update_fast_loop_state(
+            instrument,
+            effective_position_limit=effective_limit,
+            position_limit_utilization=self._position_limit_utilization(
+                inventory,
+                effective_limit,
+            ),
+            buy_constrained=inventory >= effective_limit,
+            sell_constrained=(
+                not self.allow_short_selling
+                and inventory <= self.strategy_state.min_inventory
+            ),
+        )
+        return effective_limit
 
     async def on_trade_execution(self, msg: Dict[str, Any]) -> None:
         order_id = msg.get("order_id")

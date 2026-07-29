@@ -181,6 +181,12 @@ class AMLInstitutionalTrader(BaseAMLAgent):
         effective_exit_threshold = (
             strategy.exit_threshold * risk_policy.signal_threshold_multiplier
         )
+        self._update_fast_loop_state(
+            instrument,
+            signal_strength=signal,
+            effective_entry_threshold=effective_entry_threshold,
+            effective_exit_threshold=effective_exit_threshold,
+        )
 
         current_target = strategy.target_positions.get(instrument, 0)
         if "target_execution" in alpha_strategies and abs(signal) <= effective_exit_threshold:
@@ -222,6 +228,23 @@ class AMLInstitutionalTrader(BaseAMLAgent):
             effective_max_position,
         )
         gap = target - current
+        self._update_fast_loop_state(
+            instrument,
+            effective_target_position=target,
+            target_distance=abs(gap),
+            effective_position_limit=effective_max_position,
+            position_limit_utilization=self._position_limit_utilization(
+                current,
+                effective_max_position,
+            ),
+            position_constrained=(
+                gap > 0 and current >= effective_max_position
+            ),
+            sell_constrained=(
+                gap < 0 and self.long_qty[instrument] <= 0
+            ),
+            preferred_order_type=strategy.order_type,
+        )
 
         if gap == 0:
             return
@@ -236,6 +259,10 @@ class AMLInstitutionalTrader(BaseAMLAgent):
             reduces_exposure=reduces_exposure,
         )
         quantity = min(abs(gap), max(1, int(child_size)))
+        self._update_fast_loop_state(
+            instrument,
+            effective_child_order_size=max(1, int(child_size)),
+        )
 
         if side == Side.SELL.value:
             held = self.long_qty[instrument]

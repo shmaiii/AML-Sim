@@ -90,13 +90,59 @@ class AMLLiquidityTaker(BaseAMLAgent):
         participation *= 0.5 + (strategy.aggression * 0.5)
         participation *= risk_policy.participation_multiplier
 
-        if self.random.random() > clamp(participation, 0.0, 1.0):
-            return
-
+        effective_participation = clamp(participation, 0.0, 1.0)
         buy_bias = strategy.buy_bias
         buy_bias += pressure["directional_bias"] * strategy.shock_sensitivity * 0.35
-        side = Side.BUY.value if self.random.random() < clamp(buy_bias, 0.0, 1.0) else Side.SELL.value
-        quantity = self._order_quantity(instrument, side, pressure)
+        effective_buy_bias = clamp(buy_bias, 0.0, 1.0)
+        effective_order_cap = strategy.max_order_size
+        effective_order_cap *= pressure["risk_limit_multiplier"]
+        effective_order_cap *= clamp(
+            pressure["order_arrival_multiplier"],
+            0.25,
+            2.0,
+        )
+        effective_order_cap *= risk_policy.order_size_multiplier
+        effective_order_cap = max(1, int(effective_order_cap))
+        current_position = (
+            self.long_qty[instrument] - self.short_qty[instrument]
+        )
+        effective_limit = max(
+            0,
+            int(
+                strategy.inventory_limit
+                * pressure["risk_limit_multiplier"]
+                * risk_policy.position_limit_multiplier
+            ),
+        )
+        self._update_fast_loop_state(
+            instrument,
+            effective_participation_probability=effective_participation,
+            effective_buy_probability=effective_buy_bias,
+            effective_order_size_cap=effective_order_cap,
+            effective_position_limit=effective_limit,
+            position_limit_utilization=self._position_limit_utilization(
+                current_position,
+                effective_limit,
+            ),
+            buy_constrained=current_position >= effective_limit,
+            sell_constrained=self.long_qty[instrument] <= 0,
+            aggression=strategy.aggression,
+            preferred_order_type=OrderType.MARKET.value,
+        )
+        if self.random.random() > effective_participation:
+            return
+
+        side = (
+            Side.BUY.value
+            if self.random.random() < effective_buy_bias
+            else Side.SELL.value
+        )
+        quantity = self._order_quantity(
+            instrument,
+            side,
+            max_size=effective_order_cap,
+            inventory_limit=effective_limit,
+        )
         if quantity <= 0:
             return
 
@@ -117,25 +163,13 @@ class AMLLiquidityTaker(BaseAMLAgent):
         self,
         instrument: str,
         side: str,
-        pressure: Mapping[str, float],
+        *,
+        max_size: int,
+        inventory_limit: int,
     ) -> int:
-        strategy = self.strategy_state
-        risk_policy = self._risk_policy()
-        max_size = strategy.max_order_size
-        max_size *= pressure["risk_limit_multiplier"]
-        max_size *= clamp(pressure["order_arrival_multiplier"], 0.25, 2.0)
-        max_size *= risk_policy.order_size_multiplier
-        quantity = self.random.randint(1, max(1, int(max_size)))
+        quantity = self.random.randint(1, max_size)
 
         current_position = self.long_qty[instrument] - self.short_qty[instrument]
-        inventory_limit = max(
-            0,
-            int(
-                strategy.inventory_limit
-                * pressure["risk_limit_multiplier"]
-                * risk_policy.position_limit_multiplier
-            ),
-        )
         if side == Side.BUY.value:
             return min(quantity, max(0, inventory_limit - current_position))
 
