@@ -25,7 +25,7 @@ class RecoveryConfig:
     behavioural_recovery_score: float = 0.80
     sustained_observations: int = 3
     behavioural_window_ticks: int = 3
-    horizons_seconds: tuple[int, ...] = (10, 20)
+    horizons_seconds: tuple[int, ...] = (30, 60, 120)
 
 
 class RecoveryEvaluator:
@@ -61,22 +61,46 @@ class RecoveryEvaluator:
                 or action_file.stem.removeprefix("trader_actions_")
             )
             event_metadata = _event_metadata(actions)
+            episodes = _shock_episodes(state_ticks)
+            global_baseline = (
+                _baseline_rows(
+                    state_ticks,
+                    onset=_parse_timestamp(episodes[0]["onset"]),
+                    seconds=self.config.baseline_seconds,
+                )
+                if episodes
+                else []
+            )
             shocks: dict[str, Any] = {}
-            for shock_id in _observed_shock_ids(state_ticks):
-                window = _shock_window(state_ticks, shock_id)
-                if window is None:
-                    continue
-                shocks[shock_id] = self.evaluate_agent_shock(
+            for index, episode in enumerate(episodes):
+                shock_ids = list(episode["shock_ids"])
+                episode_key = _episode_key(shock_ids)
+                next_onset = (
+                    episodes[index + 1]["onset"]
+                    if index + 1 < len(episodes)
+                    else None
+                )
+                shocks[episode_key] = self.evaluate_agent_shock(
                     agent_id=agent_id,
                     state_ticks=state_ticks,
-                    shock_id=shock_id,
-                    shock_window=window,
-                    shock_metadata=event_metadata.get(shock_id, {}),
+                    shock_id=episode_key,
+                    shock_ids=shock_ids,
+                    shock_window=episode,
+                    shock_metadata={
+                        shock_id: event_metadata.get(shock_id, {})
+                        for shock_id in shock_ids
+                    },
+                    baseline_rows=global_baseline,
+                    next_episode_onset=next_onset,
                 )
             agents[agent_id] = {
                 "agent_id": agent_id,
                 "role": state_ticks[0].get("role"),
-                "shock_count": len(shocks),
+                "shock_count": sum(
+                    len(episode["shock_ids"])
+                    for episode in episodes
+                ),
+                "shock_episode_count": len(shocks),
                 "shocks": shocks,
             }
 
@@ -120,28 +144,68 @@ class RecoveryEvaluator:
         shock_id: str,
         shock_window: Mapping[str, Any],
         shock_metadata: Mapping[str, Any],
+        shock_ids: Sequence[str] | None = None,
+        baseline_rows: Sequence[Mapping[str, Any]] | None = None,
+        next_episode_onset: Any = None,
     ) -> dict[str, Any]:
-        """Evaluate one agent relative to one observed shock."""
+        """Evaluate one agent relative to one observed shock episode."""
 
         onset = _parse_timestamp(shock_window["onset"])
         expiry = _parse_timestamp(shock_window["expiry"])
-        baseline = _baseline_rows(
-            state_ticks,
-            onset=onset,
-            seconds=self.config.baseline_seconds,
+        baseline = (
+            list(baseline_rows)
+            if baseline_rows is not None
+            else _baseline_rows(
+                state_ticks,
+                onset=onset,
+                seconds=self.config.baseline_seconds,
+            )
+        )
+        evaluation_end = (
+            _parse_timestamp(next_episode_onset)
+            if next_episode_onset is not None
+            else None
         )
         post_shock = [
             row
             for row in state_ticks
             if _row_time(row) >= onset
+            and (
+                evaluation_end is None
+                or _row_time(row) < evaluation_end
+            )
         ]
+        interrupted = evaluation_end is not None
+        episode_shock_ids = list(shock_ids or [shock_id])
+        episode_metadata = dict(shock_metadata)
         return {
             "agent_id": agent_id,
             "role": post_shock[0].get("role") if post_shock else None,
             "shock_id": shock_id,
-            "shock": dict(shock_metadata),
+            "shock_ids": episode_shock_ids,
+            "shock": (
+                dict(episode_metadata.get(episode_shock_ids[0], {}))
+                if len(episode_shock_ids) == 1
+                else {}
+            ),
+            "shock_metadata": episode_metadata,
             "window": {
                 **dict(shock_window),
+                "next_episode_onset": (
+                    evaluation_end.isoformat()
+                    if evaluation_end is not None
+                    else None
+                ),
+                "evaluation_end": (
+                    evaluation_end.isoformat()
+                    if evaluation_end is not None
+                    else (
+                        _row_time(post_shock[-1]).isoformat()
+                        if post_shock
+                        else None
+                    )
+                ),
+                "baseline_reference": "before_first_observed_shock",
                 "baseline_start": (
                     _row_time(baseline[0]).isoformat()
                     if baseline
@@ -154,18 +218,21 @@ class RecoveryEvaluator:
                 post_shock,
                 onset=onset,
                 expiry=expiry,
+                interrupted=interrupted,
             ),
             "balance_sheet_recovery": self._balance_sheet_recovery(
                 baseline,
                 post_shock,
                 onset=onset,
                 expiry=expiry,
+                interrupted=interrupted,
             ),
             "behavioural_recovery": self._behavioural_recovery(
                 baseline,
                 post_shock,
                 onset=onset,
                 expiry=expiry,
+                interrupted=interrupted,
             ),
         }
 
@@ -176,6 +243,7 @@ class RecoveryEvaluator:
         *,
         onset: datetime,
         expiry: datetime,
+        interrupted: bool = False,
     ) -> dict[str, Any]:
         values = _numbers(
             row.get("portfolio_value") for row in baseline_rows
@@ -197,6 +265,7 @@ class RecoveryEvaluator:
             onset=onset,
             expiry=expiry,
             sustained=self.config.sustained_observations,
+            interrupted=interrupted,
         )
         post_values = _numbers(
             row.get("portfolio_value") for row in post_rows
@@ -231,7 +300,7 @@ class RecoveryEvaluator:
             ),
             "horizons": _horizon_values(
                 post_rows,
-                onset,
+                expiry,
                 self.config.horizons_seconds,
                 ("portfolio_value", "total_pnl"),
             ),
@@ -245,6 +314,7 @@ class RecoveryEvaluator:
         *,
         onset: datetime,
         expiry: datetime,
+        interrupted: bool = False,
     ) -> dict[str, Any]:
         if not baseline_rows:
             return _unavailable("no pre-shock balance-sheet observations")
@@ -280,6 +350,7 @@ class RecoveryEvaluator:
             onset=onset,
             expiry=expiry,
             sustained=self.config.sustained_observations,
+            interrupted=interrupted,
         )
         constrained_seconds = _duration_matching(
             post_rows,
@@ -335,7 +406,7 @@ class RecoveryEvaluator:
             ),
             "horizons": _balance_horizons(
                 post_rows,
-                onset,
+                expiry,
                 self.config.horizons_seconds,
                 baseline_cash,
             ),
@@ -349,6 +420,7 @@ class RecoveryEvaluator:
         *,
         onset: datetime,
         expiry: datetime,
+        interrupted: bool = False,
     ) -> dict[str, Any]:
         baseline_fast = [
             row for row in baseline_rows if row.get("fast_loop_executed")
@@ -390,6 +462,7 @@ class RecoveryEvaluator:
             onset=onset,
             expiry=expiry,
             sustained=self.config.sustained_observations,
+            interrupted=interrupted,
         )
         end_profile = (
             _behaviour_profile(post_fast[-width:], role) if post_fast else {}
@@ -421,7 +494,7 @@ class RecoveryEvaluator:
             "score_trajectory": scored_windows,
             "horizons": _behaviour_horizons(
                 post_fast,
-                onset,
+                expiry,
                 self.config.horizons_seconds,
             ),
             **recovery,
@@ -434,16 +507,21 @@ def _recovery_timing(
     onset: datetime,
     expiry: datetime,
     sustained: int,
+    interrupted: bool = False,
 ) -> dict[str, Any]:
-    """Find first sustained return after the condition has been breached."""
+    """Find the first sustained return after episode expiry."""
 
     breached = False
     run = 0
     for index, (row, inside) in enumerate(rows):
+        timestamp = _row_time(row)
         if not breached:
             if not inside:
                 breached = True
                 run = 0
+            if not breached or timestamp < expiry:
+                continue
+        if timestamp < expiry:
             continue
         run = run + 1 if inside else 0
         if run >= max(1, sustained):
@@ -452,7 +530,8 @@ def _recovery_timing(
             return {
                 "disrupted": True,
                 "recovered": True,
-                "recovery_time_from_onset_seconds": (
+                "recovery_status": "recovered",
+                "recovery_time_frwe haom_onset_seconds": (
                     recovered_at - onset
                 ).total_seconds(),
                 "recovery_time_from_expiry_seconds": (
@@ -464,6 +543,7 @@ def _recovery_timing(
         return {
             "disrupted": False,
             "recovered": True,
+            "recovery_status": "not_disrupted",
             "recovery_time_from_onset_seconds": 0.0,
             "recovery_time_from_expiry_seconds": None,
             "recovery_timestamp": onset.isoformat(),
@@ -471,6 +551,11 @@ def _recovery_timing(
     return {
         "disrupted": True,
         "recovered": False,
+        "recovery_status": (
+            "interrupted_by_next_shock"
+            if interrupted
+            else "not_recovered_by_run_end"
+        ),
         "recovery_time_from_onset_seconds": None,
         "recovery_time_from_expiry_seconds": None,
         "recovery_timestamp": None,
@@ -868,6 +953,60 @@ def _shock_window(
     }
 
 
+def _shock_episodes(
+    rows: Sequence[Mapping[str, Any]],
+) -> list[dict[str, Any]]:
+    """Merge overlapping observed shock intervals into ordered episodes."""
+
+    intervals: list[dict[str, Any]] = []
+    for shock_id in _observed_shock_ids(rows):
+        window = _shock_window(rows, shock_id)
+        if window is None:
+            continue
+        intervals.append(
+            {
+                "shock_ids": [shock_id],
+                "onset": _parse_timestamp(window["onset"]),
+                "expiry": _parse_timestamp(window["expiry"]),
+                "expiry_is_run_end": window["expiry_is_run_end"],
+            }
+        )
+    intervals.sort(key=lambda interval: interval["onset"])
+
+    episodes: list[dict[str, Any]] = []
+    for interval in intervals:
+        if (
+            episodes
+            and interval["onset"] <= episodes[-1]["expiry"]
+        ):
+            episode = episodes[-1]
+            episode["shock_ids"].extend(interval["shock_ids"])
+            if interval["expiry"] > episode["expiry"]:
+                episode["expiry"] = interval["expiry"]
+            episode["expiry_is_run_end"] = (
+                episode["expiry_is_run_end"]
+                or interval["expiry_is_run_end"]
+            )
+            continue
+        episodes.append(dict(interval))
+
+    return [
+        {
+            "shock_ids": episode["shock_ids"],
+            "onset": episode["onset"].isoformat(),
+            "expiry": episode["expiry"].isoformat(),
+            "expiry_is_run_end": episode["expiry_is_run_end"],
+        }
+        for episode in episodes
+    ]
+
+
+def _episode_key(shock_ids: Sequence[str]) -> str:
+    if len(shock_ids) == 1:
+        return shock_ids[0]
+    return "episode__" + "__".join(shock_ids)
+
+
 def _baseline_rows(
     rows: Sequence[Mapping[str, Any]],
     *,
@@ -1006,13 +1145,16 @@ def _duration_matching(
 
 def _horizon_values(
     rows: Sequence[Mapping[str, Any]],
-    onset: datetime,
+    reference: datetime,
     horizons: Iterable[int],
     fields: Sequence[str],
 ) -> dict[str, Any]:
     result: dict[str, Any] = {}
     for seconds in horizons:
-        row = _first_at_or_after(rows, onset + timedelta(seconds=seconds))
+        row = _first_at_or_after(
+            rows,
+            reference + timedelta(seconds=seconds),
+        )
         result[f"+{seconds}s"] = (
             {
                 "observed_at": _row_time(row).isoformat(),
@@ -1026,13 +1168,16 @@ def _horizon_values(
 
 def _balance_horizons(
     rows: Sequence[Mapping[str, Any]],
-    onset: datetime,
+    reference: datetime,
     horizons: Iterable[int],
     baseline_cash: float | None,
 ) -> dict[str, Any]:
     result: dict[str, Any] = {}
     for seconds in horizons:
-        row = _first_at_or_after(rows, onset + timedelta(seconds=seconds))
+        row = _first_at_or_after(
+            rows,
+            reference + timedelta(seconds=seconds),
+        )
         result[f"+{seconds}s"] = (
             {
                 "observed_at": _row_time(row).isoformat(),
@@ -1063,12 +1208,15 @@ def _balance_horizons(
 
 def _behaviour_horizons(
     rows: Sequence[Mapping[str, Any]],
-    onset: datetime,
+    reference: datetime,
     horizons: Iterable[int],
 ) -> dict[str, Any]:
     result: dict[str, Any] = {}
     for seconds in horizons:
-        row = _first_at_or_after(rows, onset + timedelta(seconds=seconds))
+        row = _first_at_or_after(
+            rows,
+            reference + timedelta(seconds=seconds),
+        )
         result[f"+{seconds}s"] = (
             {
                 "observed_at": _row_time(row).isoformat(),
