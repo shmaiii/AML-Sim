@@ -10,6 +10,13 @@ from datetime import datetime, timezone
 from typing import Any, Mapping, Optional, Protocol
 
 from aml_sim.agents.models.profile import profile_to_dict
+from aml_sim.agents.models.state import (
+    InformedStrategyState,
+    InstitutionalStrategyState,
+    LiquidityTakerStrategyState,
+    MarketMakerStrategyState,
+    RetailStrategyState,
+)
 from aml_sim.agents.strategy.constants import (
     DEFAULT_OPENAI_SLOW_STRATEGY_PROMPT,
     STATIC_RESPONSES_BY_ROLE,
@@ -37,6 +44,20 @@ class LLMStrategyResponseError(ValueError):
     """Raised when an LLM response cannot be parsed into a strategy proposal."""
 
 
+_STRATEGY_STATE_BY_ROLE = {
+    "market_maker": MarketMakerStrategyState,
+    "retail": RetailStrategyState,
+    "institutional": InstitutionalStrategyState,
+    "informed": InformedStrategyState,
+    "liquidity_taker": LiquidityTakerStrategyState,
+}
+_SLOW_STRATEGIST_CONFIG_FIELDS = {
+    "enabled", "type", "provider", "model", "api_key_env", "temperature",
+    "timeout_seconds", "max_retries", "role_prompt", "role_prompts",
+    "allowed_strategy_fields",
+}
+
+
 class JSONLLMClient(Protocol):
     """Minimal protocol expected from an LLM client adapter."""
 
@@ -60,6 +81,7 @@ class LLMStrategist:
     ) -> None:
         self.client = client
         self.allowed_strategy_fields = allowed_strategy_fields
+        self.last_update_audit: dict[str, Any] = {}
 
     async def propose(
         self,
@@ -156,12 +178,23 @@ class LLMStrategist:
         observation: Mapping[str, Any],
         response: Mapping[str, Any],
     ) -> Any:
+        all_fields = self._strategy_fields(current_strategy)
         allowed_fields = self._allowed_fields(current_strategy)
-        clean_updates = {
-            key: value
-            for key, value in updates.items()
-            if key in allowed_fields
-        }
+        clean_updates: dict[str, Any] = {}
+        rejected_updates: dict[str, dict[str, Any]] = {}
+        for key, value in updates.items():
+            if key not in all_fields:
+                rejected_updates[key] = {
+                    "value": value,
+                    "reason": "unknown_strategy_field",
+                }
+            elif key not in allowed_fields:
+                rejected_updates[key] = {
+                    "value": value,
+                    "reason": "not_allowed_by_configuration",
+                }
+            else:
+                clean_updates[key] = value
 
         if "confidence" in response and "confidence" in allowed_fields:
             clean_updates["confidence"] = response["confidence"]
@@ -169,6 +202,12 @@ class LLMStrategist:
             clean_updates["reason"] = response["reason"]
         if "updated_at" in allowed_fields:
             clean_updates.setdefault("updated_at", observation.get("current_time"))
+
+        self.last_update_audit = {
+            "proposed_updates": dict(updates),
+            "eligible_updates": dict(clean_updates),
+            "rejected_updates": rejected_updates,
+        }
 
         if is_dataclass(current_strategy):
             return replace(current_strategy, **clean_updates)
@@ -184,7 +223,10 @@ class LLMStrategist:
 
     def _allowed_fields(self, current_strategy: Any) -> set[str]:
         if self.allowed_strategy_fields is not None:
-            return set(self.allowed_strategy_fields)
+            return set(self.allowed_strategy_fields) & self._strategy_fields(current_strategy)
+        return self._strategy_fields(current_strategy)
+
+    def _strategy_fields(self, current_strategy: Any) -> set[str]:
         if is_dataclass(current_strategy):
             return {field.name for field in fields(current_strategy)}
         return set(vars(current_strategy).keys())
@@ -305,6 +347,11 @@ def create_llm_strategist(
 ) -> LLMStrategist:
     """Create a slow-loop strategist from role-specific config."""
     config = dict(config or {})
+    unknown_config = sorted(set(config) - _SLOW_STRATEGIST_CONFIG_FIELDS)
+    if unknown_config:
+        raise LLMStrategistConfigurationError(
+            "Unknown slow_strategist field(s): " + ", ".join(unknown_config)
+        )
     strategist_type = str(config.get("type", "static")).lower()
 
     if not config.get("enabled", True):
@@ -315,6 +362,11 @@ def create_llm_strategist(
         return LLMStrategist(client=StaticJSONLLMClient(response))
 
     if strategist_type in {"openai", "openai_json"}:
+        provider = str(config.get("provider", "openai")).lower()
+        if provider != "openai":
+            raise LLMStrategistConfigurationError(
+                f"OpenAI strategist requires provider='openai', not {provider!r}."
+            )
         role_overrides = config.get("role_prompt") or config.get("role_prompts")
         if role_overrides is not None and not isinstance(role_overrides, Mapping):
             raise LLMStrategistConfigurationError(
@@ -331,6 +383,20 @@ def create_llm_strategist(
             system_prompt=system_prompt,
         )
         allowed_fields = config.get("allowed_strategy_fields")
+        if allowed_fields is not None and not isinstance(allowed_fields, list):
+            raise LLMStrategistConfigurationError(
+                "allowed_strategy_fields must be a YAML list."
+            )
+        strategy_cls = _STRATEGY_STATE_BY_ROLE.get(role)
+        valid_fields = (
+            {item.name for item in fields(strategy_cls)} if strategy_cls else set()
+        )
+        unknown_allowed = sorted(set(allowed_fields or []) - valid_fields)
+        if unknown_allowed:
+            raise LLMStrategistConfigurationError(
+                f"Unknown {role} allowed_strategy_fields: "
+                + ", ".join(unknown_allowed)
+            )
         return LLMStrategist(
             client=client,
             allowed_strategy_fields=set(allowed_fields) if allowed_fields else None,

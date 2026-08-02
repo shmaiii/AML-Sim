@@ -47,6 +47,56 @@ INTERVAL_OUTCOME_FIELDS = [
 ]
 
 
+def generate_order_book_microstructure_report(
+    agent_reports_dir: Path,
+    reports_dir: Path,
+) -> None:
+    """Combine exchange JSONL snapshots into a research-friendly CSV."""
+    rows: list[dict[str, Any]] = []
+    for source in sorted(agent_reports_dir.glob("order_book_microstructure_*.jsonl")):
+        with source.open("r", encoding="utf-8") as handle:
+            for line_number, line in enumerate(handle, start=1):
+                if not line.strip():
+                    continue
+                try:
+                    row = json.loads(line)
+                except json.JSONDecodeError as exc:
+                    print(f"Skipping malformed microstructure row {source}:{line_number}: {exc}")
+                    continue
+                if isinstance(row, dict):
+                    rows.append(row)
+
+    rows.sort(key=lambda row: (row.get("timestamp") or "", row.get("instrument") or ""))
+    reports_dir.mkdir(parents=True, exist_ok=True)
+    output_file = reports_dir / "order_book_microstructure.csv"
+    scalar_fields = sorted({key for row in rows for key in row if key not in {"bid_levels", "ask_levels"}})
+    fieldnames = scalar_fields + ["bid_levels", "ask_levels"]
+    with output_file.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=fieldnames)
+        writer.writeheader()
+        for row in rows:
+            output = dict(row)
+            output["bid_levels"] = json.dumps(row.get("bid_levels", []), separators=(",", ":"))
+            output["ask_levels"] = json.dumps(row.get("ask_levels", []), separators=(",", ":"))
+            writer.writerow(output)
+    print(f"Generated order-book microstructure CSV: {output_file}")
+
+
+def generate_llm_update_report(agent_reports_dir: Path, reports_dir: Path) -> None:
+    """Combine per-agent LLM strategy update audit files."""
+    records: list[dict[str, Any]] = []
+    for source in sorted(agent_reports_dir.glob("llm_strategy_updates_*.json")):
+        with source.open("r", encoding="utf-8") as handle:
+            payload = json.load(handle)
+        if isinstance(payload, list):
+            records.extend(item for item in payload if isinstance(item, dict))
+    records.sort(key=lambda row: (row.get("timestamp") or "", row.get("agent_id") or ""))
+    output_file = reports_dir / "llm_strategy_updates.json"
+    with output_file.open("w", encoding="utf-8") as handle:
+        json.dump(records, handle, indent=2)
+    print(f"Generated LLM strategy update audit: {output_file}")
+
+
 def _parse_report_datetime(value: str):
     """Parse scenario datetimes, including common trailing-Z UTC notation."""
     from utils.time_utils import parse_datetime_utc

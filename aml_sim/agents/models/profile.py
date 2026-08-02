@@ -6,6 +6,18 @@ from dataclasses import asdict, dataclass, field, fields, is_dataclass
 from typing import Any, Mapping, TypeVar
 
 
+_RISK_TOLERANCES = {"low", "medium", "high"}
+_BOUNDED_PROFILE_FIELDS = {
+    "inventory_discipline", "quote_aggressiveness",
+    "adverse_selection_sensitivity", "liquidity_resilience",
+    "social_sensitivity", "panic_sensitivity", "herding_tendency",
+    "news_reactivity", "loss_aversion", "execution_patience",
+    "information_sensitivity", "market_impact_aversion", "information_quality",
+    "patience", "adverse_selection_tolerance", "conviction",
+    "immediacy_preference", "market_impact_tolerance", "flow_persistence",
+}
+
+
 @dataclass
 class AgentProfile:
     """Stable identity and behavioral context for an AML agent."""
@@ -98,8 +110,6 @@ def coerce_profile(
 
     if profile is None:
         return profile_cls()
-    if isinstance(profile, profile_cls):
-        return profile
     if is_dataclass(profile):
         profile = asdict(profile)
     if not isinstance(profile, Mapping):
@@ -117,14 +127,31 @@ def coerce_profile(
         if key not in valid_fields
     }
     if unrecognised:
-        existing_custom = dict(known_values.get("custom", {}))
-        # Store unrecognised keys under a separate key so they never silently
-        # overwrite legitimate 'custom' entries.
-        existing_custom.setdefault("_unrecognised_fields", {})
-        existing_custom["_unrecognised_fields"].update(unrecognised)
-        known_values["custom"] = existing_custom
+        raise ValueError(
+            f"Unknown {profile_cls.__name__} field(s): "
+            + ", ".join(sorted(unrecognised))
+        )
 
-    return profile_cls(**known_values)
+    result = profile_cls(**known_values)
+    if result.role != profile_cls().role:
+        raise ValueError(
+            f"{profile_cls.__name__}.role must be {profile_cls().role!r}, "
+            f"not {result.role!r}"
+        )
+    if result.risk_tolerance not in _RISK_TOLERANCES:
+        raise ValueError(
+            "risk_tolerance must be one of: "
+            + ", ".join(sorted(_RISK_TOLERANCES))
+        )
+    for profile_field in fields(result):
+        if profile_field.name not in _BOUNDED_PROFILE_FIELDS:
+            continue
+        value = getattr(result, profile_field.name)
+        if isinstance(value, bool) or not isinstance(value, (int, float)):
+            raise ValueError(f"profile.{profile_field.name} must be numeric in [0, 1]")
+        if not 0.0 <= float(value) <= 1.0:
+            raise ValueError(f"profile.{profile_field.name} must be in [0, 1]")
+    return result
 
 
 def profile_to_dict(profile: AgentProfile | Mapping[str, Any] | None) -> dict[str, Any]:

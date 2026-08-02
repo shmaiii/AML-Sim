@@ -13,6 +13,7 @@ from aml_sim.agents.base import BaseAMLAgent
 from aml_sim.agents.context.memory import MemoryBackend
 from aml_sim.agents.context.observation import ObservationProcessor
 from aml_sim.agents.models.profile import InstitutionalProfile, coerce_profile
+from aml_sim.agents.profile_effects import institutional_profile_effects
 from aml_sim.agents.strategy.llm_slow_strategy import SlowStrategist
 from aml_sim.agents.models.state import InstitutionalStrategyState
 from aml_sim.agents.strategy.signals import (
@@ -42,6 +43,8 @@ class AMLInstitutionalTrader(BaseAMLAgent):
         child_order_size: int = 100,
         order_type: str = OrderType.MARKET.value,
         limit_price: Optional[float] = None,
+        execution_style: str = "sliced",
+        urgency: float = 0.5,
         alpha_strategy: str = "target_execution",
         alpha_strategies: Optional[list[str]] = None,
         strategy_weights: Optional[Dict[str, float]] = None,
@@ -72,6 +75,9 @@ class AMLInstitutionalTrader(BaseAMLAgent):
         ]:
             if param in kwargs:
                 trader_kwargs[param] = kwargs[param]
+        unknown = sorted(set(kwargs) - set(trader_kwargs))
+        if unknown:
+            raise TypeError("Unknown AML_Institutional_Trader parameter(s): " + ", ".join(unknown))
 
         super().__init__(
             instrument_exchange_map=instrument_exchange_map,
@@ -80,6 +86,8 @@ class AMLInstitutionalTrader(BaseAMLAgent):
                 child_order_size=child_order_size,
                 order_type=order_type.upper(),
                 limit_price=limit_price,
+                execution_style=execution_style,
+                urgency=urgency,
                 alpha_strategy=alpha_strategy,
                 alpha_strategies=self._normalize_alpha_strategies(
                     alpha_strategy,
@@ -158,6 +166,8 @@ class AMLInstitutionalTrader(BaseAMLAgent):
             signal_parts[alpha_strategy] = weighted_signal
 
         pressure = self._market_pressure(instrument)
+        profile_effects = institutional_profile_effects(self.profile, strategy.urgency)
+        signal *= profile_effects["signal_multiplier"]
         signal += pressure["directional_bias"] * strategy.shock_reactivity * strategy.entry_threshold
         if prices and prices[-1] > 0:
             signal += (
@@ -206,6 +216,10 @@ class AMLInstitutionalTrader(BaseAMLAgent):
         side = Side.BUY.value if gap > 0 else Side.SELL.value
         pressure = self._market_pressure(instrument)
         child_size = strategy.child_order_size
+        child_size *= institutional_profile_effects(
+            self.profile,
+            strategy.urgency,
+        )["child_size_multiplier"]
         child_size *= clamp(pressure["order_arrival_multiplier"], 0.25, 2.0)
         child_size *= pressure["risk_limit_multiplier"]
         quantity = min(abs(gap), max(1, int(child_size)))

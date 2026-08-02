@@ -9,6 +9,7 @@ from aml_sim.agents.base import BaseAMLAgent
 from aml_sim.agents.context.memory import MemoryBackend
 from aml_sim.agents.context.observation import ObservationProcessor
 from aml_sim.agents.models.profile import InformedProfile, coerce_profile
+from aml_sim.agents.profile_effects import informed_profile_effects
 from aml_sim.agents.models.state import InformedStrategyState
 from aml_sim.agents.strategy.llm_slow_strategy import SlowStrategist
 from aml_sim.agents.strategy.signals import (
@@ -67,6 +68,9 @@ class AMLInformedTrader(BaseAMLAgent):
         ]:
             if param in kwargs:
                 trader_kwargs[param] = kwargs[param]
+        unknown = sorted(set(kwargs) - set(trader_kwargs))
+        if unknown:
+            raise TypeError("Unknown AML_Informed_Trader parameter(s): " + ", ".join(unknown))
 
         super().__init__(
             instrument_exchange_map=instrument_exchange_map,
@@ -110,6 +114,7 @@ class AMLInformedTrader(BaseAMLAgent):
             return
 
         pressure = self._market_pressure(instrument)
+        profile_effects = informed_profile_effects(self.profile)
         fair_value = max(
             0.01,
             strategy.fair_value_anchor
@@ -121,6 +126,7 @@ class AMLInformedTrader(BaseAMLAgent):
         shock_signal = (
             pressure["directional_bias"]
             * strategy.shock_reactivity
+            * profile_effects["shock_tolerance_multiplier"]
             * strategy.signal_threshold
         )
         signal = value_signal + timing_signal + shock_signal
@@ -131,7 +137,13 @@ class AMLInformedTrader(BaseAMLAgent):
 
         participation = strategy.trade_probability
         participation *= pressure["order_arrival_multiplier"]
-        participation *= 0.5 + (strategy.information_edge * 0.5)
+        effective_information_edge = clamp(
+            strategy.information_edge * profile_effects["information_edge_multiplier"],
+            0.0,
+            1.0,
+        )
+        participation *= 0.5 + (effective_information_edge * 0.5)
+        participation *= profile_effects["participation_multiplier"]
         if self.random.random() > clamp(participation, 0.0, 1.0):
             return
 
@@ -182,7 +194,11 @@ class AMLInformedTrader(BaseAMLAgent):
             strategy.min_position,
             int(strategy.max_position * pressure["risk_limit_multiplier"]),
         )
-        max_size = max(1, int(strategy.max_order_size * pressure["risk_limit_multiplier"]))
+        max_size = max(1, int(
+            strategy.max_order_size
+            * pressure["risk_limit_multiplier"]
+            * informed_profile_effects(self.profile)["order_size_multiplier"]
+        ))
         quantity = self.random.randint(1, max_size)
 
         if side == Side.BUY.value:

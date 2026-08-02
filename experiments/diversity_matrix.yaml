@@ -1,0 +1,24 @@
+experiment: cognitive_diversity_matrix
+question: >
+  What minimum level of diversity in profiles, prompts, and strategy parameters
+  prevents synchronized trading without reducing beneficial liquidity provision?
+levels:
+  D0: identical strategy parameters, profiles, and prompts
+  D1: heterogeneous strategy parameters only
+  D2: heterogeneous strategy parameters and profiles
+  D3: heterogeneous strategy parameters, profiles, and prompts
+  D4: maximal orthogonal profile/prompt combinations with the same agent-role mix
+fixed_seeds: [104729, 130363, 155921, 181081, 206369]
+primary_synchrony_metrics:
+  - signed_order_flow_herding_index
+  - same_direction_share
+  - pairwise_signed_order_flow_correlation
+primary_liquidity_metrics:
+  - spread
+  - top5_bid_depth
+  - top5_ask_depth
+  - fill_rate
+  - signed_price_impact_bps
+selection_rule: >
+  Choose the lowest D level whose confidence interval reduces synchrony relative
+  to D0 without a material deterioration in spread, depth, fill rate, or price impact.

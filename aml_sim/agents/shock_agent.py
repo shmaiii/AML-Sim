@@ -26,6 +26,8 @@ class AMLShockAgent(Agent):
     StockSim submodule does not need a new enum value for AML-owned events.
     """
 
+    TIME_ROUTING_GROUP = "shock.#"
+
     def __init__(
         self,
         scheduled_events: Optional[list[Mapping[str, Any]]] = None,
@@ -35,10 +37,16 @@ class AMLShockAgent(Agent):
         initial_market_state: Optional[Mapping[str, Any]] = None,
         default_duration_ticks: int = 10,
         random_seed: Optional[int] = None,
+        direct_message_delivery: bool = False,
         agent_id: Optional[str] = None,
         rabbitmq_host: str = "localhost",
-        **_: Any,
+        **unknown: Any,
     ) -> None:
+        if unknown:
+            raise TypeError(
+                "Unknown AML_Shock_Agent parameter(s): "
+                + ", ".join(sorted(unknown))
+            )
         super().__init__(agent_id=agent_id, rabbitmq_host=rabbitmq_host)
         self.scheduled_events = [dict(event) for event in (scheduled_events or [])]
         self.random_events_config = dict(random_events or {})
@@ -53,6 +61,7 @@ class AMLShockAgent(Agent):
         self.market_state = dict(self.market_state_engine.current_state)
         self._last_broadcast_market_state: dict[str, Any] | None = None
         self.default_duration_ticks = default_duration_ticks
+        self.direct_message_delivery = bool(direct_message_delivery)
         self.emitted_event_ids: set[str] = set()
         self.announced_event_ids: set[str] = set()
         self.random_event_count = 0
@@ -66,47 +75,71 @@ class AMLShockAgent(Agent):
         self.logger.debug(f"AMLShockAgent ignored message: {msg.get('type')}")
 
     async def handle_time_tick(self, payload: dict[str, Any]) -> None:
-        await super().handle_time_tick(payload)
+        emitted: list[dict[str, Any]] = []
+        error: str | None = None
         tick_id = safe_int(payload.get("tick_id"), 0) or 0
-        self.market_state = self.market_state_engine.snapshot(tick_id)
-        for index, event in enumerate(self.scheduled_events):
-            event_id = str(event.get("id") or event.get("shock_id") or f"shock_{index}")
-            if (
-                event_id not in self.announced_event_ids
-                and event_id not in self.emitted_event_ids
-                and self._announcement_due(event, payload)
-            ):
-                await self._emit_event(
-                    event_id,
-                    event,
-                    payload,
-                    phase="announcement",
-                    trigger_type=str(event.get("trigger_type", "scheduled")),
-                )
-                self.announced_event_ids.add(event_id)
+        try:
+            await super().handle_time_tick(payload)
+            self.market_state = self.market_state_engine.snapshot(tick_id)
+            for index, event in enumerate(self.scheduled_events):
+                event_id = str(event.get("id") or event.get("shock_id") or f"shock_{index}")
+                if (
+                    event_id not in self.announced_event_ids
+                    and event_id not in self.emitted_event_ids
+                    and self._announcement_due(event, payload)
+                ):
+                    emitted.append(await self._emit_event(
+                        event_id,
+                        event,
+                        payload,
+                        phase="announcement",
+                        trigger_type=str(event.get("trigger_type", "scheduled")),
+                    ))
+                    self.announced_event_ids.add(event_id)
 
-            if event_id in self.emitted_event_ids:
-                continue
-            if self._event_due(event, payload):
-                await self._emit_event(
+                if event_id in self.emitted_event_ids:
+                    continue
+                if self._event_due(event, payload):
+                    emitted.append(await self._emit_event(
+                        event_id,
+                        event,
+                        payload,
+                        phase="active",
+                        trigger_type=str(event.get("trigger_type", "scheduled")),
+                    ))
+
+            for event_id, event in self._random_events_due(payload):
+                emitted.append(await self._emit_event(
                     event_id,
                     event,
                     payload,
                     phase="active",
-                    trigger_type=str(event.get("trigger_type", "scheduled")),
-                )
+                    trigger_type=str(event.get("trigger_type", "unexpected")),
+                ))
 
-        for event_id, event in self._random_events_due(payload):
-            await self._emit_event(
-                event_id,
-                event,
-                payload,
-                phase="active",
-                trigger_type=str(event.get("trigger_type", "unexpected")),
+            self.market_state = self.market_state_engine.snapshot(tick_id)
+            state_update = await self._broadcast_market_state_if_changed(payload)
+            if state_update is not None:
+                emitted.append(state_update)
+        except Exception as exc:
+            error = f"{type(exc).__name__}: {exc}"
+            raise
+        finally:
+            ack = {
+                "tick_id": tick_id,
+                "agent_id": self.agent_id,
+                "phase": "shock",
+                "events": emitted,
+                "market_state": dict(self.market_state),
+                "market_state_baseline": dict(self.market_state_baseline),
+            }
+            if error:
+                ack["error"] = error
+            await self.publish_time(
+                MessageType.DECISION_RESPONSE,
+                ack,
+                routing_key="simulation_clock",
             )
-
-        self.market_state = self.market_state_engine.snapshot(tick_id)
-        await self._broadcast_market_state_if_changed(payload)
 
     def _event_due(self, event: Mapping[str, Any], payload: Mapping[str, Any]) -> bool:
         tick_id = payload.get("tick_id")
@@ -163,7 +196,7 @@ class AMLShockAgent(Agent):
         *,
         phase: str,
         trigger_type: str,
-    ) -> None:
+    ) -> dict[str, Any]:
         shock_payload = build_shock_payload(
             event_id,
             event,
@@ -198,14 +231,15 @@ class AMLShockAgent(Agent):
             self.logger.warning(f"AMLShockAgent has no targets for shock {event_id}")
             if phase == "active":
                 self.emitted_event_ids.add(event_id)
-            return
+            return shock_payload
 
-        for target_agent_id in self.target_agent_ids:
-            await self.send_message(
-                target_agent_id,
-                MessageType.STATUS_UPDATE,
-                shock_payload,
-            )
+        if self.direct_message_delivery:
+            for target_agent_id in self.target_agent_ids:
+                await self.send_message(
+                    target_agent_id,
+                    MessageType.STATUS_UPDATE,
+                    shock_payload,
+                )
 
         if phase == "active":
             self.emitted_event_ids.add(event_id)
@@ -217,13 +251,14 @@ class AMLShockAgent(Agent):
             f"type={shock_payload['shock_type']}, class={shock_payload['shock_class']}, "
             f"severity={shock_payload['severity']}, direction={shock_payload['direction']}"
         )
+        return shock_payload
 
     async def _broadcast_market_state_if_changed(
         self,
         payload: Mapping[str, Any],
-    ) -> None:
+    ) -> dict[str, Any] | None:
         if not self.target_agent_ids or self.market_state == self._last_broadcast_market_state:
-            return
+            return None
 
         current_time = payload.get("current_time")
         timestamp = (
@@ -238,13 +273,15 @@ class AMLShockAgent(Agent):
             "market_state": dict(self.market_state),
             "market_state_baseline": dict(self.market_state_baseline),
         }
-        for target_agent_id in self.target_agent_ids:
-            await self.send_message(
-                target_agent_id,
-                MessageType.STATUS_UPDATE,
-                state_payload,
-            )
+        if self.direct_message_delivery:
+            for target_agent_id in self.target_agent_ids:
+                await self.send_message(
+                    target_agent_id,
+                    MessageType.STATUS_UPDATE,
+                    state_payload,
+                )
         self._last_broadcast_market_state = dict(self.market_state)
+        return state_payload
 
     @staticmethod
     def _market_state_contribution(

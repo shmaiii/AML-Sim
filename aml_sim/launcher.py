@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import logging
 import os
 import signal
@@ -203,6 +204,7 @@ def simulation_clock_runner(
     simulation_config: dict[str, Any],
     rabbitmq_host: str,
     expected_responses: int,
+    expected_shock_responses: int,
 ) -> None:
     """Run the StockSim simulation clock process."""
     from simulation.simulation_clock import SimulationClock
@@ -225,6 +227,13 @@ def simulation_clock_runner(
                 "expected_exchange_agent_count", 1
             ),
             expected_responses=expected_responses,
+            expected_shock_responses=expected_shock_responses,
+            barrier_timeout_seconds=simulation_config.get(
+                "barrier_timeout_seconds", 60.0
+            ),
+            inter_tick_delay_seconds=simulation_config.get(
+                "inter_tick_delay_seconds", 0.0
+            ),
         )
         await simulation_clock.run()
 
@@ -267,6 +276,7 @@ def build_agent_param_customizers(
             normalized["action_interval_seconds"] = interval_to_seconds(
                 params["action_interval"]
             )
+            normalized.pop("action_interval", None)
         elif "action_interval_seconds" not in normalized:
             normalized["action_interval_seconds"] = default_action_interval
 
@@ -274,6 +284,7 @@ def build_agent_param_customizers(
             normalized["slow_loop_interval_seconds"] = interval_to_seconds(
                 params["slow_loop_interval"]
             )
+            normalized.pop("slow_loop_interval", None)
         return normalized
 
     return {
@@ -419,14 +430,32 @@ def run_stocksim_components(
     time.sleep(startup_grace_seconds)
 
     # --- Clock process ---
-    llm_expected_responses = sum(
+    acknowledged_trader_types = {
+        "LLMTradingAgent",
+        "AML_Market_Maker",
+        "AML_Retail_Trader",
+        "AML_Institutional_Trader",
+        "AML_Informed_Trader",
+        "AML_Liquidity_Taker",
+    }
+    expected_trader_responses = sum(
         details.get("count", 1)
         for details in agents_config.values()
-        if details.get("type") == "LLMTradingAgent"
+        if details.get("type") in acknowledged_trader_types
+    )
+    expected_shock_responses = sum(
+        details.get("count", 1)
+        for details in agents_config.values()
+        if details.get("type") == "AML_Shock_Agent"
     )
     clock_process = Process(
         target=simulation_clock_runner,
-        args=(simulation_config, rabbitmq_host, llm_expected_responses),
+        args=(
+            simulation_config,
+            rabbitmq_host,
+            expected_trader_responses,
+            expected_shock_responses,
+        ),
         name="SimulationClock",
     )
     clock_process.start()
@@ -460,7 +489,12 @@ def run_stocksim_components(
 
     exit_code = 0
     try:
-        _join_all_with_timeout(all_processes, timeout=process_timeout_seconds)
+        timed_out = _join_all_with_timeout(
+            all_processes,
+            timeout=process_timeout_seconds,
+        )
+        if timed_out:
+            exit_code = 1
     except KeyboardInterrupt:
         terminate_processes(all_processes)
         exit_code = 130
@@ -471,6 +505,20 @@ def run_stocksim_components(
 
     if shutdown_requested:
         exit_code = 130
+
+    failed_processes = [
+        process
+        for process in all_processes
+        if process.exitcode not in {None, 0}
+    ]
+    if failed_processes and exit_code == 0:
+        exit_code = 1
+    for process in failed_processes:
+        logger.error(
+            "Process '%s' exited with code %s.",
+            process.name,
+            process.exitcode,
+        )
 
     if exit_code == 0:
         generate_aml_reports(aml_run)
@@ -520,7 +568,7 @@ def _join_all_with_timeout(
     *,
     timeout: float,
     interval: float = 2.0,
-) -> None:
+) -> bool:
     """Join every process with a per-process deadline, polling for stalls."""
     deadline = time.monotonic() + timeout
     remaining = [p for p in processes if p.is_alive() or p.exitcode is None]
@@ -535,6 +583,8 @@ def _join_all_with_timeout(
     for p in remaining:
         logger.warning("Process '%s' (pid=%s) is still alive; terminating.", p.name, p.pid)
         p.terminate()
+        p.join(timeout=5.0)
+    return bool(remaining)
 
 
 def terminate_processes(processes: list[Process]) -> None:
@@ -555,12 +605,20 @@ def generate_aml_reports(aml_run: AMLRun) -> None:
     from aml_sim.reporting import (
         generate_agent_decision_csv,
         generate_interval_outcome_csv,
+        generate_llm_update_report,
+        generate_order_book_microstructure_report,
         generate_trader_action_report,
     )
+    from aml_sim.research_metrics import build_research_metrics
 
     generate_trader_action_report(aml_run.reports_dir / "agents", aml_run.reports_dir)
     generate_agent_decision_csv(aml_run.reports_dir / "agents", aml_run.reports_dir)
     generate_interval_outcome_csv(aml_run.reports_dir / "agents", aml_run.reports_dir)
+    generate_llm_update_report(aml_run.reports_dir / "agents", aml_run.reports_dir)
+    generate_order_book_microstructure_report(
+        aml_run.reports_dir / "agents", aml_run.reports_dir
+    )
+    build_research_metrics(aml_run.reports_dir / "agents", aml_run.reports_dir)
 
 
 def generate_stocksim_reports(config: dict[str, Any], aml_run: AMLRun) -> None:
@@ -679,6 +737,10 @@ def start_trader_processes(
     dataset_split = aml_config.get("dataset_split", "unspecified")
     if not isinstance(dataset_split, (str, dict)):
         raise ValueError("aml_config.dataset_split must be a string or mapping")
+    experiment_config = aml_config.get("experiment", {}) or {}
+    if not isinstance(experiment_config, dict):
+        raise ValueError("aml_config.experiment must be a mapping when provided")
+    experiment_seed = int(experiment_config.get("seed", 0))
 
     agent_ids_by_name = build_agent_instance_id_map(agents_config)
     shock_target_agent_ids = [
@@ -710,25 +772,38 @@ def start_trader_processes(
             if agent_type in agent_custom_params:
                 instance_params = agent_custom_params[agent_type](instance_params)
 
-            instance_params = apply_aml_agent_defaults(
-                instance_params,
-                llm_defaults=llm_defaults,
-                dataset_split=dataset_split,
-            )
+            if agent_type != "AML_Shock_Agent":
+                instance_params = apply_aml_agent_defaults(
+                    instance_params,
+                    llm_defaults=llm_defaults,
+                    dataset_split=dataset_split,
+                )
 
             instance_params["agent_id"] = unique_agent_id
-            instance_params.setdefault(
-                "instrument_exchange_map", instrument_exchange_map
-            )
             instance_params["rabbitmq_host"] = rabbitmq_host
             if agent_type == "AML_Shock_Agent":
                 instance_params.setdefault("target_agent_ids", shock_target_agent_ids)
                 instance_params.setdefault("instrument_metadata", instrument_metadata)
+            else:
+                instance_params.setdefault(
+                    "instrument_exchange_map", instrument_exchange_map
+                )
 
             # Deterministic seed: derived from run_id and agent identity so
             # every re-run of the same scenario produces the same behaviour.
             if agent_type == "Random_Trader":
-                instance_params["seed"] = _make_seed(run_id, unique_agent_id)
+                instance_params.setdefault(
+                    "seed", _make_seed(str(experiment_seed), unique_agent_id)
+                )
+            if agent_type in {
+                "AML_Retail_Trader",
+                "AML_Informed_Trader",
+                "AML_Liquidity_Taker",
+                "AML_Shock_Agent",
+            }:
+                instance_params.setdefault(
+                    "random_seed", _make_seed(str(experiment_seed), unique_agent_id)
+                )
 
             process = Process(
                 target=_async_process_runner,
@@ -780,8 +855,5 @@ def build_agent_instance_id_map(agents_config: dict[str, Any]) -> dict[str, list
 
 def _make_seed(run_id: str, agent_id: str) -> int:
     """Produce a deterministic seed from run and agent identity."""
-    # hash() is deterministic within a single Python process but not across
-    # runs.  For true cross-run reproducibility we would store the seed in
-    # the run metadata.  For now this guarantees that two agents with the
-    # same run_id + agent_id get the same seed every launch.
-    return hash(f"{run_id}:{agent_id}") & 0x7FFF_FFFF
+    digest = hashlib.sha256(f"{run_id}:{agent_id}".encode("utf-8")).digest()
+    return int.from_bytes(digest[:4], "big") & 0x7FFF_FFFF

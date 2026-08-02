@@ -64,6 +64,7 @@ class BaseAMLAgent(TraderAgent):
         self.observation_processor = observation_processor or ObservationProcessor()
         self.slow_strategist = self._build_slow_strategist(slow_strategist)
         self.strategy_validator = strategy_validator or validate_strategy_state
+        self._last_strategy_validation_error: str | None = None
         self.strategy_state = self._validate_or_keep(strategy_state, is_initial=True)
 
         if slow_loop_interval_seconds is None:
@@ -77,6 +78,7 @@ class BaseAMLAgent(TraderAgent):
         )
         self.next_slow_loop_time = None
         self.action_events: list[dict[str, Any]] = []
+        self.llm_update_records: list[dict[str, Any]] = []
         self.decision_records: list[dict[str, Any]] = []
         self.interval_outcomes: list[dict[str, Any]] = []
         self._pending_interval_outcomes: list[dict[str, Any]] = []
@@ -93,6 +95,7 @@ class BaseAMLAgent(TraderAgent):
         self.slow_loop_seen_event_ids: set[Any] = set()
         self.market_state: dict[str, Any] = {}
         self.market_state_baseline: dict[str, Any] = {}
+        self._observed_event_keys: set[tuple[Any, Any, Any]] = set()
 
         self.price_history: dict[str, list[dict[str, Any]]] = {
             instrument: [] for instrument in self.instrument_exchange_map.keys()
@@ -121,35 +124,72 @@ class BaseAMLAgent(TraderAgent):
         return create_llm_strategist(self.LLM_STRATEGY_ROLE)
 
     async def handle_time_tick(self, payload: dict[str, Any]) -> None:
-        await super().handle_time_tick(payload)
+        tick_id = payload.get("tick_id")
+        error: str | None = None
+        try:
+            await super().handle_time_tick(payload)
+            self._ingest_shock_packets(payload.get("shock_packets", []))
 
-        current_time = self.current_time
-        if current_time is None:
-            return
+            current_time = self.current_time
+            if current_time is None:
+                return
 
-        self._capture_outcome_observation()
-        self._finalize_due_interval_outcomes()
+            self._capture_outcome_observation()
+            self._finalize_due_interval_outcomes()
 
-        if self.next_action_time is None:
-            self.next_action_time = current_time
-        if self.next_slow_loop_time is None:
-            self.next_slow_loop_time = current_time
+            if self.next_action_time is None:
+                self.next_action_time = current_time
+            if self.next_slow_loop_time is None:
+                self.next_slow_loop_time = current_time
 
-        observation = self.build_observation()
-
-        if self.slow_loop_due():
-            await self.run_slow_loop(observation)
-            self.next_slow_loop_time = current_time + self.slow_loop_interval
             observation = self.build_observation()
 
-        if current_time >= self.next_action_time:
-            action_event_start = len(self.action_events)
-            await self.run_fast_loop(observation)
-            self._record_fast_loop_decisions(
-                observation=observation,
-                action_event_start=action_event_start,
+            if self.slow_loop_due():
+                await self.run_slow_loop(observation)
+                self.next_slow_loop_time = current_time + self.slow_loop_interval
+                observation = self.build_observation()
+
+            if current_time >= self.next_action_time:
+                action_event_start = len(self.action_events)
+                await self.run_fast_loop(observation)
+                self._record_fast_loop_decisions(
+                    observation=observation,
+                    action_event_start=action_event_start,
+                )
+                self.next_action_time = current_time + self.action_interval
+        except Exception as exc:
+            error = f"{type(exc).__name__}: {exc}"
+            raise
+        finally:
+            ack = {
+                "tick_id": tick_id,
+                "agent_id": self.agent_id,
+                "phase": "trader",
+            }
+            if error:
+                ack["error"] = error
+            await self.publish_time(
+                MessageType.DECISION_RESPONSE,
+                ack,
+                routing_key="simulation_clock",
             )
-            self.next_action_time = current_time + self.action_interval
+
+    def _ingest_shock_packets(self, packets: Any) -> None:
+        if not isinstance(packets, list):
+            return
+        for packet in packets:
+            if not isinstance(packet, Mapping):
+                continue
+            events = packet.get("events", [])
+            if isinstance(events, list):
+                for event in events:
+                    if not isinstance(event, Mapping):
+                        continue
+                    if event.get("event_type") in {"AML_SHOCK", "AML_MARKET_EVENT"}:
+                        self._handle_aml_event(event)
+                    elif event.get("event_type") == "AML_MARKET_STATE":
+                        self._handle_market_state_update(event)
+            self._update_market_state_from_payload(packet)
 
     @staticmethod
     def _normalize_dataset_split(
@@ -654,6 +694,10 @@ class BaseAMLAgent(TraderAgent):
 
     async def run_slow_loop(self, observation: Mapping[str, Any]) -> None:
         before = self._strategy_snapshot(self.strategy_state)
+        self._last_strategy_validation_error = None
+        slow_loop_error: str | None = None
+        if hasattr(self.slow_strategist, "last_update_audit"):
+            self.slow_strategist.last_update_audit = {}
         try:
             proposal = self.slow_strategist.propose(
                 observation,
@@ -670,11 +714,61 @@ class BaseAMLAgent(TraderAgent):
             # For the slow loop, the previous state is kept inside _validate_or_keep.
             pass
         except Exception as exc:
+            slow_loop_error = f"{type(exc).__name__}: {exc}"
             self.logger.error(
                 f"{self.agent_id} slow loop failed; keeping current strategy: {exc}"
             )
 
         after = self._strategy_snapshot(self.strategy_state)
+        strategist_audit = getattr(self.slow_strategist, "last_update_audit", {})
+        if not isinstance(strategist_audit, Mapping):
+            strategist_audit = {}
+        proposed_updates = dict(strategist_audit.get("proposed_updates", {}) or {})
+        eligible_updates = dict(strategist_audit.get("eligible_updates", {}) or {})
+        rejected_updates = dict(strategist_audit.get("rejected_updates", {}) or {})
+        validation_error = self._last_strategy_validation_error
+        if validation_error:
+            for key, value in eligible_updates.items():
+                rejected_updates[key] = {
+                    "value": value,
+                    "reason": "strategy_validation_error",
+                    "detail": validation_error,
+                }
+        applied_updates = {
+            key: after.get(key)
+            for key in eligible_updates
+            if before.get(key) != after.get(key)
+        }
+        status = "applied"
+        rejection_reason = None
+        if slow_loop_error:
+            status = "rejected"
+            rejection_reason = slow_loop_error
+        elif validation_error:
+            status = "rejected"
+            rejection_reason = validation_error
+        elif rejected_updates and not applied_updates:
+            status = "rejected"
+            rejection_reason = "all proposed updates were rejected"
+        elif rejected_updates:
+            status = "partially_applied"
+        elif not applied_updates:
+            status = "no_change"
+
+        update_record = serialize_value({
+            "agent_id": self.agent_id,
+            "tick_id": self.current_tick_id,
+            "timestamp": self.current_time.isoformat() if self.current_time else None,
+            "status": status,
+            "proposed_updates": proposed_updates,
+            "applied_updates": applied_updates,
+            "rejected_updates": rejected_updates,
+            "rejection_reason": rejection_reason,
+            "strategy_before": before,
+            "strategy_after": after,
+        })
+        self.llm_update_records.append(update_record)
+        self._record_action_event({"event_type": "llm_strategy_update", **update_record})
         self._remember_slow_loop_decision(
             observation=observation,
             before=before,
@@ -828,6 +922,7 @@ class BaseAMLAgent(TraderAgent):
             self.logger.warning(
                 f"Rejected strategy proposal for {self.agent_id}; keeping previous state: {exc}"
             )
+            self._last_strategy_validation_error = str(exc)
             return self.strategy_state
 
     def _strategy_snapshot(self, strategy_state: Any) -> dict[str, Any]:
@@ -953,11 +1048,28 @@ class BaseAMLAgent(TraderAgent):
 
     def _record_action_event(self, event: dict[str, Any]) -> None:
         event.setdefault("agent_id", self.agent_id)
+        profile = getattr(self, "profile", None)
+        role = (
+            profile.get("role", "unspecified")
+            if isinstance(profile, Mapping)
+            else getattr(profile, "role", "unspecified")
+        )
+        event.setdefault("agent_role", role)
+        event.setdefault("tick_id", self.current_tick_id)
         event.setdefault("timestamp", self.current_time.isoformat() if self.current_time else None)
         self.action_events.append(serialize_value(event))
 
     def _handle_aml_event(self, event: Mapping[str, Any]) -> None:
         observed = serialize_value(dict(event))
+        delivery_key = (
+            observed.get("shock_id"),
+            observed.get("phase", "active"),
+            observed.get("effective_tick_id", observed.get("tick_id")),
+        )
+        if delivery_key[0] is not None and delivery_key in self._observed_event_keys:
+            return
+        if delivery_key[0] is not None:
+            self._observed_event_keys.add(delivery_key)
         observed.setdefault("observed_at", self.current_time.isoformat() if self.current_time else None)
         observed.setdefault("observed_tick_id", self.current_tick_id)
 
@@ -1148,6 +1260,7 @@ class BaseAMLAgent(TraderAgent):
         self._export_action_events(output_dir=output_dir)
         self._export_agent_decisions(output_dir=output_dir)
         self._export_interval_outcomes(output_dir=output_dir)
+        self._export_llm_updates(output_dir=output_dir)
         self._export_memory_events(agent_dir=agent_dir)
 
     def _export_action_events(self, *, output_dir: str) -> None:
@@ -1182,6 +1295,18 @@ class BaseAMLAgent(TraderAgent):
             self.logger.info(f"AML interval outcomes exported to {output_file}")
         except Exception as exc:
             self.logger.error(f"Failed to export AML interval outcomes: {exc}")
+
+    def _export_llm_updates(self, *, output_dir: str) -> None:
+        output_file = os.path.join(
+            output_dir,
+            f"llm_strategy_updates_{self.agent_id}.json",
+        )
+        try:
+            with open(output_file, "w", encoding="utf-8") as handle:
+                json.dump(self.llm_update_records, handle, indent=2)
+            self.logger.info(f"AML LLM update audit exported to {output_file}")
+        except Exception as exc:
+            self.logger.error(f"Failed to export AML LLM update audit: {exc}")
 
     def _export_memory_events(self, *, agent_dir: str) -> None:
         output_file = os.path.join(agent_dir, "memory.json")

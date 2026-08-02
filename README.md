@@ -454,11 +454,37 @@ Runs are finite by default. The scenario YAML controls the simulated clock with
 For example, `scenarios/aml_one_hour_live.yaml` runs from 09:30 to 10:30 with
 30-second ticks. The dashboard streams updates while this run is active; after
 the scenario clock reaches `end_time`, the run stops and the final reports are
-loaded. StockSim currently sleeps for roughly 5 wall-clock seconds per tick, so
-this one simulated hour usually takes about 10 wall-clock minutes plus
-startup/reporting overhead. Longer live scenarios should set
+loaded. The clock advances immediately after every required acknowledgement by
+default. Set `simulation.inter_tick_delay_seconds` only when a slower dashboard
+display is useful. Longer live scenarios should set
 `simulation.max_wall_time_seconds` high enough for the wall-clock runtime; the
 one-hour dashboard scenario uses 900 seconds.
+
+## Diversity Research Matrix
+
+Generate the fixed D0-D4 matrix (five conditions by five seeds):
+
+```bash
+python -m aml_sim.experiments.diversity_matrix
+```
+
+Validate every generated scenario without launching RabbitMQ or calling an API:
+
+```bash
+python scripts/run_diversity_matrix.py --dry-run
+```
+
+Run the full matrix sequentially after RabbitMQ and `OPENAI_API_KEY` are ready:
+
+```bash
+python scripts/run_diversity_matrix.py
+```
+
+Every tick uses `exchange -> shock -> trader` barriers. Final reports add
+`order_book_microstructure.csv`, `llm_strategy_updates.json`,
+`signed_order_flow.csv`, and `research_metrics.json` alongside the existing
+decision, outcome, and action exports. The design and selection rule are in
+`experiments/diversity_matrix.yaml`.
 
 ## Working With The StockSim Submodule
 
