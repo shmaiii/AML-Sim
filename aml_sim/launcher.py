@@ -318,6 +318,7 @@ def launch_stocksim(
     env_updates["LOG_DIR"] = str(aml_run.logs_dir)
     env_updates["METRICS_OUTPUT_DIR"] = str(aml_run.reports_dir / "agents")
     env_updates["DECISION_CONTEXT_DIR"] = str(aml_run.run_dir / "decision_context")
+    env_updates["AML_RUN_ID"] = aml_run.run_id
     env_updates["RABBITMQ_HOST"] = rabbitmq_host
 
     logger.info("Launching StockSim components from AML-Sim")
@@ -551,9 +552,15 @@ def terminate_processes(processes: list[Process]) -> None:
 
 def generate_aml_reports(aml_run: AMLRun) -> None:
     """Generate AML-owned reports from run-local agent artifacts."""
-    from aml_sim.reporting import generate_trader_action_report
+    from aml_sim.reporting import (
+        generate_agent_decision_csv,
+        generate_interval_outcome_csv,
+        generate_trader_action_report,
+    )
 
     generate_trader_action_report(aml_run.reports_dir / "agents", aml_run.reports_dir)
+    generate_agent_decision_csv(aml_run.reports_dir / "agents", aml_run.reports_dir)
+    generate_interval_outcome_csv(aml_run.reports_dir / "agents", aml_run.reports_dir)
 
 
 def generate_stocksim_reports(config: dict[str, Any], aml_run: AMLRun) -> None:
@@ -669,6 +676,9 @@ def start_trader_processes(
         llm_defaults = {}
     if not isinstance(llm_defaults, dict):
         raise ValueError("aml_config.llm must be a mapping when provided")
+    dataset_split = aml_config.get("dataset_split", "unspecified")
+    if not isinstance(dataset_split, (str, dict)):
+        raise ValueError("aml_config.dataset_split must be a string or mapping")
 
     agent_ids_by_name = build_agent_instance_id_map(agents_config)
     shock_target_agent_ids = [
@@ -703,6 +713,7 @@ def start_trader_processes(
             instance_params = apply_aml_agent_defaults(
                 instance_params,
                 llm_defaults=llm_defaults,
+                dataset_split=dataset_split,
             )
 
             instance_params["agent_id"] = unique_agent_id
@@ -736,11 +747,11 @@ def apply_aml_agent_defaults(
     params: dict[str, Any],
     *,
     llm_defaults: dict[str, Any],
+    dataset_split: str | dict[str, Any] = "unspecified",
 ) -> dict[str, Any]:
     """Merge AML-level defaults into agent parameters."""
     normalized = dict(params)
-    if not llm_defaults:
-        return normalized
+    normalized.setdefault("dataset_split", dataset_split)
 
     slow_strategist = normalized.get("slow_strategist")
     if slow_strategist is None:

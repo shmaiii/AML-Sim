@@ -1,4 +1,5 @@
 .aml_runs/
+.venv/
 .env
 simulators/StockSim/.env
 __pycache__/

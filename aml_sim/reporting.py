@@ -2,12 +2,49 @@
 
 from __future__ import annotations
 
+import csv
 import json
 import os
 import traceback
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+
+
+AGENT_DECISION_FIELDS = [
+    "decision_id",
+    "agent_name",
+    "asset",
+    "decision_date",
+    "decision_timestamp",
+    "data_cutoff_timestamp",
+    "prediction_score",
+    "confidence",
+    "action",
+    "submitted_action",
+    "latest_data_date_used",
+    "data_timestamp_source",
+    "split",
+]
+
+INTERVAL_OUTCOME_FIELDS = [
+    "decision_id",
+    "agent_name",
+    "asset",
+    "interval_start",
+    "interval_end",
+    "result_available_timestamp",
+    "interval_return",
+    "interval_pnl",
+    "portfolio_value",
+    "realized_volatility",
+    "drawdown",
+    "gross_exposure",
+    "net_exposure",
+    "assigned_risk_budget",
+    "outcome_status",
+    "split",
+]
 
 
 def _parse_report_datetime(value: str):
@@ -17,6 +54,19 @@ def _parse_report_datetime(value: str):
     if value.endswith("Z"):
         value = f"{value[:-1]}+00:00"
     return parse_datetime_utc(value)
+
+
+def _decision_timestamp_sort_key(value: Any) -> datetime:
+    if isinstance(value, datetime):
+        parsed = value
+    else:
+        try:
+            parsed = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+        except (TypeError, ValueError):
+            return datetime.min.replace(tzinfo=timezone.utc)
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    return parsed.astimezone(timezone.utc)
 
 
 def _format_simulation_duration(start_str: str, end_str: str) -> str:
@@ -241,3 +291,123 @@ def generate_trader_action_report(agent_reports_dir: Path, reports_dir: Path) ->
         json.dump(report, handle, indent=2)
 
     print(f"Generated AML trader action report: {output_file}")
+
+
+def generate_agent_decision_csv(
+    agent_reports_dir: Path,
+    reports_dir: Path,
+) -> None:
+    """Build detailed and latest-daily decision datasets."""
+    reports_dir.mkdir(parents=True, exist_ok=True)
+    agent_reports_dir.mkdir(parents=True, exist_ok=True)
+
+    rows_by_key: dict[tuple[str, str, str], dict[str, Any]] = {}
+    detailed_rows: list[dict[str, Any]] = []
+    for decision_file in sorted(agent_reports_dir.glob("agent_decisions_*.json")):
+        try:
+            with decision_file.open("r", encoding="utf-8") as handle:
+                agent_rows = json.load(handle)
+        except Exception as exc:
+            print(f"Failed to read agent decision file {decision_file}: {exc}")
+            continue
+
+        if not isinstance(agent_rows, list):
+            print(f"Skipping agent decision file with non-list payload: {decision_file}")
+            continue
+
+        for raw_row in agent_rows:
+            if not isinstance(raw_row, dict):
+                continue
+            row = {field: raw_row.get(field) for field in AGENT_DECISION_FIELDS}
+            key = (
+                str(row.get("agent_name") or ""),
+                str(row.get("decision_date") or ""),
+                str(row.get("asset") or ""),
+            )
+            if not all(key):
+                continue
+
+            detailed_rows.append(row)
+
+            previous = rows_by_key.get(key)
+            if previous is None or _decision_timestamp_sort_key(
+                row.get("decision_timestamp")
+            ) >= _decision_timestamp_sort_key(previous.get("decision_timestamp")):
+                rows_by_key[key] = row
+
+    detailed_rows.sort(
+        key=lambda row: (
+            _decision_timestamp_sort_key(row.get("decision_timestamp")),
+            str(row.get("agent_name") or ""),
+            str(row.get("asset") or ""),
+        )
+    )
+    detailed_output_file = reports_dir / "agent_decisions_detailed.csv"
+    with detailed_output_file.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=AGENT_DECISION_FIELDS)
+        writer.writeheader()
+        writer.writerows(detailed_rows)
+
+    rows = sorted(
+        rows_by_key.values(),
+        key=lambda row: (
+            str(row.get("decision_date") or ""),
+            str(row.get("agent_name") or ""),
+            str(row.get("asset") or ""),
+        ),
+    )
+    output_file = reports_dir / "agent_decisions.csv"
+    with output_file.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=AGENT_DECISION_FIELDS)
+        writer.writeheader()
+        writer.writerows(rows)
+
+    print(f"Generated AML agent decision CSV: {output_file}")
+    print(f"Generated detailed AML decision CSV: {detailed_output_file}")
+
+
+def generate_interval_outcome_csv(
+    agent_reports_dir: Path,
+    reports_dir: Path,
+) -> None:
+    """Combine per-agent interval outcomes into one decision-linked CSV."""
+    reports_dir.mkdir(parents=True, exist_ok=True)
+    agent_reports_dir.mkdir(parents=True, exist_ok=True)
+
+    rows_by_decision_id: dict[str, dict[str, Any]] = {}
+    for outcome_file in sorted(agent_reports_dir.glob("interval_outcomes_*.json")):
+        try:
+            with outcome_file.open("r", encoding="utf-8") as handle:
+                agent_rows = json.load(handle)
+        except Exception as exc:
+            print(f"Failed to read interval outcome file {outcome_file}: {exc}")
+            continue
+
+        if not isinstance(agent_rows, list):
+            print(f"Skipping interval outcome file with non-list payload: {outcome_file}")
+            continue
+
+        for raw_row in agent_rows:
+            if not isinstance(raw_row, dict):
+                continue
+            row = {field: raw_row.get(field) for field in INTERVAL_OUTCOME_FIELDS}
+            decision_id = str(row.get("decision_id") or "")
+            if not decision_id:
+                continue
+            rows_by_decision_id[decision_id] = row
+
+    rows = sorted(
+        rows_by_decision_id.values(),
+        key=lambda row: (
+            _decision_timestamp_sort_key(row.get("interval_start")),
+            str(row.get("agent_name") or ""),
+            str(row.get("asset") or ""),
+        ),
+    )
+    output_file = reports_dir / "interval_outcomes.csv"
+    with output_file.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=INTERVAL_OUTCOME_FIELDS)
+        writer.writeheader()
+        writer.writerows(rows)
+
+    print(f"Generated AML interval outcome CSV: {output_file}")

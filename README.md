@@ -300,6 +300,51 @@ The combined `trader_actions.json` report contains submitted orders, rejected
 orders, trade executions, strategy state at the time of the action, and
 portfolio/share state before and after the action.
 
+Completed runs also write a governance-oriented decision dataset:
+
+```text
+.aml_runs/<run-id>/reports/agent_decisions.csv
+.aml_runs/<run-id>/reports/agent_decisions_detailed.csv
+.aml_runs/<run-id>/reports/interval_outcomes.csv
+.aml_runs/<run-id>/reports/agents/agent_decisions_<agent-id>.json
+.aml_runs/<run-id>/reports/agents/interval_outcomes_<agent-id>.json
+```
+
+The per-agent JSON files and `agent_decisions_detailed.csv` retain every
+fast-loop decision. `agent_decisions.csv` keeps the latest decision for each
+`agent_name`, `decision_date`, and `asset`. Every decision has a deterministic
+`decision_id` and a `data_cutoff_timestamp`, plus the prediction score in
+`[-1, 1]`, confidence in `[0, 1]`, recommended `BUY`/`HOLD`/`SELL` action,
+actual submitted action, timestamp source, and dataset split.
+
+`interval_outcomes.csv` contains one row per `decision_id` with interval start
+and end, result availability time, return, P&L, ending portfolio value, realized
+volatility, drawdown, gross/net exposure, assigned risk budget, and an outcome
+status of `completed`, `inactive`, or `missing`. Realized volatility is the
+square root of summed squared portfolio returns observed during the interval;
+drawdown is the largest peak-to-trough portfolio decline in that interval.
+`inactive` is reserved for HOLD decisions with no submitted order and zero
+start/end gross exposure. An interval that does not finish before shutdown is
+`missing` and leaves result metrics empty.
+
+The recommended action uses a default `0.1` score threshold;
+`decision_action_threshold` can override it per agent. `assigned_risk_budget`
+accepts a non-negative number or an instrument mapping in agent parameters. If
+it is omitted, the agent's initial equity is used as its assigned budget. Actual
+fills remain in the executed-order and `trader_actions.json` reports.
+
+Label validation and final out-of-sample runs at the AML level:
+
+```yaml
+aml_config:
+  dataset_split:
+    label: validation
+```
+
+Use `out_of_sample_test` in a separate, non-overlapping scenario after the
+governance configuration has been frozen. If omitted, the CSV split is
+`unspecified`.
+
 Then run the full scenario with RabbitMQ running:
 
 ```bash

@@ -5,9 +5,11 @@ from __future__ import annotations
 import inspect
 import json
 import os
+import uuid
 from abc import abstractmethod
 from dataclasses import asdict, is_dataclass
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone
+from math import isfinite, sqrt
 from typing import Any, Callable, Mapping, Optional
 
 from aml_sim.agents.context.memory import LocalAgentMemory, MemoryBackend
@@ -43,6 +45,9 @@ class BaseAMLAgent(TraderAgent):
         slow_strategist: Optional[SlowStrategist | Mapping[str, Any]] = None,
         strategy_validator: Optional[Callable[[Any], Any]] = None,
         slow_loop_interval_seconds: Optional[int] = None,
+        dataset_split: str | Mapping[str, Any] | None = None,
+        decision_action_threshold: float = 0.1,
+        assigned_risk_budget: float | Mapping[str, Any] | None = None,
         agent_id: Optional[str] = None,
         rabbitmq_host: str = "localhost",
         **trader_kwargs: Any,
@@ -72,7 +77,18 @@ class BaseAMLAgent(TraderAgent):
         )
         self.next_slow_loop_time = None
         self.action_events: list[dict[str, Any]] = []
+        self.decision_records: list[dict[str, Any]] = []
+        self.interval_outcomes: list[dict[str, Any]] = []
+        self._pending_interval_outcomes: list[dict[str, Any]] = []
+        self._outcome_observations: list[dict[str, Any]] = []
         self.recent_events: list[dict[str, Any]] = []
+        self.dataset_split = self._normalize_dataset_split(dataset_split)
+        self.decision_action_threshold = self._normalize_action_threshold(
+            decision_action_threshold
+        )
+        self.assigned_risk_budgets = self._normalize_assigned_risk_budgets(
+            assigned_risk_budget
+        )
 
         self.slow_loop_seen_event_ids: set[Any] = set()
         self.market_state: dict[str, Any] = {}
@@ -111,6 +127,9 @@ class BaseAMLAgent(TraderAgent):
         if current_time is None:
             return
 
+        self._capture_outcome_observation()
+        self._finalize_due_interval_outcomes()
+
         if self.next_action_time is None:
             self.next_action_time = current_time
         if self.next_slow_loop_time is None:
@@ -124,8 +143,486 @@ class BaseAMLAgent(TraderAgent):
             observation = self.build_observation()
 
         if current_time >= self.next_action_time:
+            action_event_start = len(self.action_events)
             await self.run_fast_loop(observation)
+            self._record_fast_loop_decisions(
+                observation=observation,
+                action_event_start=action_event_start,
+            )
             self.next_action_time = current_time + self.action_interval
+
+    @staticmethod
+    def _normalize_dataset_split(
+        dataset_split: str | Mapping[str, Any] | None,
+    ) -> str:
+        if isinstance(dataset_split, Mapping):
+            value = (
+                dataset_split.get("label")
+                or dataset_split.get("name")
+                or dataset_split.get("split")
+            )
+        else:
+            value = dataset_split
+        return str(value or "unspecified")
+
+    def _record_fast_loop_decisions(
+        self,
+        *,
+        observation: Mapping[str, Any],
+        action_event_start: int,
+    ) -> None:
+        """Record one observational decision per instrument after a fast loop."""
+        new_action_events = self.action_events[action_event_start:]
+        decision_timestamp = (
+            self.current_time.isoformat() if self.current_time else None
+        )
+        decision_date = (
+            self.current_time.date().isoformat() if self.current_time else None
+        )
+
+        for instrument in self.instrument_exchange_map:
+            prediction_score = self._decision_prediction_score(
+                instrument,
+                observation,
+            )
+            submitted_sides = {
+                str(event.get("side", "")).upper()
+                for event in new_action_events
+                if event.get("event_type") == "order_submitted"
+                and event.get("instrument") == instrument
+                and str(event.get("side", "")).upper() in {"BUY", "SELL"}
+            }
+            if submitted_sides == {"BUY"}:
+                submitted_action = "BUY"
+            elif submitted_sides == {"SELL"}:
+                submitted_action = "SELL"
+            else:
+                # No submitted order is a HOLD. Dual-sided market-maker quotes
+                # are directionally neutral from an order-submission perspective.
+                submitted_action = "HOLD"
+
+            latest_data_date_used, data_timestamp_source = (
+                self._latest_data_reference(instrument, observation)
+            )
+
+            decision = serialize_value(
+                {
+                    "decision_id": self._build_decision_id(
+                        instrument,
+                        decision_timestamp,
+                    ),
+                    "agent_name": self.agent_id,
+                    "asset": instrument,
+                    "decision_date": decision_date,
+                    "decision_timestamp": decision_timestamp,
+                    "data_cutoff_timestamp": latest_data_date_used,
+                    "prediction_score": prediction_score,
+                    "confidence": self._decision_confidence(),
+                    "action": self._action_from_prediction_score(
+                        prediction_score
+                    ),
+                    "submitted_action": submitted_action,
+                    "latest_data_date_used": latest_data_date_used,
+                    "data_timestamp_source": data_timestamp_source,
+                    "split": self.dataset_split,
+                }
+            )
+            self.decision_records.append(decision)
+            self._start_interval_outcome(decision)
+
+    def _build_decision_id(
+        self,
+        instrument: str,
+        decision_timestamp: str | None,
+    ) -> str:
+        run_id = os.getenv("AML_RUN_ID", "unscoped")
+        identity = ":".join(
+            (
+                run_id,
+                str(self.agent_id),
+                str(instrument),
+                str(decision_timestamp or "missing-time"),
+            )
+        )
+        return f"dec_{uuid.uuid5(uuid.NAMESPACE_URL, identity).hex}"
+
+    def _normalize_assigned_risk_budgets(
+        self,
+        configured: float | Mapping[str, Any] | None,
+    ) -> dict[str, float]:
+        instruments = list(self.instrument_exchange_map)
+        if configured is None:
+            default_budget = float(self.portfolio_value)
+            return {instrument: default_budget for instrument in instruments}
+
+        if isinstance(configured, Mapping):
+            fallback = configured.get("default", configured.get("*"))
+            budgets: dict[str, float] = {}
+            for instrument in instruments:
+                raw_value = configured.get(instrument, fallback)
+                if raw_value is None:
+                    raise ValueError(
+                        "assigned_risk_budget mapping must cover every instrument "
+                        "or define 'default'"
+                    )
+                budgets[instrument] = self._validate_risk_budget(raw_value)
+            return budgets
+
+        budget = self._validate_risk_budget(configured)
+        return {instrument: budget for instrument in instruments}
+
+    @staticmethod
+    def _validate_risk_budget(value: Any) -> float:
+        try:
+            budget = float(value)
+        except (TypeError, ValueError) as exc:
+            raise ValueError("assigned_risk_budget must be numeric") from exc
+        if not isfinite(budget) or budget < 0.0:
+            raise ValueError("assigned_risk_budget must be finite and non-negative")
+        return round(budget, 2)
+
+    def _start_interval_outcome(self, decision: Mapping[str, Any]) -> None:
+        if self.current_time is None:
+            return
+        self._pending_interval_outcomes.append(
+            {
+                "decision": dict(decision),
+                "interval_start": self.current_time.isoformat(),
+                "interval_end": (
+                    self.current_time + self.action_interval
+                ).isoformat(),
+                "start_snapshot": self._portfolio_snapshot(),
+                "assigned_risk_budget": self.assigned_risk_budgets.get(
+                    str(decision.get("asset"))
+                ),
+            }
+        )
+
+    def _capture_outcome_observation(self) -> None:
+        if self.current_time is None:
+            return
+        observation = {
+            "timestamp": self.current_time.isoformat(),
+            "portfolio_value": self.portfolio_value,
+        }
+        if (
+            self._outcome_observations
+            and self._outcome_observations[-1].get("timestamp")
+            == observation["timestamp"]
+        ):
+            self._outcome_observations[-1] = observation
+        else:
+            self._outcome_observations.append(observation)
+
+    def _finalize_due_interval_outcomes(self) -> None:
+        if self.current_time is None or not self._pending_interval_outcomes:
+            return
+
+        remaining: list[dict[str, Any]] = []
+        current_time = self._timestamp_sort_key(self.current_time)
+        for pending in self._pending_interval_outcomes:
+            interval_end = self._timestamp_sort_key(pending.get("interval_end"))
+            if interval_end > current_time:
+                remaining.append(pending)
+                continue
+            self.interval_outcomes.append(
+                self._completed_interval_outcome(pending)
+            )
+        self._pending_interval_outcomes = remaining
+        self._prune_outcome_observations()
+
+    def _prune_outcome_observations(self) -> None:
+        if not self._outcome_observations:
+            return
+        if not self._pending_interval_outcomes:
+            self._outcome_observations = self._outcome_observations[-1:]
+            return
+        earliest_start = min(
+            self._timestamp_sort_key(pending.get("interval_start"))
+            for pending in self._pending_interval_outcomes
+        )
+        self._outcome_observations = [
+            observation
+            for observation in self._outcome_observations
+            if self._timestamp_sort_key(observation.get("timestamp"))
+            >= earliest_start
+        ]
+
+    def _completed_interval_outcome(
+        self,
+        pending: Mapping[str, Any],
+    ) -> dict[str, Any]:
+        decision = pending.get("decision", {})
+        start_snapshot = pending.get("start_snapshot", {})
+        end_snapshot = self._portfolio_snapshot()
+        start_value = self._optional_finite_float(
+            start_snapshot.get("portfolio_value")
+        )
+        end_value = self._optional_finite_float(
+            end_snapshot.get("portfolio_value")
+        )
+        if start_value is None or end_value is None or start_value == 0.0:
+            return self._missing_interval_outcome(pending)
+
+        values = self._interval_portfolio_values(
+            str(pending.get("interval_start")),
+            self.current_time.isoformat(),
+            start_value,
+            end_value,
+        )
+        returns = [
+            (current / previous) - 1.0
+            for previous, current in zip(values, values[1:])
+            if previous != 0.0
+        ]
+        realized_volatility = sqrt(sum(value * value for value in returns))
+        drawdown = self._interval_drawdown(values)
+        start_gross = self._optional_finite_float(
+            start_snapshot.get("gross_exposure")
+        ) or 0.0
+        end_gross = self._optional_finite_float(
+            end_snapshot.get("gross_exposure")
+        ) or 0.0
+        inactive = (
+            decision.get("action") == "HOLD"
+            and decision.get("submitted_action") == "HOLD"
+            and max(abs(start_gross), abs(end_gross)) < 1e-9
+        )
+
+        return serialize_value(
+            {
+                **self._interval_outcome_identity(pending),
+                "result_available_timestamp": self.current_time.isoformat(),
+                "interval_return": round((end_value / start_value) - 1.0, 8),
+                "interval_pnl": round(end_value - start_value, 2),
+                "portfolio_value": round(end_value, 2),
+                "realized_volatility": round(realized_volatility, 8),
+                "drawdown": round(drawdown, 8),
+                "gross_exposure": end_snapshot.get("gross_exposure"),
+                "net_exposure": end_snapshot.get("net_exposure"),
+                "assigned_risk_budget": pending.get("assigned_risk_budget"),
+                "outcome_status": "inactive" if inactive else "completed",
+                "split": decision.get("split"),
+            }
+        )
+
+    def _interval_portfolio_values(
+        self,
+        interval_start: str,
+        result_timestamp: str,
+        start_value: float,
+        end_value: float,
+    ) -> list[float]:
+        start = self._timestamp_sort_key(interval_start)
+        result_time = self._timestamp_sort_key(result_timestamp)
+        samples: dict[datetime, float] = {start: start_value}
+        for observation in self._outcome_observations:
+            timestamp = self._timestamp_sort_key(observation.get("timestamp"))
+            value = self._optional_finite_float(observation.get("portfolio_value"))
+            if value is not None and start <= timestamp <= result_time:
+                samples[timestamp] = value
+        samples[result_time] = end_value
+        return [samples[timestamp] for timestamp in sorted(samples)]
+
+    @staticmethod
+    def _interval_drawdown(values: list[float]) -> float:
+        if not values:
+            return 0.0
+        peak = values[0]
+        maximum = 0.0
+        for value in values:
+            peak = max(peak, value)
+            if peak > 0.0:
+                maximum = max(maximum, (peak - value) / peak)
+        return maximum
+
+    @staticmethod
+    def _optional_finite_float(value: Any) -> float | None:
+        try:
+            result = float(value)
+        except (TypeError, ValueError):
+            return None
+        return result if isfinite(result) else None
+
+    def _interval_outcome_identity(
+        self,
+        pending: Mapping[str, Any],
+    ) -> dict[str, Any]:
+        decision = pending.get("decision", {})
+        return {
+            "decision_id": decision.get("decision_id"),
+            "agent_name": decision.get("agent_name"),
+            "asset": decision.get("asset"),
+            "interval_start": pending.get("interval_start"),
+            "interval_end": pending.get("interval_end"),
+        }
+
+    def _missing_interval_outcome(
+        self,
+        pending: Mapping[str, Any],
+    ) -> dict[str, Any]:
+        decision = pending.get("decision", {})
+        return serialize_value(
+            {
+                **self._interval_outcome_identity(pending),
+                "result_available_timestamp": None,
+                "interval_return": None,
+                "interval_pnl": None,
+                "portfolio_value": None,
+                "realized_volatility": None,
+                "drawdown": None,
+                "gross_exposure": None,
+                "net_exposure": None,
+                "assigned_risk_budget": pending.get("assigned_risk_budget"),
+                "outcome_status": "missing",
+                "split": decision.get("split"),
+            }
+        )
+
+    def _mark_unresolved_outcomes_missing(self) -> None:
+        self.interval_outcomes.extend(
+            self._missing_interval_outcome(pending)
+            for pending in self._pending_interval_outcomes
+        )
+        self._pending_interval_outcomes = []
+
+    @staticmethod
+    def _normalize_action_threshold(value: Any) -> float:
+        try:
+            threshold = float(value)
+        except (TypeError, ValueError) as exc:
+            raise ValueError("decision_action_threshold must be a number") from exc
+        if not 0.0 <= threshold <= 1.0:
+            raise ValueError("decision_action_threshold must be between 0 and 1")
+        return threshold
+
+    def _action_from_prediction_score(self, score: float) -> str:
+        threshold = getattr(self, "decision_action_threshold", 0.1)
+        if score > 0.0 and score >= threshold:
+            return "BUY"
+        if score < 0.0 and score <= -threshold:
+            return "SELL"
+        return "HOLD"
+
+    def _decision_prediction_score(
+        self,
+        instrument: str,
+        observation: Mapping[str, Any],
+    ) -> float:
+        """Return a bounded directional score without changing live strategy."""
+        strategy = self.strategy_state
+
+        if hasattr(strategy, "signal_strength"):
+            signal = self._safe_float(getattr(strategy, "signal_strength", 0.0))
+            threshold = self._safe_float(
+                getattr(
+                    strategy,
+                    "signal_threshold",
+                    getattr(strategy, "entry_threshold", 1.0),
+                ),
+                1.0,
+            )
+            score = signal / threshold if threshold > 0 else signal
+            return round(self._clamp(score, -1.0, 1.0), 6)
+
+        if hasattr(strategy, "buy_bias"):
+            pressure = self._market_pressure(instrument)
+            buy_bias = self._safe_float(getattr(strategy, "buy_bias", 0.5), 0.5)
+            effective_params = getattr(self, "_effective_retail_params", None)
+            if callable(effective_params):
+                _, buy_bias = effective_params(instrument, pressure)
+            elif hasattr(strategy, "flow_intensity"):
+                buy_bias += (
+                    pressure["directional_bias"]
+                    * self._safe_float(getattr(strategy, "shock_sensitivity", 0.0))
+                    * 0.35
+                )
+            score = (2.0 * self._clamp(buy_bias, 0.0, 1.0)) - 1.0
+            return round(self._clamp(score, -1.0, 1.0), 6)
+
+        pressure = self._market_pressure(instrument)
+        return round(
+            self._clamp(
+                self._safe_float(pressure.get("directional_bias", 0.0)),
+                -1.0,
+                1.0,
+            ),
+            6,
+        )
+
+    def _decision_confidence(self) -> float:
+        confidence = self._safe_float(
+            getattr(self.strategy_state, "confidence", 0.0),
+            0.0,
+        )
+        return round(self._clamp(confidence, 0.0, 1.0), 6)
+
+    def _latest_data_date_used(
+        self,
+        instrument: str,
+        observation: Mapping[str, Any],
+    ) -> str | None:
+        return self._latest_data_reference(instrument, observation)[0]
+
+    def _latest_data_reference(
+        self,
+        instrument: str,
+        observation: Mapping[str, Any],
+    ) -> tuple[str | None, str]:
+        candidates: list[tuple[Any, str]] = []
+        market = observation.get("market", {})
+        if isinstance(market, Mapping):
+            snapshots = market.get("last_market_snapshot", {})
+            if isinstance(snapshots, Mapping):
+                snapshot = snapshots.get(instrument, {})
+                if isinstance(snapshot, Mapping):
+                    for key in ("window_end", "data_date", "timestamp", "date"):
+                        if snapshot.get(key) is not None:
+                            candidates.append((snapshot.get(key), "market_snapshot"))
+
+            history = market.get("price_history", {})
+            if isinstance(history, Mapping):
+                rows = history.get(instrument, [])
+                if isinstance(rows, list):
+                    for row in rows:
+                        if not isinstance(row, Mapping):
+                            continue
+                        source_timestamp = row.get("source_timestamp")
+                        if source_timestamp is not None:
+                            candidates.append((source_timestamp, "price_history"))
+
+        if not candidates:
+            fallback = self.current_time.isoformat() if self.current_time else None
+            return fallback, "simulation_clock"
+        latest, source = max(
+            candidates,
+            key=lambda candidate: self._timestamp_sort_key(candidate[0]),
+        )
+        return str(serialize_value(latest)), source
+
+    @staticmethod
+    def _timestamp_sort_key(value: Any) -> datetime:
+        if isinstance(value, datetime):
+            parsed = value
+        else:
+            try:
+                parsed = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
+            except (TypeError, ValueError):
+                return datetime.min.replace(tzinfo=timezone.utc)
+        if parsed.tzinfo is None:
+            parsed = parsed.replace(tzinfo=timezone.utc)
+        return parsed.astimezone(timezone.utc)
+
+    @staticmethod
+    def _safe_float(value: Any, default: float = 0.0) -> float:
+        try:
+            return float(value)
+        except (TypeError, ValueError):
+            return default
+
+    @staticmethod
+    def _clamp(value: float, lower: float, upper: float) -> float:
+        return max(lower, min(upper, value))
 
     def build_observation(self) -> dict[str, Any]:
         active_events = self._active_events()
@@ -354,7 +851,15 @@ class BaseAMLAgent(TraderAgent):
 
     async def _handle_portfolio_update(self, payload: dict[str, Any]) -> None:
         await super()._handle_portfolio_update(payload)
-        self._record_price(payload.get("instrument"), payload.get("close_price"))
+        self._record_price(
+            payload.get("instrument"),
+            payload.get("close_price"),
+            source_timestamp=(
+                payload.get("data_timestamp")
+                or payload.get("window_end")
+                or payload.get("timestamp")
+            ),
+        )
 
     async def place_order(
         self,
@@ -404,7 +909,11 @@ class BaseAMLAgent(TraderAgent):
             trade_data.get("order_id"),
             trade_data.get("order_status"),
         )
-        self._record_price(trade_data.get("instrument"), trade_data.get("price"))
+        self._record_price(
+            trade_data.get("instrument"),
+            trade_data.get("price"),
+            source_timestamp=trade_data.get("timestamp"),
+        )
         self._record_action_event(
             {
                 "event_type": "trade_executed",
@@ -555,7 +1064,13 @@ class BaseAMLAgent(TraderAgent):
     def _known_events(self) -> list[dict[str, Any]]:
         return self.recent_events[-50:]
 
-    def _record_price(self, instrument: Any, price: Any) -> None:
+    def _record_price(
+        self,
+        instrument: Any,
+        price: Any,
+        *,
+        source_timestamp: Any = None,
+    ) -> None:
         if not instrument:
             return
         try:
@@ -569,6 +1084,8 @@ class BaseAMLAgent(TraderAgent):
         series.append(
             {
                 "timestamp": self.current_time.isoformat() if self.current_time else None,
+                "source_timestamp": serialize_value(source_timestamp),
+                "observed_at": self.current_time.isoformat() if self.current_time else None,
                 "tick_id": self.current_tick_id,
                 "price": clean_price,
             }
@@ -613,6 +1130,9 @@ class BaseAMLAgent(TraderAgent):
         }
 
     def stop(self) -> None:
+        self._capture_outcome_observation()
+        self._finalize_due_interval_outcomes()
+        self._mark_unresolved_outcomes_missing()
         self._export_decision_artifacts()
         super().stop()
 
@@ -626,6 +1146,8 @@ class BaseAMLAgent(TraderAgent):
         agent_dir = os.path.join(decision_context_dir, self.agent_id)
         os.makedirs(agent_dir, exist_ok=True)
         self._export_action_events(output_dir=output_dir)
+        self._export_agent_decisions(output_dir=output_dir)
+        self._export_interval_outcomes(output_dir=output_dir)
         self._export_memory_events(agent_dir=agent_dir)
 
     def _export_action_events(self, *, output_dir: str) -> None:
@@ -636,6 +1158,30 @@ class BaseAMLAgent(TraderAgent):
             self.logger.info(f"AML trader actions exported to {output_file}")
         except Exception as exc:
             self.logger.error(f"Failed to export AML trader actions: {exc}")
+
+    def _export_agent_decisions(self, *, output_dir: str) -> None:
+        output_file = os.path.join(
+            output_dir,
+            f"agent_decisions_{self.agent_id}.json",
+        )
+        try:
+            with open(output_file, "w", encoding="utf-8") as handle:
+                json.dump(self.decision_records, handle, indent=2)
+            self.logger.info(f"AML agent decisions exported to {output_file}")
+        except Exception as exc:
+            self.logger.error(f"Failed to export AML agent decisions: {exc}")
+
+    def _export_interval_outcomes(self, *, output_dir: str) -> None:
+        output_file = os.path.join(
+            output_dir,
+            f"interval_outcomes_{self.agent_id}.json",
+        )
+        try:
+            with open(output_file, "w", encoding="utf-8") as handle:
+                json.dump(self.interval_outcomes, handle, indent=2)
+            self.logger.info(f"AML interval outcomes exported to {output_file}")
+        except Exception as exc:
+            self.logger.error(f"Failed to export AML interval outcomes: {exc}")
 
     def _export_memory_events(self, *, agent_dir: str) -> None:
         output_file = os.path.join(agent_dir, "memory.json")

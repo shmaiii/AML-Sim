@@ -68,6 +68,9 @@ class AMLMarketMakerTrader(BaseAMLAgent):
             "initial_positions",
             "initial_cost_basis",
             "action_interval_seconds",
+            "dataset_split",
+            "decision_action_threshold",
+            "assigned_risk_budget",
         ]:
             if param in kwargs:
                 trader_kwargs[param] = kwargs[param]
