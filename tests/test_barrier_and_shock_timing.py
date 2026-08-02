@@ -45,13 +45,19 @@ class PacketTestAgent(BaseAMLAgent):
 
 
 class BarrierAndShockTimingTests(unittest.IsolatedAsyncioTestCase):
-    async def test_barrier_deduplicates_agent_acknowledgements(self) -> None:
-        clock = SimulationClock(
-            start_time=datetime(2025, 1, 1, tzinfo=timezone.utc),
-            end_time=datetime(2025, 1, 1, 0, 1, tzinfo=timezone.utc),
-            tick_interval_seconds=30,
-            barrier_timeout_seconds=0.2,
+    @staticmethod
+    def make_clock(timeout: float) -> SimulationClock:
+        clock = object.__new__(SimulationClock)
+        clock.barrier_timeout_seconds = timeout
+        clock.trader_response_queue = asyncio.Queue()
+        clock.logger = SimpleNamespace(
+            info=lambda *_: None,
+            warning=lambda *_: None,
         )
+        return clock
+
+    async def test_barrier_deduplicates_agent_acknowledgements(self) -> None:
+        clock = self.make_clock(0.2)
         await clock.trader_response_queue.put(
             {"tick_id": 4, "agent_id": "retail_1", "phase": "trader"}
         )
@@ -67,12 +73,7 @@ class BarrierAndShockTimingTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual({"retail_1", "retail_2"}, {row["agent_id"] for row in responses})
 
     async def test_barrier_timeout_fails_instead_of_advancing_clock(self) -> None:
-        clock = SimulationClock(
-            start_time=datetime(2025, 1, 1, tzinfo=timezone.utc),
-            end_time=datetime(2025, 1, 1, 0, 1, tzinfo=timezone.utc),
-            tick_interval_seconds=30,
-            barrier_timeout_seconds=0.01,
-        )
+        clock = self.make_clock(0.01)
         with self.assertRaises(asyncio.TimeoutError):
             await clock._wait_for_decision_responses(
                 0, expected_count=1, phase="shock"
