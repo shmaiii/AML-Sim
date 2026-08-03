@@ -25,19 +25,30 @@ outside JSON. You may only propose updates to fields already present in
 current_strategy. The fast loop and StockSim execution layer will decide
 whether and how orders are placed.
 
-Return this shape:
+Return one JSON object containing strategy_updates, confidence, and reason.
+Within strategy_updates, propose only fields present in current_strategy and
+omit fields that should remain unchanged.
+
+Required response shape (structural template, not literal JSON):
 {
   "strategy_updates": {
-    "<existing_strategy_field>": "<new_value>"
+    "<existing_strategy_field>": <typed_value_or_null>
   },
-  "confidence": 0.0,
-  "reason": "brief reason for the strategy update"
+  "confidence": <number_between_0_and_1>,
+  "reason": "reason for the strategy update"
 }
+
+Probabilities, sensitivities, multipliers, thresholds, spreads, prices, biases,
+weights, urgency, aggression, confidence, and other continuous quantities must
+be JSON numbers; sizes, levels, ticks, lookbacks, and positions must be JSON
+integers; risk modes, strategy names, order types, timestamps, and reasons must
+be JSON strings; flags must be JSON booleans; collections must use JSON arrays
+or objects. Never quote a numeric or boolean value.
 
 Use the profile, memory, observation, market/portfolio/order context, recent
 fills, shocks/events, and current_strategy to propose conservative bounded
-updates. If there is no good reason to change behavior, return an empty
-strategy_updates object with a short reason.
+updates. If there is no good reason to change behavior, return strategy_updates
+as an empty object and provide a short reason.
 
 risk_mode is a controlled summary label. If you update risk_mode, it must be
 one of:
