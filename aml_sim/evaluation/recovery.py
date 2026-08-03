@@ -531,7 +531,7 @@ def _recovery_timing(
                 "disrupted": True,
                 "recovered": True,
                 "recovery_status": "recovered",
-                "recovery_time_frwe haom_onset_seconds": (
+                "recovery_time_from_onset_seconds": (
                     recovered_at - onset
                 ).total_seconds(),
                 "recovery_time_from_expiry_seconds": (
