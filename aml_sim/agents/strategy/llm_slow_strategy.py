@@ -210,6 +210,31 @@ class LLMStrategist:
         if "updated_at" in allowed_fields:
             clean_updates.setdefault("updated_at", observation.get("current_time"))
 
+        bounded_numeric_fields = {
+            "trade_probability": 1.0,
+            "buy_bias": 1.0,
+            "flow_intensity": 1.0,
+            "information_edge": 1.0,
+            "urgency": 1.0,
+            "size_decay": 1.0,
+            "confidence": 1.0,
+            "liquidity_withdrawal_sensitivity": 2.0,
+            "shock_sensitivity": 2.0,
+            "sentiment_sensitivity": 2.0,
+            "shock_reactivity": 2.0,
+            "herding_tendency": 2.0,
+            "panic_level": 2.0,
+            "aggression": 2.0,
+            "momentum_weight": 2.0,
+        }
+        for field_name in bounded_numeric_fields.keys() & clean_updates.keys():
+            value = clean_updates[field_name]
+            if isinstance(value, (int, float)) and not isinstance(value, bool):
+                clean_updates[field_name] = max(
+                    0.0,
+                    min(bounded_numeric_fields[field_name], float(value)),
+                )
+
         if is_dataclass(current_strategy):
             return replace(current_strategy, **clean_updates)
 
