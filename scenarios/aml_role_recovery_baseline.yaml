@@ -1,0 +1,317 @@
+name: aml_role_recovery_baseline
+description: >
+  Reproducible multi-shock experiment for comparing financial, balance-sheet,
+  and behavioural recovery across all five AML trading roles. Three controlled,
+  well-spaced scheduled shocks expose every role to the same stress sequence.
+  OpenAI slow strategists capture adaptive strategy changes as well as fast-loop
+  reactions.
+rabbitmq_host: localhost
+
+aml_config:
+  llm:
+    provider: openai
+    model: gpt-5.4-mini
+    api_key_env: OPENAI_API_KEY
+    timeout_seconds: 30
+    max_retries: 2
+    max_output_tokens: 500
+
+stocksim_config:
+  exchange_mode: orderbook
+
+  instruments:
+    - AAPL
+
+  exchanges:
+    AAPL:
+      data_source: synthetic
+      symbol_type: stock
+      candle_interval: 1d
+      warmup_candles: 0
+
+  agents:
+    market_maker:
+      type: AML_Market_Maker
+      count: 1
+      parameters:
+        initial_cash: 500000
+        action_interval: 30s
+        slow_loop_interval: 3m
+        fair_price: 100.0
+        spread: 0.2
+        min_spread: 0.05
+        max_spread: 2.0
+        quote_size: 60
+        quote_levels: 4
+        level_spacing: 0.05
+        size_decay: 0.85
+        target_inventory: 1000
+        inventory_skew: 0.001
+        max_inventory: 1600
+        min_inventory: 100
+        volatility_sensitivity: 5.0
+        shock_spread_multiplier: 1.25
+        shock_price_adjustment: 0.5
+        liquidity_withdrawal_sensitivity: 0.45
+        initial_positions:
+          AAPL: 1000
+        initial_cost_basis:
+          AAPL: 100.0
+        slow_strategist:
+          type: openai
+          allowed_strategy_fields:
+            - risk_mode
+            - confidence
+            - reason
+            - updated_at
+            - spread
+            - quote_size
+            - quote_levels
+            - level_spacing
+            - size_decay
+            - inventory_skew
+            - volatility_sensitivity
+            - shock_spread_multiplier
+            - shock_price_adjustment
+            - liquidity_withdrawal_sensitivity
+
+    retail_trader:
+      type: AML_Retail_Trader
+      count: 1
+      parameters:
+        initial_cash: 30000
+        action_interval: 30s
+        slow_loop_interval: 3m
+        trade_probability: 0.4
+        max_order_size: 12
+        buy_bias: 0.52
+        herding_tendency: 0.4
+        panic_level: 0.6
+        sentiment_sensitivity: 0.65
+        shock_sensitivity: 0.8
+        random_seed: 2026072901
+        initial_positions:
+          AAPL: 20
+        initial_cost_basis:
+          AAPL: 100.0
+        slow_strategist:
+          type: openai
+          allowed_strategy_fields:
+            - risk_mode
+            - confidence
+            - reason
+            - updated_at
+            - trade_probability
+            - buy_bias
+            - max_order_size
+            - herding_tendency
+            - panic_level
+            - sentiment_sensitivity
+            - shock_sensitivity
+
+    institutional_trader:
+      type: AML_Institutional_Trader
+      count: 1
+      parameters:
+        initial_cash: 500000
+        action_interval: 30s
+        slow_loop_interval: 3m
+        target_positions:
+          AAPL: 800
+        child_order_size: 25
+        order_type: MARKET
+        alpha_strategy: target_execution
+        alpha_strategies:
+          - target_execution
+        max_position: 1200
+        min_position: 0
+        shock_reactivity: 0.7
+        initial_positions:
+          AAPL: 600
+        initial_cost_basis:
+          AAPL: 100.0
+        slow_strategist:
+          type: openai
+          allowed_strategy_fields:
+            - risk_mode
+            - confidence
+            - reason
+            - updated_at
+            - child_order_size
+            - urgency
+            - strategy_weights
+            - lookback_ticks
+            - entry_threshold
+            - exit_threshold
+            - shock_reactivity
+
+    informed_trader:
+      type: AML_Informed_Trader
+      count: 1
+      parameters:
+        initial_cash: 200000
+        action_interval: 30s
+        slow_loop_interval: 3m
+        fair_value_anchor: 100.0
+        information_edge: 0.75
+        trade_probability: 0.5
+        max_order_size: 30
+        max_position: 500
+        min_position: 0
+        signal_threshold: 0.0015
+        momentum_weight: 0.2
+        fundamental_sensitivity: 1.0
+        shock_reactivity: 1.0
+        order_type: MARKET
+        random_seed: 2026072902
+        initial_positions:
+          AAPL: 100
+        initial_cost_basis:
+          AAPL: 100.0
+        slow_strategist:
+          type: openai
+          allowed_strategy_fields:
+            - risk_mode
+            - confidence
+            - reason
+            - updated_at
+            - fair_value_anchor
+            - information_edge
+            - trade_probability
+            - max_order_size
+            - signal_threshold
+            - momentum_weight
+            - fundamental_sensitivity
+            - shock_reactivity
+            - order_type
+            - limit_offset
+
+    liquidity_taker:
+      type: AML_Liquidity_Taker
+      count: 1
+      parameters:
+        initial_cash: 150000
+        action_interval: 30s
+        slow_loop_interval: 3m
+        flow_intensity: 0.4
+        buy_bias: 0.52
+        max_order_size: 30
+        inventory_limit: 400
+        shock_sensitivity: 0.85
+        aggression: 0.85
+        random_seed: 2026072903
+        initial_positions:
+          AAPL: 80
+        initial_cost_basis:
+          AAPL: 100.0
+        slow_strategist:
+          type: openai
+          allowed_strategy_fields:
+            - risk_mode
+            - confidence
+            - reason
+            - updated_at
+            - flow_intensity
+            - buy_bias
+            - max_order_size
+            - shock_sensitivity
+            - aggression
+
+    shock_agent:
+      type: AML_Shock_Agent
+      count: 1
+      parameters:
+        default_duration_ticks: 10
+        random_seed: 2026072904
+        initial_market_state:
+          policy_rate_bps: 425
+          liquidity_index: 1.0
+          risk_aversion: 0.0
+          credit_spread_bps: 90
+        random_events:
+          enabled: false
+        scheduled_events:
+          - id: role_recovery_negative_news
+            tick: 20
+            shock_type: negative_news
+            shock_class: non_systematic
+            scope: micro
+            trigger_type: unexpected
+            visibility: public
+            severity: 0.55
+            direction: -1
+            surprise: 0.85
+            expected_probability: 0.0
+            effects:
+              fundamental_price_shift: -0.9
+              order_arrival_multiplier: 1.55
+              risk_limit_multiplier: 0.72
+              liquidity_multiplier: 0.65
+              volatility_multiplier: 1.45
+              spread_multiplier: 1.25
+            affected_instruments:
+              - AAPL
+            duration_ticks: 10
+            message: Scheduled firm-specific negative news.
+          - id: role_recovery_liquidity_stress
+            tick: 60
+            shock_type: liquidity_stress
+            shock_class: systematic
+            scope: market_structure
+            trigger_type: unexpected
+            visibility: public
+            severity: 0.8
+            direction: -1
+            surprise: 1.0
+            expected_probability: 0.0
+            effects:
+              fundamental_price_shift: -1.5
+              order_arrival_multiplier: 1.8
+              risk_limit_multiplier: 0.55
+              liquidity_multiplier: 0.4
+              volatility_multiplier: 1.8
+              spread_multiplier: 1.7
+              price_impact_multiplier: 1.5
+              sentiment_shift: -0.4
+            affected_instruments:
+              - AAPL
+            duration_ticks: 12
+            message: >
+              Unexpected market-wide liquidity stress used for role-recovery
+              evaluation.
+          - id: role_recovery_positive_news
+            tick: 100
+            notice_ticks: 8
+            shock_type: positive_recovery_news
+            shock_class: non_systematic
+            scope: micro
+            trigger_type: scheduled
+            visibility: public
+            severity: 0.45
+            direction: 1
+            surprise: 0.3
+            expected_probability: 0.65
+            effects:
+              fundamental_price_shift: 0.8
+              order_arrival_multiplier: 1.35
+              risk_limit_multiplier: 1.1
+              liquidity_multiplier: 0.85
+              volatility_multiplier: 1.25
+              spread_multiplier: 1.1
+              sentiment_shift: 0.35
+            affected_instruments:
+              - AAPL
+            duration_ticks: 10
+            message: Scheduled positive recovery news.
+
+  simulation:
+    start_time: "2025-03-01T09:30:00+00:00"
+    end_time: "2025-03-01T10:45:00+00:00"
+    tick_interval: 30s
+    max_wall_time_seconds: 900
+    expected_exchange_agent_count: 1
+    startup_grace_seconds: 5
+
+  environment:
+    rabbitmq_host: localhost
+    log_level: INFO
