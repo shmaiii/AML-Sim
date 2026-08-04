@@ -48,19 +48,25 @@ def validate_strategy_state(
 
     errors: list[str] = []
 
-    _check_probability(strategy_state, "trade_probability", errors)
-    _check_probability(strategy_state, "buy_bias", errors)
-    _check_probability(strategy_state, "herding_tendency", errors)
-    _check_probability(strategy_state, "panic_level", errors)
-    _check_probability(strategy_state, "sentiment_sensitivity", errors)
-    _check_probability(strategy_state, "shock_sensitivity", errors)
-    _check_probability(strategy_state, "urgency", errors)
-    _check_probability(strategy_state, "shock_reactivity", errors)
-    _check_probability(strategy_state, "liquidity_withdrawal_sensitivity", errors)
-    _check_probability(strategy_state, "information_edge", errors)
-    _check_probability(strategy_state, "flow_intensity", errors)
-    _check_probability(strategy_state, "aggression", errors)
-    _check_probability(strategy_state, "momentum_weight", errors)
+    for field_name in (
+        "trade_probability",
+        "buy_bias",
+        "urgency",
+        "information_edge",
+        "flow_intensity",
+    ):
+        _check_range(strategy_state, field_name, 0.0, 1.0, errors)
+    for field_name in (
+        "herding_tendency",
+        "panic_level",
+        "sentiment_sensitivity",
+        "shock_sensitivity",
+        "shock_reactivity",
+        "liquidity_withdrawal_sensitivity",
+        "aggression",
+        "momentum_weight",
+    ):
+        _check_range(strategy_state, field_name, 0.0, 2.0, errors)
 
     if hasattr(strategy_state, "quote_size"):
         _check_upper_bound(
@@ -78,7 +84,7 @@ def validate_strategy_state(
         )
     if hasattr(strategy_state, "level_spacing") and strategy_state.level_spacing <= 0:
         errors.append("level_spacing must be greater than 0")
-    _check_probability(strategy_state, "size_decay", errors)
+    _check_range(strategy_state, "size_decay", 0.0, 1.0, errors)
 
     if hasattr(strategy_state, "spread") and strategy_state.spread <= 0:
         errors.append("spread must be greater than 0")
@@ -192,13 +198,22 @@ def _check_has_attr(strategy_state: Any, field_name: str, errors: list[str]) -> 
         errors.append(f"strategy state missing required field '{field_name}'")
 
 
-def _check_probability(strategy_state: Any, field_name: str, errors: list[str]) -> None:
+def _check_range(
+    strategy_state: Any,
+    field_name: str,
+    lower_bound: float,
+    upper_bound: float,
+    errors: list[str],
+) -> None:
     if not hasattr(strategy_state, field_name):
         return
 
     value = getattr(strategy_state, field_name)
-    if value < 0 or value > 1:
-        errors.append(f"{field_name} must be between 0 and 1, got {value}")
+    if value < lower_bound or value > upper_bound:
+        errors.append(
+            f"{field_name} must be between {lower_bound:g} and "
+            f"{upper_bound:g}, got {value}"
+        )
 
 
 def _check_upper_bound(

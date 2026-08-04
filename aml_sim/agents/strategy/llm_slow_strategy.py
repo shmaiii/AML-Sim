@@ -5,6 +5,7 @@ from __future__ import annotations
 import inspect
 import json
 import os
+import copy
 from dataclasses import asdict, fields, is_dataclass, replace
 from datetime import datetime, timezone
 from typing import Any, Mapping, Optional, Protocol
@@ -113,18 +114,57 @@ class LLMStrategist:
     ) -> dict[str, Any]:
         """Build the structured context sent to the LLM client."""
 
+        compact_observation = self._compact_observation(observation)
+        compact_memory = self._compact_memory(
+            memory or observation.get("memory", {}) or {}
+        )
         return {
             "task": "Propose strategy_state updates only. Do not place orders.",
             "output_contract": {
                 "strategy_updates": "object containing only existing strategy fields",
-                "confidence": "optional float",
-                "reason": "optional short explanation",
+                "confidence": "float between 0 and 1",
+                "reason": "short explanation",
             },
             "profile": profile_to_dict(profile),
-            "memory": dict(memory or observation.get("memory", {}) or {}),
-            "observation": dict(observation),
+            "memory": compact_memory,
+            "observation": compact_observation,
             "current_strategy": self._strategy_to_dict(current_strategy),
         }
+
+    @staticmethod
+    def _compact_memory(memory: Mapping[str, Any]) -> dict[str, Any]:
+        compact = copy.deepcopy(dict(memory))
+        events = compact.get("recent_events")
+        if isinstance(events, list):
+            compact["recent_events"] = events[-5:]
+        return compact
+
+    @staticmethod
+    def _compact_observation(observation: Mapping[str, Any]) -> dict[str, Any]:
+        """Bound LLM context without changing live simulation/report state."""
+
+        compact = copy.deepcopy(dict(observation))
+        compact.pop("memory", None)
+
+        market = compact.get("market")
+        if isinstance(market, dict):
+            history = market.get("price_history")
+            if isinstance(history, dict):
+                market["price_history"] = {
+                    instrument: values[-5:] if isinstance(values, list) else values
+                    for instrument, values in history.items()
+                }
+
+        orders = compact.get("orders")
+        if isinstance(orders, dict):
+            pending = orders.get("pending")
+            if isinstance(pending, dict) and len(pending) > 10:
+                orders["pending"] = dict(list(pending.items())[-10:])
+
+        fills = compact.get("recent_fills")
+        if isinstance(fills, list):
+            compact["recent_fills"] = fills[-5:]
+        return compact
 
     def _parse_response(self, raw_response: Mapping[str, Any] | str) -> dict[str, Any]:
         if isinstance(raw_response, Mapping):
@@ -160,7 +200,7 @@ class LLMStrategist:
         clean_updates = {
             key: value
             for key, value in updates.items()
-            if key in allowed_fields
+            if key in allowed_fields and value is not None
         }
 
         if "confidence" in response and "confidence" in allowed_fields:
@@ -169,6 +209,31 @@ class LLMStrategist:
             clean_updates["reason"] = response["reason"]
         if "updated_at" in allowed_fields:
             clean_updates.setdefault("updated_at", observation.get("current_time"))
+
+        bounded_numeric_fields = {
+            "trade_probability": 1.0,
+            "buy_bias": 1.0,
+            "flow_intensity": 1.0,
+            "information_edge": 1.0,
+            "urgency": 1.0,
+            "size_decay": 1.0,
+            "confidence": 1.0,
+            "liquidity_withdrawal_sensitivity": 2.0,
+            "shock_sensitivity": 2.0,
+            "sentiment_sensitivity": 2.0,
+            "shock_reactivity": 2.0,
+            "herding_tendency": 2.0,
+            "panic_level": 2.0,
+            "aggression": 2.0,
+            "momentum_weight": 2.0,
+        }
+        for field_name in bounded_numeric_fields.keys() & clean_updates.keys():
+            value = clean_updates[field_name]
+            if isinstance(value, (int, float)) and not isinstance(value, bool):
+                clean_updates[field_name] = max(
+                    0.0,
+                    min(bounded_numeric_fields[field_name], float(value)),
+                )
 
         if is_dataclass(current_strategy):
             return replace(current_strategy, **clean_updates)
@@ -187,6 +252,8 @@ class LLMStrategist:
             return set(self.allowed_strategy_fields)
         if is_dataclass(current_strategy):
             return {field.name for field in fields(current_strategy)}
+        if isinstance(current_strategy, Mapping):
+            return set(current_strategy)
         return set(vars(current_strategy).keys())
 
     def _strategy_to_dict(self, strategy: Any) -> dict[str, Any]:
@@ -219,9 +286,10 @@ class OpenAIJSONLLMClient:
         *,
         model: str,
         api_key_env: str = "OPENAI_API_KEY",
-        temperature: float = 0.2,
-        timeout_seconds: float = 30.0,
-        max_retries: int = 2,
+        temperature: float | None = None,
+        timeout_seconds: float | None = None,
+        max_retries: int | None = None,
+        max_output_tokens: int | None = None,
         system_prompt: Optional[str] = None,
     ) -> None:
         self.model = model
@@ -229,6 +297,7 @@ class OpenAIJSONLLMClient:
         self.temperature = temperature
         self.timeout_seconds = timeout_seconds
         self.max_retries = max_retries
+        self.max_output_tokens = max_output_tokens
         self.system_prompt = system_prompt or DEFAULT_OPENAI_SLOW_STRATEGY_PROMPT
         self.last_context: Optional[Mapping[str, Any]] = None
 
@@ -247,21 +316,27 @@ class OpenAIJSONLLMClient:
             ) from exc
 
         self.last_context = context
-        client = AsyncOpenAI(
-            api_key=api_key,
-            timeout=self.timeout_seconds,
-            max_retries=self.max_retries,
-        )
-        response = await client.responses.create(
-            model=self.model,
-            instructions=self.system_prompt,
-            input=(
+        client_options: dict[str, Any] = {"api_key": api_key}
+        if self.timeout_seconds is not None:
+            client_options["timeout"] = self.timeout_seconds
+        if self.max_retries is not None:
+            client_options["max_retries"] = self.max_retries
+        client = AsyncOpenAI(**client_options)
+
+        request: dict[str, Any] = {
+            "model": self.model,
+            "instructions": self.system_prompt,
+            "input": (
                 "Return JSON only using the requested strategy update contract.\n\n"
                 f"Context JSON:\n{json.dumps(context, default=str)}"
             ),
-            temperature=self.temperature,
-            text={"format": {"type": "json_object"}},
-        )
+            "text": {"format": {"type": "json_object"}},
+        }
+        if self.temperature is not None:
+            request["temperature"] = self.temperature
+        if self.max_output_tokens is not None:
+            request["max_output_tokens"] = self.max_output_tokens
+        response = await client.responses.create(**request)
         content = getattr(response, "output_text", None)
         if not content:
             raise LLMStrategyResponseError("OpenAI returned an empty strategy response.")
@@ -322,12 +397,27 @@ def create_llm_strategist(
             )
         system_prompt = build_role_prompt(role, role_overrides=role_overrides)
 
+        temperature = config.get("temperature")
+        timeout_seconds = config.get("timeout_seconds")
+        max_retries = config.get("max_retries")
+        max_output_tokens = config.get("max_output_tokens")
         client = OpenAIJSONLLMClient(
-            model=str(config.get("model", "gpt-4o-mini")),
+            model=str(config.get("model", "gpt-5.4")),
             api_key_env=str(config.get("api_key_env", "OPENAI_API_KEY")),
-            temperature=float(config.get("temperature", 0.2)),
-            timeout_seconds=float(config.get("timeout_seconds", 30.0)),
-            max_retries=int(config.get("max_retries", 2)),
+            temperature=(
+                float(temperature) if temperature is not None else None
+            ),
+            timeout_seconds=(
+                float(timeout_seconds)
+                if timeout_seconds is not None
+                else None
+            ),
+            max_retries=(
+                int(max_retries) if max_retries is not None else None
+            ),
+            max_output_tokens=(
+                int(max_output_tokens) if max_output_tokens is not None else None
+            ),
             system_prompt=system_prompt,
         )
         allowed_fields = config.get("allowed_strategy_fields")
