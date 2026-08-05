@@ -36,7 +36,7 @@ stocksim_config:
       parameters:
         initial_cash: 500000
         action_interval: 30s
-        slow_loop_interval: 3m
+        slow_loop_interval: 2m
         fair_price: 100.0
         spread: 0.2
         min_spread: 0.05
@@ -81,7 +81,7 @@ stocksim_config:
       parameters:
         initial_cash: 30000
         action_interval: 30s
-        slow_loop_interval: 3m
+        slow_loop_interval: 2m
         trade_probability: 0.4
         max_order_size: 12
         buy_bias: 0.52
@@ -115,7 +115,7 @@ stocksim_config:
       parameters:
         initial_cash: 500000
         action_interval: 30s
-        slow_loop_interval: 3m
+        slow_loop_interval: 2m
         target_positions:
           AAPL: 800
         child_order_size: 25
@@ -151,7 +151,7 @@ stocksim_config:
       parameters:
         initial_cash: 200000
         action_interval: 30s
-        slow_loop_interval: 3m
+        slow_loop_interval: 2m
         fair_value_anchor: 100.0
         information_edge: 0.75
         trade_probability: 0.5
@@ -192,7 +192,7 @@ stocksim_config:
       parameters:
         initial_cash: 150000
         action_interval: 30s
-        slow_loop_interval: 3m
+        slow_loop_interval: 2m
         flow_intensity: 0.4
         buy_bias: 0.52
         max_order_size: 30
