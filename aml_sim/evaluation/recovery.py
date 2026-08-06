@@ -25,7 +25,7 @@ class RecoveryConfig:
     behavioural_recovery_score: float = 0.80
     sustained_observations: int = 3
     behavioural_window_ticks: int = 3
-    horizons_seconds: tuple[int, ...] = (30, 60, 120)
+    horizons_seconds: tuple[int, ...] = (30, 60, 120, 180, 240)
 
 
 class RecoveryEvaluator:
