@@ -6,6 +6,10 @@ description: >
   and liquidity.
 rabbitmq_host: localhost
 
+aml_config:
+  dataset_split:
+    label: validation
+
 stocksim_config:
   exchange_mode: orderbook
 

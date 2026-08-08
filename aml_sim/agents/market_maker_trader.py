@@ -13,6 +13,7 @@ from aml_sim.agents.base import BaseAMLAgent
 from aml_sim.agents.context.memory import MemoryBackend
 from aml_sim.agents.context.observation import ObservationProcessor
 from aml_sim.agents.models.profile import MarketMakerProfile, coerce_profile
+from aml_sim.agents.profile_effects import market_maker_profile_effects
 from aml_sim.agents.strategy.llm_slow_strategy import SlowStrategist
 from aml_sim.agents.models.state import MarketMakerStrategyState
 from aml_sim.agents.strategy.signals import price_series, realized_volatility
@@ -69,9 +70,15 @@ class AMLMarketMakerTrader(BaseAMLAgent):
             "initial_positions",
             "initial_cost_basis",
             "action_interval_seconds",
+            "dataset_split",
+            "decision_action_threshold",
+            "assigned_risk_budget",
         ]:
             if param in kwargs:
                 trader_kwargs[param] = kwargs[param]
+        unknown = sorted(set(kwargs) - set(trader_kwargs))
+        if unknown:
+            raise TypeError("Unknown AML_Market_Maker parameter(s): " + ", ".join(unknown))
 
         super().__init__(
             instrument_exchange_map=instrument_exchange_map,
@@ -164,11 +171,13 @@ class AMLMarketMakerTrader(BaseAMLAgent):
         strategy = self.strategy_state
         inventory = self.long_qty[instrument] - self.short_qty[instrument]
         inventory_gap = inventory - strategy.target_inventory
+        profile_effects = market_maker_profile_effects(self.profile)
         pressure = self._market_pressure(instrument)
         risk_policy = self._risk_policy()
         skew = (
             inventory_gap
             * strategy.inventory_skew
+            * profile_effects["inventory_skew_multiplier"]
             * risk_policy.inventory_skew_multiplier
         )
         prices = price_series(self.price_history, instrument, self.prices.get(instrument, strategy.fair_price))
@@ -188,6 +197,7 @@ class AMLMarketMakerTrader(BaseAMLAgent):
         dynamic_spread *= 1 + (pressure["severity"] * strategy.shock_spread_multiplier)
         dynamic_spread *= pressure["spread_multiplier"]
         dynamic_spread *= risk_policy.market_maker_spread_multiplier
+        dynamic_spread *= profile_effects["spread_multiplier"]
         dynamic_spread = min(strategy.max_spread, max(strategy.min_spread, dynamic_spread))
         half_spread = max(0.01, dynamic_spread / 2)
         bid = max(0.01, midpoint - half_spread)
@@ -260,9 +270,15 @@ class AMLMarketMakerTrader(BaseAMLAgent):
         strategy = self.strategy_state
         pressure = self._market_pressure(instrument)
         risk_policy = self._risk_policy()
-        size_multiplier = 1 - (pressure["severity"] * strategy.liquidity_withdrawal_sensitivity)
+        profile_effects = market_maker_profile_effects(self.profile)
+        effective_withdrawal = (
+            strategy.liquidity_withdrawal_sensitivity
+            * profile_effects["withdrawal_sensitivity_multiplier"]
+        )
+        size_multiplier = 1 - (pressure["severity"] * effective_withdrawal)
         size_multiplier *= pressure["liquidity_multiplier"]
         size_multiplier *= pressure["risk_limit_multiplier"]
+        size_multiplier *= profile_effects["quote_size_multiplier"]
         size_multiplier *= risk_policy.order_size_multiplier
         return max(1, int(strategy.quote_size * max(0.05, size_multiplier)))
 

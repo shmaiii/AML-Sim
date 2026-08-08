@@ -1,5 +1,8 @@
 .aml_runs/
+.venv/
 .env
 simulators/StockSim/.env
 __pycache__/
+logs/
+logs_v*/
 .DS_Store

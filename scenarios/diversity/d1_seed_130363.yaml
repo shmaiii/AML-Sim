@@ -1,0 +1,400 @@
+name: aml_diversity_d1_seed_130363
+description: Diversity experiment D1 with fixed experiment seed 130363.
+rabbitmq_host: localhost
+aml_config:
+  dataset_split: validation
+  llm:
+    provider: openai
+    model: gpt-5.4
+    api_key_env: OPENAI_API_KEY
+    temperature: 0.2
+    timeout_seconds: 45
+    max_retries: 2
+    max_output_tokens: 2048
+  experiment:
+    diversity_level: D1
+    seed: 130363
+    replicate: 2
+stocksim_config:
+  exchange_mode: orderbook
+  instruments:
+  - AAPL
+  exchanges:
+    AAPL:
+      data_source: synthetic
+      symbol_type: stock
+      candle_interval: 1d
+      warmup_candles: 0
+  agents:
+    market_maker:
+      type: AML_Market_Maker
+      count: 1
+      parameters:
+        initial_cash: 500000
+        action_interval: 30s
+        slow_loop_interval: 2m
+        assigned_risk_budget: 100000
+        risk_mode: normal
+        fair_price: 100.0
+        spread: 0.2
+        min_spread: 0.05
+        max_spread: 1.5
+        quote_size: 60
+        quote_levels: 5
+        level_spacing: 0.04
+        size_decay: 0.85
+        target_inventory: 2500
+        inventory_skew: 0.0005
+        max_inventory: 4000
+        min_inventory: 250
+        volatility_sensitivity: 5.0
+        shock_spread_multiplier: 1.25
+        shock_price_adjustment: 0.45
+        liquidity_withdrawal_sensitivity: 0.35
+        initial_positions:
+          AAPL: 2500
+        initial_cost_basis:
+          AAPL: 100.0
+        profile:
+          name: liquidity_focused_market_maker
+          risk_tolerance: medium
+          decision_style: inventory_aware_quoting
+          inventory_discipline: 0.8
+          quote_aggressiveness: 0.4
+          adverse_selection_sensitivity: 0.7
+          liquidity_resilience: 0.7
+        slow_strategist:
+          type: openai
+          role_prompt:
+            goal: provide resilient two-sided liquidity while controlling inventory
+              risk.
+            behavior: preserve useful depth, widen spreads only when volatility or
+              adverse selection justifies it, and avoid abrupt quote withdrawal.
+          allowed_strategy_fields:
+          - confidence
+          - reason
+          - updated_at
+          - spread
+          - quote_size
+          - quote_levels
+          - level_spacing
+          - size_decay
+          - inventory_skew
+          - volatility_sensitivity
+          - shock_spread_multiplier
+          - shock_price_adjustment
+          - liquidity_withdrawal_sensitivity
+    institutional_trader:
+      type: AML_Institutional_Trader
+      count: 1
+      parameters:
+        initial_cash: 750000
+        action_interval: 1m
+        slow_loop_interval: 2m
+        assigned_risk_budget: 150000
+        risk_mode: normal
+        target_positions:
+          AAPL: 1200
+        child_order_size: 40
+        order_type: MARKET
+        alpha_strategy: target_execution
+        alpha_strategies:
+        - target_execution
+        - momentum
+        - mean_reversion
+        strategy_weights:
+          momentum: 0.45
+          mean_reversion: 0.55
+        max_position: 1200
+        min_position: 0
+        shock_reactivity: 0.7
+        initial_positions:
+          AAPL: 0
+        initial_cost_basis:
+          AAPL: 100.0
+        profile:
+          name: patient_institutional_executor
+          risk_tolerance: medium
+          decision_style: target_execution
+          execution_patience: 0.75
+          benchmark_focus: arrival_price
+          information_sensitivity: 0.55
+          alpha_horizon: intraday
+          market_impact_aversion: 0.75
+        slow_strategist:
+          type: openai
+          role_prompt:
+            goal: progress toward the target position while limiting market impact
+              and avoiding synchronized aggressive execution.
+            behavior: balance momentum and mean reversion, use measured child orders,
+              and reduce urgency during liquidity stress.
+          allowed_strategy_fields:
+          - confidence
+          - reason
+          - updated_at
+          - child_order_size
+          - urgency
+          - strategy_weights
+          - lookback_ticks
+          - entry_threshold
+          - exit_threshold
+          - shock_reactivity
+    shock_agent:
+      type: AML_Shock_Agent
+      count: 1
+      parameters:
+        default_duration_ticks: 4
+        random_seed: 20260801
+        initial_market_state:
+          policy_rate_bps: 425
+          liquidity_index: 1.0
+          risk_aversion: 0.0
+          credit_spread_bps: 90
+        random_events:
+          enabled: false
+        scheduled_events:
+        - id: negative_news_tick_6
+          tick: 6
+          shock_type: negative_news
+          shock_class: non_systematic
+          scope: micro
+          trigger_type: unexpected
+          visibility: public
+          severity: 0.55
+          direction: -1
+          surprise: 0.8
+          effects:
+            fundamental_price_shift: -0.7
+            order_arrival_multiplier: 1.5
+            risk_limit_multiplier: 0.75
+            liquidity_multiplier: 0.7
+            volatility_multiplier: 1.4
+            spread_multiplier: 1.3
+          affected_instruments:
+          - AAPL
+          duration_ticks: 4
+          message: Unexpected negative firm news during the validation run.
+        - id: liquidity_stress_tick_14
+          tick: 14
+          shock_type: liquidity_stress
+          shock_class: systematic
+          scope: market_structure
+          trigger_type: unexpected
+          visibility: public
+          severity: 0.7
+          direction: -1
+          surprise: 0.9
+          effects:
+            fundamental_price_shift: -0.5
+            order_arrival_multiplier: 1.8
+            risk_limit_multiplier: 0.6
+            liquidity_multiplier: 0.45
+            volatility_multiplier: 1.7
+            spread_multiplier: 1.6
+          market_state_delta:
+            risk_aversion: 0.35
+          affected_instruments:
+          - AAPL
+          duration_ticks: 4
+          message: Sudden liquidity stress during the validation run.
+    retail_1:
+      type: AML_Retail_Trader
+      count: 1
+      parameters:
+        initial_cash: 30000
+        action_interval: 30s
+        slow_loop_interval: 2m
+        assigned_risk_budget: 5000
+        risk_mode: normal
+        random_seed: 665554574
+        trade_probability: 0.24
+        max_order_size: 12
+        buy_bias: 0.42
+        herding_tendency: 0.15
+        panic_level: 0.25
+        sentiment_sensitivity: 0.65
+        shock_sensitivity: 0.7
+        initial_positions:
+          AAPL: 10
+        initial_cost_basis:
+          AAPL: 100.0
+        profile:
+          name: d1_retail_1
+          risk_tolerance: medium
+          decision_style: noisy_sentiment_driven
+          social_sensitivity: 0.55
+          panic_sensitivity: 0.55
+          herding_tendency: 0.45
+          news_reactivity: 0.7
+          loss_aversion: 0.6
+        slow_strategist:
+          type: openai
+          role_prompt:
+            goal: trade selectively from sentiment and recent price information without
+              blindly following crowd pressure.
+            behavior: react to public shocks, but reduce participation and order size
+              when conviction is weak or losses accumulate.
+          allowed_strategy_fields:
+          - confidence
+          - reason
+          - updated_at
+          - trade_probability
+          - buy_bias
+          - max_order_size
+          - herding_tendency
+          - panic_level
+          - sentiment_sensitivity
+          - shock_sensitivity
+    retail_2:
+      type: AML_Retail_Trader
+      count: 1
+      parameters:
+        initial_cash: 30000
+        action_interval: 30s
+        slow_loop_interval: 2m
+        assigned_risk_budget: 5000
+        risk_mode: normal
+        random_seed: 1164920937
+        trade_probability: 0.34
+        max_order_size: 12
+        buy_bias: 0.48
+        herding_tendency: 0.35
+        panic_level: 0.45
+        sentiment_sensitivity: 0.65
+        shock_sensitivity: 0.7
+        initial_positions:
+          AAPL: 10
+        initial_cost_basis:
+          AAPL: 100.0
+        profile:
+          name: d1_retail_2
+          risk_tolerance: medium
+          decision_style: noisy_sentiment_driven
+          social_sensitivity: 0.55
+          panic_sensitivity: 0.55
+          herding_tendency: 0.45
+          news_reactivity: 0.7
+          loss_aversion: 0.6
+        slow_strategist:
+          type: openai
+          role_prompt:
+            goal: trade selectively from sentiment and recent price information without
+              blindly following crowd pressure.
+            behavior: react to public shocks, but reduce participation and order size
+              when conviction is weak or losses accumulate.
+          allowed_strategy_fields:
+          - confidence
+          - reason
+          - updated_at
+          - trade_probability
+          - buy_bias
+          - max_order_size
+          - herding_tendency
+          - panic_level
+          - sentiment_sensitivity
+          - shock_sensitivity
+    retail_3:
+      type: AML_Retail_Trader
+      count: 1
+      parameters:
+        initial_cash: 30000
+        action_interval: 30s
+        slow_loop_interval: 2m
+        assigned_risk_budget: 5000
+        risk_mode: normal
+        random_seed: 1044531220
+        trade_probability: 0.44
+        max_order_size: 12
+        buy_bias: 0.54
+        herding_tendency: 0.55
+        panic_level: 0.65
+        sentiment_sensitivity: 0.65
+        shock_sensitivity: 0.7
+        initial_positions:
+          AAPL: 10
+        initial_cost_basis:
+          AAPL: 100.0
+        profile:
+          name: d1_retail_3
+          risk_tolerance: medium
+          decision_style: noisy_sentiment_driven
+          social_sensitivity: 0.55
+          panic_sensitivity: 0.55
+          herding_tendency: 0.45
+          news_reactivity: 0.7
+          loss_aversion: 0.6
+        slow_strategist:
+          type: openai
+          role_prompt:
+            goal: trade selectively from sentiment and recent price information without
+              blindly following crowd pressure.
+            behavior: react to public shocks, but reduce participation and order size
+              when conviction is weak or losses accumulate.
+          allowed_strategy_fields:
+          - confidence
+          - reason
+          - updated_at
+          - trade_probability
+          - buy_bias
+          - max_order_size
+          - herding_tendency
+          - panic_level
+          - sentiment_sensitivity
+          - shock_sensitivity
+    retail_4:
+      type: AML_Retail_Trader
+      count: 1
+      parameters:
+        initial_cash: 30000
+        action_interval: 30s
+        slow_loop_interval: 2m
+        assigned_risk_budget: 5000
+        risk_mode: normal
+        random_seed: 847253065
+        trade_probability: 0.54
+        max_order_size: 12
+        buy_bias: 0.6
+        herding_tendency: 0.75
+        panic_level: 0.85
+        sentiment_sensitivity: 0.65
+        shock_sensitivity: 0.7
+        initial_positions:
+          AAPL: 10
+        initial_cost_basis:
+          AAPL: 100.0
+        profile:
+          name: d1_retail_4
+          risk_tolerance: medium
+          decision_style: noisy_sentiment_driven
+          social_sensitivity: 0.55
+          panic_sensitivity: 0.55
+          herding_tendency: 0.45
+          news_reactivity: 0.7
+          loss_aversion: 0.6
+        slow_strategist:
+          type: openai
+          role_prompt:
+            goal: trade selectively from sentiment and recent price information without
+              blindly following crowd pressure.
+            behavior: react to public shocks, but reduce participation and order size
+              when conviction is weak or losses accumulate.
+          allowed_strategy_fields:
+          - confidence
+          - reason
+          - updated_at
+          - trade_probability
+          - buy_bias
+          - max_order_size
+          - herding_tendency
+          - panic_level
+          - sentiment_sensitivity
+          - shock_sensitivity
+  simulation:
+    start_time: '2025-03-01T09:30:00+00:00'
+    end_time: '2025-03-01T09:40:00+00:00'
+    tick_interval: 30s
+    max_wall_time_seconds: 600
+    expected_exchange_agent_count: 1
+  environment:
+    rabbitmq_host: localhost
+    log_level: INFO

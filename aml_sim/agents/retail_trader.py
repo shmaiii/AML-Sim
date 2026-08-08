@@ -14,6 +14,7 @@ from aml_sim.agents.base import BaseAMLAgent
 from aml_sim.agents.context.memory import MemoryBackend
 from aml_sim.agents.context.observation import ObservationProcessor
 from aml_sim.agents.models.profile import RetailProfile, coerce_profile
+from aml_sim.agents.profile_effects import retail_profile_effects
 from aml_sim.agents.strategy.llm_slow_strategy import SlowStrategist
 from aml_sim.agents.models.state import RetailStrategyState
 from aml_sim.agents.strategy.signals import clamp, momentum_signal, price_series
@@ -57,9 +58,15 @@ class AMLRetailTrader(BaseAMLAgent):
             "initial_positions",
             "initial_cost_basis",
             "action_interval_seconds",
+            "dataset_split",
+            "decision_action_threshold",
+            "assigned_risk_budget",
         ]:
             if param in kwargs:
                 trader_kwargs[param] = kwargs[param]
+        unknown = sorted(set(kwargs) - set(trader_kwargs))
+        if unknown:
+            raise TypeError("Unknown AML_Retail_Trader parameter(s): " + ", ".join(unknown))
 
         super().__init__(
             instrument_exchange_map=instrument_exchange_map,
@@ -129,13 +136,16 @@ class AMLRetailTrader(BaseAMLAgent):
     ) -> tuple[float, float]:
         strategy = self.strategy_state
         risk_policy = self._risk_policy()
+        profile_effects = retail_profile_effects(self.profile)
         prices = price_series(self.price_history, instrument, self.prices.get(instrument, 0))
         momentum = momentum_signal(prices, lookback_ticks=5)
 
         trade_probability = strategy.trade_probability
+        trade_probability *= profile_effects["participation_multiplier"]
         trade_probability *= pressure["order_arrival_multiplier"]
         trade_probability += pressure["severity"] * strategy.shock_sensitivity * 0.35
-        trade_probability += min(abs(momentum) * strategy.herding_tendency * 10, 0.2)
+        effective_herding = strategy.herding_tendency * profile_effects["herding_multiplier"]
+        trade_probability += min(abs(momentum) * effective_herding * 10, 0.2)
         trade_probability *= risk_policy.participation_multiplier
 
         buy_bias = strategy.buy_bias
@@ -149,9 +159,14 @@ class AMLRetailTrader(BaseAMLAgent):
                 -0.15,
                 0.15,
             )
-        buy_bias += clamp(momentum * strategy.herding_tendency * 5, -0.2, 0.2)
+        buy_bias += clamp(momentum * effective_herding * 5, -0.2, 0.2)
         if pressure["directional_bias"] < 0:
-            buy_bias -= pressure["severity"] * strategy.panic_level * 0.2
+            buy_bias -= (
+                pressure["severity"]
+                * strategy.panic_level
+                * profile_effects["panic_multiplier"]
+                * 0.2
+            )
 
         return clamp(trade_probability, 0.0, 1.0), clamp(buy_bias, 0.0, 1.0)
 
@@ -159,4 +174,5 @@ class AMLRetailTrader(BaseAMLAgent):
         size = self.strategy_state.max_order_size
         size *= pressure["risk_limit_multiplier"]
         size *= self._risk_policy().order_size_multiplier
+        size *= retail_profile_effects(self.profile)["order_size_multiplier"]
         return max(1, int(size))

@@ -9,6 +9,7 @@ from aml_sim.agents.base import BaseAMLAgent
 from aml_sim.agents.context.memory import MemoryBackend
 from aml_sim.agents.context.observation import ObservationProcessor
 from aml_sim.agents.models.profile import LiquidityTakerProfile, coerce_profile
+from aml_sim.agents.profile_effects import liquidity_taker_profile_effects
 from aml_sim.agents.models.state import LiquidityTakerStrategyState
 from aml_sim.agents.strategy.llm_slow_strategy import SlowStrategist
 from aml_sim.agents.strategy.signals import clamp
@@ -46,9 +47,15 @@ class AMLLiquidityTaker(BaseAMLAgent):
             "initial_positions",
             "initial_cost_basis",
             "action_interval_seconds",
+            "dataset_split",
+            "decision_action_threshold",
+            "assigned_risk_budget",
         ]:
             if param in kwargs:
                 trader_kwargs[param] = kwargs[param]
+        unknown = sorted(set(kwargs) - set(trader_kwargs))
+        if unknown:
+            raise TypeError("Unknown AML_Liquidity_Taker parameter(s): " + ", ".join(unknown))
 
         super().__init__(
             instrument_exchange_map=instrument_exchange_map,
@@ -82,12 +89,17 @@ class AMLLiquidityTaker(BaseAMLAgent):
 
     async def _maybe_take_liquidity(self, instrument: str) -> None:
         strategy = self.strategy_state
+        profile_effects = liquidity_taker_profile_effects(self.profile)
         pressure = self._market_pressure(instrument)
         risk_policy = self._risk_policy()
         participation = strategy.flow_intensity
         participation *= pressure["order_arrival_multiplier"]
         participation += pressure["severity"] * strategy.shock_sensitivity * 0.25
-        participation *= 0.5 + (strategy.aggression * 0.5)
+        participation *= profile_effects["participation_multiplier"]
+        participation *= 0.5 + (
+            clamp(strategy.aggression * profile_effects["aggression_multiplier"], 0.0, 1.0)
+            * 0.5
+        )
         participation *= risk_policy.participation_multiplier
 
         if self.random.random() > clamp(participation, 0.0, 1.0):
@@ -125,6 +137,7 @@ class AMLLiquidityTaker(BaseAMLAgent):
         max_size *= pressure["risk_limit_multiplier"]
         max_size *= clamp(pressure["order_arrival_multiplier"], 0.25, 2.0)
         max_size *= risk_policy.order_size_multiplier
+        max_size *= liquidity_taker_profile_effects(self.profile)["order_size_multiplier"]
         quantity = self.random.randint(1, max(1, int(max_size)))
 
         current_position = self.long_qty[instrument] - self.short_qty[instrument]
