@@ -8,6 +8,7 @@ import unittest
 from datetime import datetime, timezone
 from pathlib import Path
 from types import SimpleNamespace
+from unittest.mock import AsyncMock, patch
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -36,7 +37,9 @@ if importlib.util.find_spec("aio_pika") is None:
 
 from aml_sim.agents.shock_agent import AMLShockAgent
 from aml_sim.agents.base import BaseAMLAgent
+from aml_sim.agents.market_maker_trader import AMLMarketMakerTrader
 from simulation.simulation_clock import SimulationClock
+from utils.messages import MessageType
 
 
 class PacketTestAgent(BaseAMLAgent):
@@ -49,7 +52,9 @@ class BarrierAndShockTimingTests(unittest.IsolatedAsyncioTestCase):
     def make_clock(timeout: float) -> SimulationClock:
         clock = object.__new__(SimulationClock)
         clock.barrier_timeout_seconds = timeout
+        clock.barrier_response_queue = asyncio.Queue()
         clock.trader_response_queue = asyncio.Queue()
+        clock._deferred_barrier_responses = []
         clock.logger = SimpleNamespace(
             info=lambda *_: None,
             warning=lambda *_: None,
@@ -78,6 +83,79 @@ class BarrierAndShockTimingTests(unittest.IsolatedAsyncioTestCase):
             await clock._wait_for_decision_responses(
                 0, expected_count=1, phase="shock"
             )
+
+    async def test_early_settlement_ack_is_deferred_until_exchange_barrier(self) -> None:
+        clock = self.make_clock(0.2)
+        await clock.barrier_response_queue.put({
+            "tick_id": 4,
+            "agent_id": "retail_1",
+            "phase": "settlement",
+            "settlement_id": "trade:4:retail_1",
+        })
+        await clock.barrier_response_queue.put({
+            "tick_id": 4,
+            "agent_id": "exchange_aapl",
+            "phase": "exchange",
+            "settlement_receipts": ["trade:4:retail_1"],
+        })
+
+        exchange_responses = await clock._wait_for_barrier_responses(
+            4, 1, "exchange"
+        )
+        settlement_responses = await clock._wait_for_settlement_responses(
+            4, {"trade:4:retail_1"}
+        )
+
+        self.assertEqual("exchange_aapl", exchange_responses[0]["agent_id"])
+        self.assertEqual(
+            "trade:4:retail_1",
+            settlement_responses[0]["settlement_id"],
+        )
+        self.assertEqual([], clock._deferred_barrier_responses)
+
+    async def test_market_maker_keeps_partially_filled_quote_cancellable(self) -> None:
+        agent = object.__new__(AMLMarketMakerTrader)
+        agent.agent_id = "market_maker_1"
+        agent.long_qty = {}
+        agent.quote_order_ids = {"partial", "full"}
+        agent.pending_quote_cancel_order_ids = {"partial", "full"}
+        agent.logger = SimpleNamespace(debug=lambda *_: None)
+
+        with patch.object(
+            BaseAMLAgent,
+            "on_trade_execution",
+            new=AsyncMock(),
+        ):
+            await agent.on_trade_execution({
+                "order_id": "partial",
+                "order_status": "PARTIALLY_FILLED",
+            })
+            await agent.on_trade_execution({
+                "order_id": "full",
+                "order_status": "FILLED",
+            })
+
+        self.assertIn("partial", agent.quote_order_ids)
+        self.assertIn("partial", agent.pending_quote_cancel_order_ids)
+        self.assertNotIn("full", agent.quote_order_ids)
+        self.assertNotIn("full", agent.pending_quote_cancel_order_ids)
+
+    async def test_trade_handler_acknowledges_after_agent_processing(self) -> None:
+        agent = object.__new__(PacketTestAgent)
+        agent._handle_trade_execution = AsyncMock()
+        agent._ack_settlement = AsyncMock()
+        payload = {
+            "settlement_tick_id": 4,
+            "settlement_id": "trade:4:retail_1",
+        }
+
+        await agent._handle_regular_message({
+            "type": MessageType.TRADE_EXECUTION.value,
+            "payload": payload,
+        })
+
+        agent._handle_trade_execution.assert_awaited_once_with(payload)
+        agent._ack_settlement.assert_awaited_once_with(payload)
 
     def test_shock_agent_has_dedicated_phase_and_exact_tick_timing(self) -> None:
         self.assertEqual("shock.#", AMLShockAgent.TIME_ROUTING_GROUP)

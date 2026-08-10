@@ -20,6 +20,9 @@ LEVELS = {
     "D4": {"strategy": True, "profile": True, "prompt": True},
 }
 DEFAULT_SEEDS = [104729, 130363, 155921, 181081, 206369]
+RESEARCH_SLOW_LOOP_INTERVAL = "10m"
+RESEARCH_MAX_RETRIES = 0
+RESEARCH_MAX_OUTPUT_TOKENS = 512
 
 STRATEGY_VARIANTS = [
     {"trade_probability": 0.24, "buy_bias": 0.42, "herding_tendency": 0.15, "panic_level": 0.25},
@@ -55,6 +58,9 @@ def build_condition(base: dict[str, Any], level: str, seed: int) -> dict[str, An
         f"Diversity experiment {level} with fixed experiment seed {seed}."
     )
     aml_config = scenario.setdefault("aml_config", {})
+    llm_config = aml_config.setdefault("llm", {})
+    llm_config["max_retries"] = RESEARCH_MAX_RETRIES
+    llm_config["max_output_tokens"] = RESEARCH_MAX_OUTPUT_TOKENS
     aml_config["experiment"] = {
         "diversity_level": level,
         "seed": seed,
@@ -62,6 +68,13 @@ def build_condition(base: dict[str, Any], level: str, seed: int) -> dict[str, An
     }
 
     agents = scenario["stocksim_config"]["agents"]
+    for details in agents.values():
+        parameters = details.get("parameters", {})
+        strategist = parameters.get("slow_strategist")
+        if isinstance(strategist, dict) and str(
+            strategist.get("type", "static")
+        ).lower() in {"openai", "openai_json"}:
+            parameters["slow_loop_interval"] = RESEARCH_SLOW_LOOP_INTERVAL
     retail_template = copy.deepcopy(agents.pop("retail_trader"))
     base_parameters = retail_template["parameters"]
     base_profile = copy.deepcopy(base_parameters.get("profile", {}))

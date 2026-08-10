@@ -104,7 +104,7 @@ class AgentDecisionRecorderTests(unittest.TestCase):
 
         self.assertEqual(1, len(agent.decision_records))
         row = agent.decision_records[0]
-        self.assertEqual("BUY", row["action"])
+        self.assertEqual("HOLD", row["action"])
         self.assertEqual("HOLD", row["submitted_action"])
         self.assertTrue(row["decision_id"].startswith("dec_"))
         self.assertEqual(36, len(row["decision_id"]))
@@ -145,7 +145,7 @@ class AgentDecisionRecorderTests(unittest.TestCase):
             agent.decision_records[0]["data_timestamp_source"],
         )
 
-    def test_recommendation_can_differ_from_execution(self) -> None:
+    def test_prediction_score_can_differ_from_executed_action(self) -> None:
         agent = self.make_agent()
         agent.strategy_state.signal_strength = -0.01
         agent.action_events.append(
@@ -162,8 +162,9 @@ class AgentDecisionRecorderTests(unittest.TestCase):
         )
 
         row = agent.decision_records[0]
-        self.assertEqual("SELL", row["action"])
+        self.assertEqual("BUY", row["action"])
         self.assertEqual("BUY", row["submitted_action"])
+        self.assertEqual(-1.0, row["prediction_score"])
 
     def test_empty_market_state_has_complete_pressure_defaults(self) -> None:
         pressure = market_state_pressure(None)

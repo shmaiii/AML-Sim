@@ -80,10 +80,101 @@ class MicrostructureAndMetricsTests(unittest.TestCase):
             with (reports / "order_book_microstructure.csv").open(
                 "w", encoding="utf-8", newline=""
             ) as handle:
-                writer = csv.DictWriter(handle, fieldnames=["spread", "bid_depth", "ask_depth", "fill_rate"])
+                writer = csv.DictWriter(
+                    handle,
+                    fieldnames=[
+                        "best_bid", "best_ask", "spread", "bid_depth",
+                        "ask_depth", "top5_bid_depth", "top5_ask_depth",
+                        "fill_rate", "trade_count",
+                        "active_order_count",
+                    ],
+                )
                 writer.writeheader()
-                writer.writerow({"spread": 0.2, "bid_depth": 100, "ask_depth": 120, "fill_rate": 0.5})
+                writer.writerow({
+                    "bid_depth": 0,
+                    "ask_depth": 0,
+                    "trade_count": 0,
+                    "active_order_count": 0,
+                })
+                writer.writerow({
+                    "best_bid": 99.9,
+                    "best_ask": 100.1,
+                    "spread": 0.2,
+                    "bid_depth": 100,
+                    "ask_depth": 120,
+                    "top5_bid_depth": 90,
+                    "top5_ask_depth": 110,
+                    "fill_rate": 0.5,
+                    "trade_count": 1,
+                    "active_order_count": 2,
+                })
+                writer.writerow({
+                    "bid_depth": 0,
+                    "ask_depth": 0,
+                    "top5_bid_depth": 0,
+                    "top5_ask_depth": 0,
+                    "trade_count": 0,
+                    "active_order_count": 0,
+                })
             metrics = build_research_metrics(agents, reports)
             self.assertEqual(1.0, metrics["synchrony"]["mean_signed_flow_herding_index"])
             self.assertEqual(0.2, metrics["liquidity"]["mean_spread"])
+            self.assertEqual(50.0, metrics["liquidity"]["mean_bid_depth"])
+            self.assertEqual(
+                100.0,
+                metrics["liquidity"]["mean_top5_total_depth"],
+            )
+            self.assertEqual(0.5, metrics["liquidity"]["trade_active_tick_rate"])
+            self.assertEqual(2, metrics["liquidity"]["valid_book_observation_count"])
             self.assertTrue((reports / "signed_order_flow.csv").exists())
+
+    def test_research_metrics_separate_within_and_cross_role_synchrony(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            agents = root / "agents"
+            reports = root / "reports"
+            agents.mkdir()
+            reports.mkdir()
+            fixtures = {
+                "retail_a": ("retail", ("BUY", "SELL")),
+                "retail_b": ("retail", ("BUY", "SELL")),
+                "institutional": ("institutional", ("SELL", "BUY")),
+            }
+            timestamps = (
+                "2025-03-01T09:30:00+00:00",
+                "2025-03-01T09:31:00+00:00",
+            )
+            for agent_id, (role, sides) in fixtures.items():
+                actions = [
+                    {
+                        "event_type": "order_submitted",
+                        "timestamp": timestamp,
+                        "instrument": "AAPL",
+                        "agent_id": agent_id,
+                        "agent_role": role,
+                        "side": side,
+                        "quantity": 10,
+                    }
+                    for timestamp, side in zip(timestamps, sides)
+                ]
+                (agents / f"trader_actions_{agent_id}.json").write_text(
+                    json.dumps(actions),
+                    encoding="utf-8",
+                )
+
+            metrics = build_research_metrics(agents, reports)
+
+            synchrony = metrics["synchrony"]
+            self.assertEqual(
+                1.0,
+                synchrony["mean_absolute_within_role_signed_flow_correlation"],
+            )
+            self.assertEqual(
+                1.0,
+                synchrony["mean_absolute_cross_role_signed_flow_correlation"],
+            )
+            relations = {
+                row["role_relation"]
+                for row in synchrony["pairwise_signed_flow_correlations"]
+            }
+            self.assertEqual({"within_role", "cross_role"}, relations)

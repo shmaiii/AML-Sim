@@ -535,19 +535,44 @@ Generate the fixed D0-D4 matrix (five conditions by five seeds):
 python -m aml_sim.experiments.diversity_matrix
 ```
 
-Validate every generated scenario without launching RabbitMQ or calling an API:
+Validate one D0-D4 pilot seed without launching RabbitMQ or calling an API:
 
 ```bash
-python scripts/run_diversity_matrix.py --dry-run
+python scripts/run_diversity_matrix.py --dry-run \
+  --levels D0 D1 D2 D3 D4 --seeds 104729
 ```
 
-Run the full matrix sequentially after RabbitMQ and `OPENAI_API_KEY` are ready:
+The default API-attempt budget is 30, so an accidental full-matrix command is
+rejected before any process or API call starts. Run the five-level pilot after
+RabbitMQ and `OPENAI_API_KEY` are ready:
 
 ```bash
-python scripts/run_diversity_matrix.py
+python scripts/run_diversity_matrix.py \
+  --levels D0 D1 D2 D3 D4 --seeds 104729 --resume
 ```
 
-Every tick uses `exchange -> shock -> trader` barriers. Final reports add
+After the pilot passes, the complete five-seed validation phase requires an
+explicit 150-call budget:
+
+```bash
+python scripts/run_diversity_matrix.py \
+  --phase validation --max-api-calls 150 --resume
+```
+
+Do not run the locked out-of-sample phase until the diversity level and
+analysis code have been frozen. Then run it separately:
+
+```bash
+python scripts/run_diversity_matrix.py \
+  --phase out_of_sample --max-api-calls 150 --resume
+```
+
+Use `--levels` and `--seeds` for a smaller subset, `--reports` for additional
+StockSim artifacts, and `--resume` to skip runs that already contain
+`research_metrics.json`. Each research scenario permits one slow-loop update
+per OpenAI agent, disables API retries, and caps output at 512 tokens.
+
+Every tick uses `exchange -> settlement -> shock -> trader` barriers. Final reports add
 `order_book_microstructure.csv`, `llm_strategy_updates.json`,
 `signed_order_flow.csv`, and `research_metrics.json` alongside the existing
 decision, outcome, and action exports. The design and selection rule are in

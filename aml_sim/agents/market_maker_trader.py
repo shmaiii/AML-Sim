@@ -296,7 +296,8 @@ class AMLMarketMakerTrader(BaseAMLAgent):
 
     async def on_trade_execution(self, msg: Dict[str, Any]) -> None:
         order_id = msg.get("order_id")
-        if order_id:
+        order_status = str(msg.get("order_status") or "").upper()
+        if order_id and order_status == "FILLED":
             self.quote_order_ids.discard(str(order_id))
             self.pending_quote_cancel_order_ids.discard(str(order_id))
         await super().on_trade_execution(msg)

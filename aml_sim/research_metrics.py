@@ -86,14 +86,32 @@ def build_research_metrics(agent_reports_dir: Path, reports_dir: Path) -> dict[s
             })
 
     pairwise: list[dict[str, Any]] = []
+    within_role_correlations: list[float] = []
+    cross_role_correlations: list[float] = []
     for index, left_agent in enumerate(agents):
         for right_agent in agents[index + 1:]:
             left = [flow_by_key[key].get(left_agent, 0.0) for key in keys]
             right = [flow_by_key[key].get(right_agent, 0.0) for key in keys]
+            correlation = _pearson(left, right)
+            left_role = role_by_agent.get(left_agent, "unspecified")
+            right_role = role_by_agent.get(right_agent, "unspecified")
+            if "unspecified" in {left_role, right_role}:
+                role_relation = "unknown"
+            elif left_role == right_role:
+                role_relation = "within_role"
+                if correlation is not None:
+                    within_role_correlations.append(abs(correlation))
+            else:
+                role_relation = "cross_role"
+                if correlation is not None:
+                    cross_role_correlations.append(abs(correlation))
             pairwise.append({
                 "left_agent": left_agent,
+                "left_role": left_role,
                 "right_agent": right_agent,
-                "correlation": _pearson(left, right),
+                "right_role": right_role,
+                "role_relation": role_relation,
+                "correlation": correlation,
             })
 
     microstructure_rows: list[dict[str, str]] = []
@@ -102,9 +120,29 @@ def build_research_metrics(agent_reports_dir: Path, reports_dir: Path) -> dict[s
         with microstructure_file.open("r", encoding="utf-8", newline="") as handle:
             microstructure_rows = list(csv.DictReader(handle))
 
-    def numeric(field: str) -> list[float]:
+    def has_value(row: dict[str, str], field: str) -> bool:
+        return row.get(field) not in {None, "", "None"}
+
+    analysis_rows: list[dict[str, str]] = []
+    book_started = False
+    for row in microstructure_rows:
+        try:
+            active_order_count = float(row.get("active_order_count") or 0.0)
+        except (TypeError, ValueError):
+            active_order_count = 0.0
+        if (
+            active_order_count > 0
+            or has_value(row, "best_bid")
+            or has_value(row, "best_ask")
+            or has_value(row, "spread")
+        ):
+            book_started = True
+        if book_started:
+            analysis_rows.append(row)
+
+    def numeric(field: str, rows: list[dict[str, str]]) -> list[float]:
         values: list[float] = []
-        for row in microstructure_rows:
+        for row in rows:
             raw = row.get(field)
             if raw in {None, "", "None"}:
                 continue
@@ -120,8 +158,23 @@ def build_research_metrics(agent_reports_dir: Path, reports_dir: Path) -> dict[s
         "top5_bid_depth", "top5_ask_depth", "fill_rate",
         "signed_price_impact_bps",
     ):
-        values = numeric(field)
+        values = numeric(field, analysis_rows)
         liquidity[f"mean_{field}"] = mean(values) if values else None
+    top5_total_depth = [
+        bid_depth + ask_depth
+        for row in analysis_rows
+        for bid_depth in numeric("top5_bid_depth", [row])
+        for ask_depth in numeric("top5_ask_depth", [row])
+    ]
+    liquidity["mean_top5_total_depth"] = (
+        mean(top5_total_depth) if top5_total_depth else None
+    )
+    trade_counts = numeric("trade_count", analysis_rows)
+    liquidity["trade_active_tick_rate"] = (
+        sum(value > 0 for value in trade_counts) / len(analysis_rows)
+        if analysis_rows else None
+    )
+    liquidity["valid_book_observation_count"] = len(analysis_rows)
 
     metrics = {
         "synchrony": {
@@ -129,14 +182,26 @@ def build_research_metrics(agent_reports_dir: Path, reports_dir: Path) -> dict[s
             "observation_count": len(keys),
             "mean_signed_flow_herding_index": mean(herding_values) if herding_values else None,
             "mean_same_direction_share": mean(same_direction_values) if same_direction_values else None,
+            "mean_absolute_within_role_signed_flow_correlation": (
+                mean(within_role_correlations)
+                if within_role_correlations else None
+            ),
+            "mean_absolute_cross_role_signed_flow_correlation": (
+                mean(cross_role_correlations)
+                if cross_role_correlations else None
+            ),
             "pairwise_signed_flow_correlations": pairwise,
         },
         "liquidity": liquidity,
         "definitions": {
             "signed_order_flow": "BUY submitted quantity minus SELL submitted quantity per agent/timestamp/asset",
             "signed_flow_herding_index": "absolute net signed flow divided by gross absolute signed flow",
+            "within_role_signed_flow_correlation": "mean absolute Pearson correlation of signed order flow for agent pairs with the same role",
+            "cross_role_signed_flow_correlation": "mean absolute Pearson correlation of signed order flow for agent pairs with different roles",
+            "top5_total_depth": "sum of displayed bid and ask quantity across the top five price levels",
             "fill_rate": "executed quantity divided by submitted quantity between exchange ticks",
             "signed_price_impact_bps": "midpoint return aligned to the sign of aggregate submitted order flow",
+            "trade_active_tick_rate": "share of post-initialization exchange ticks with one or more executed trades",
         },
     }
 

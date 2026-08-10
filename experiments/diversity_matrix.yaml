@@ -8,17 +8,45 @@ levels:
   D2: heterogeneous strategy parameters and profiles
   D3: heterogeneous strategy parameters, profiles, and prompts
   D4: maximal orthogonal profile/prompt combinations with the same agent-role mix
-fixed_seeds: [104729, 130363, 155921, 181081, 206369]
+validation_seeds: [104729, 130363, 155921, 181081, 206369]
+out_of_sample_seeds: [238417, 269231, 302137, 334619, 365903]
+fixed_controls:
+  agent_count: true
+  role_mix: true
+  initial_capital: true
+  shocks: true
+  information_set: true
+  market_structure: true
+  model_and_temperature: true
 primary_synchrony_metrics:
-  - signed_order_flow_herding_index
-  - same_direction_share
-  - pairwise_signed_order_flow_correlation
+  - mean_signed_flow_herding_index
+  - mean_absolute_within_role_signed_flow_correlation
+  - mean_absolute_cross_role_signed_flow_correlation
 primary_liquidity_metrics:
-  - spread
-  - top5_bid_depth
-  - top5_ask_depth
-  - fill_rate
-  - signed_price_impact_bps
+  - mean_relative_spread_bps
+  - mean_top5_total_depth
+  - trade_active_tick_rate
+validation_thresholds:
+  minimum_herding_reduction_relative_to_d0: 0.15
+  minimum_absolute_correlation_reduction: 0.10
+  maximum_relative_spread_increase: 0.10
+  maximum_relative_depth_decrease: 0.10
+  maximum_trade_active_tick_rate_decrease: 0.05
+api_policy:
+  slow_loop_updates_per_agent_per_run: 1
+  max_retries: 0
+  max_output_tokens: 512
+  pilot_max_calls: 30
+  validation_max_calls: 150
+  out_of_sample_max_calls: 150
 selection_rule: >
-  Choose the lowest D level whose confidence interval reduces synchrony relative
-  to D0 without a material deterioration in spread, depth, fill rate, or price impact.
+  On validation seeds, choose the lowest D level that reduces mean herding by at
+  least 15 percent and reduces both within-role and cross-role mean absolute
+  signed-flow correlation by at least 0.10 versus D0, while relative spread
+  increases by no more than 10 percent, top-five total depth decreases by no
+  more than 10 percent, and trade-active tick rate decreases by no more than
+  0.05. Freeze that level before opening the out-of-sample results.
+phase_rule: >
+  Use validation seeds for all configuration and threshold decisions. Do not
+  inspect out-of-sample seeds until the selected diversity level and analysis
+  code are frozen. Report validation and out-of-sample results separately.

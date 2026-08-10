@@ -9,8 +9,8 @@ aml_config:
     api_key_env: OPENAI_API_KEY
     temperature: 0.2
     timeout_seconds: 45
-    max_retries: 2
-    max_output_tokens: 2048
+    max_retries: 0
+    max_output_tokens: 512
   experiment:
     diversity_level: D4
     seed: 155921
@@ -32,7 +32,7 @@ stocksim_config:
       parameters:
         initial_cash: 500000
         action_interval: 30s
-        slow_loop_interval: 2m
+        slow_loop_interval: 10m
         assigned_risk_budget: 100000
         risk_mode: normal
         fair_price: 100.0
@@ -90,7 +90,7 @@ stocksim_config:
       parameters:
         initial_cash: 750000
         action_interval: 1m
-        slow_loop_interval: 2m
+        slow_loop_interval: 10m
         assigned_risk_budget: 150000
         risk_mode: normal
         target_positions:
@@ -203,7 +203,7 @@ stocksim_config:
       parameters:
         initial_cash: 30000
         action_interval: 30s
-        slow_loop_interval: 2m
+        slow_loop_interval: 10m
         assigned_risk_budget: 5000
         risk_mode: normal
         random_seed: 1238643121
@@ -249,7 +249,7 @@ stocksim_config:
       parameters:
         initial_cash: 30000
         action_interval: 30s
-        slow_loop_interval: 2m
+        slow_loop_interval: 10m
         assigned_risk_budget: 5000
         risk_mode: normal
         random_seed: 678691522
@@ -295,7 +295,7 @@ stocksim_config:
       parameters:
         initial_cash: 30000
         action_interval: 30s
-        slow_loop_interval: 2m
+        slow_loop_interval: 10m
         assigned_risk_budget: 5000
         risk_mode: normal
         random_seed: 2124889838
@@ -341,7 +341,7 @@ stocksim_config:
       parameters:
         initial_cash: 30000
         action_interval: 30s
-        slow_loop_interval: 2m
+        slow_loop_interval: 10m
         assigned_risk_budget: 5000
         risk_mode: normal
         random_seed: 927631785

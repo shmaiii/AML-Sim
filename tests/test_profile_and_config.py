@@ -110,3 +110,10 @@ class ProfileAndConfigTests(unittest.TestCase):
         }
         self.assertEqual(1, len(d0_herding))
         self.assertGreater(len(d4_herding), 1)
+        self.assertEqual(0, d0["aml_config"]["llm"]["max_retries"])
+        self.assertEqual(512, d0["aml_config"]["llm"]["max_output_tokens"])
+        for details in d0_agents.values():
+            parameters = details["parameters"]
+            strategist = parameters.get("slow_strategist", {})
+            if strategist.get("type") == "openai":
+                self.assertEqual("10m", parameters["slow_loop_interval"])

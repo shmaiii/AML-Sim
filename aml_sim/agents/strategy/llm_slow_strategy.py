@@ -144,8 +144,8 @@ class LLMStrategist:
             "task": "Propose strategy_state updates only. Do not place orders.",
             "output_contract": {
                 "strategy_updates": "object containing only existing strategy fields",
-                "confidence": "float between 0 and 1",
-                "reason": "short explanation",
+                "confidence": "top-level float between 0 and 1; do not repeat inside strategy_updates",
+                "reason": "top-level short explanation; do not repeat inside strategy_updates",
             },
             "profile": profile_to_dict(profile),
             "memory": compact_memory,
@@ -220,9 +220,26 @@ class LLMStrategist:
     ) -> Any:
         all_fields = self._strategy_fields(current_strategy)
         allowed_fields = self._allowed_fields(current_strategy)
+        proposed_updates = dict(updates)
+        adjusted_updates: dict[str, dict[str, Any]] = {}
+        for field_name in ("confidence", "reason"):
+            if field_name not in response:
+                continue
+            top_level_value = response[field_name]
+            if (
+                field_name in proposed_updates
+                and proposed_updates[field_name] != top_level_value
+            ):
+                adjusted_updates[field_name] = {
+                    "original": proposed_updates[field_name],
+                    "applied": top_level_value,
+                    "reason": "top_level_override",
+                }
+            proposed_updates[field_name] = top_level_value
+
         clean_updates: dict[str, Any] = {}
         rejected_updates: dict[str, dict[str, Any]] = {}
-        for key, value in updates.items():
+        for key, value in proposed_updates.items():
             if key not in all_fields:
                 rejected_updates[key] = {
                     "value": value,
@@ -241,10 +258,6 @@ class LLMStrategist:
             else:
                 clean_updates[key] = value
 
-        if "confidence" in response and "confidence" in allowed_fields:
-            clean_updates["confidence"] = response["confidence"]
-        if "reason" in response and "reason" in allowed_fields:
-            clean_updates["reason"] = response["reason"]
         if "updated_at" in allowed_fields:
             clean_updates.setdefault("updated_at", observation.get("current_time"))
 
@@ -265,7 +278,6 @@ class LLMStrategist:
             "aggression": 2.0,
             "momentum_weight": 2.0,
         }
-        adjusted_updates: dict[str, dict[str, Any]] = {}
         for field_name in bounded_numeric_fields.keys() & clean_updates.keys():
             value = clean_updates[field_name]
             if isinstance(value, bool) or not isinstance(value, (int, float)):
@@ -288,7 +300,7 @@ class LLMStrategist:
                 }
 
         self.last_update_audit = {
-            "proposed_updates": dict(updates),
+            "proposed_updates": proposed_updates,
             "eligible_updates": dict(clean_updates),
             "adjusted_updates": adjusted_updates,
             "rejected_updates": rejected_updates,
@@ -402,10 +414,20 @@ class OpenAIJSONLLMClient:
         content = getattr(response, "output_text", None)
         if not content:
             raise LLMStrategyResponseError("OpenAI returned an empty strategy response.")
-        self._write_response_log(context=context, content=content)
+        self._write_response_log(
+            context=context,
+            content=content,
+            response=response,
+        )
         return content
 
-    def _write_response_log(self, *, context: Mapping[str, Any], content: str) -> None:
+    def _write_response_log(
+        self,
+        *,
+        context: Mapping[str, Any],
+        content: str,
+        response: Any = None,
+    ) -> None:
         decision_context_dir = os.getenv("DECISION_CONTEXT_DIR")
         if not decision_context_dir:
             return
@@ -421,10 +443,31 @@ class OpenAIJSONLLMClient:
             character if character.isalnum() or character in {"-", "_"} else "_"
             for character in agent_id
         )
+        usage = getattr(response, "usage", None)
+        if hasattr(usage, "model_dump"):
+            usage_payload = usage.model_dump()
+        elif isinstance(usage, Mapping):
+            usage_payload = dict(usage)
+        elif usage is not None:
+            usage_payload = {
+                field_name: getattr(usage, field_name)
+                for field_name in (
+                    "input_tokens",
+                    "output_tokens",
+                    "total_tokens",
+                )
+                if getattr(usage, field_name, None) is not None
+            }
+        else:
+            usage_payload = None
+
         record = {
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "provider": "openai",
             "model": self.model,
+            "response_id": getattr(response, "id", None),
+            "response_model": getattr(response, "model", None),
+            "usage": usage_payload,
             "agent_id": agent_id,
             "simulation_time": observation.get("current_time"),
             "response": content,

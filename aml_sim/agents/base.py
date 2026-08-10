@@ -259,9 +259,7 @@ class BaseAMLAgent(TraderAgent):
                     "data_cutoff_timestamp": latest_data_date_used,
                     "prediction_score": prediction_score,
                     "confidence": self._decision_confidence(),
-                    "action": self._action_from_prediction_score(
-                        prediction_score
-                    ),
+                    "action": submitted_action,
                     "submitted_action": submitted_action,
                     "latest_data_date_used": latest_data_date_used,
                     "data_timestamp_source": data_timestamp_source,
@@ -1018,6 +1016,7 @@ class BaseAMLAgent(TraderAgent):
         self._record_action_event(
             {
                 "event_type": "trade_executed",
+                "timestamp": trade_data.get("timestamp"),
                 "order_id": trade_data.get("order_id"),
                 "instrument": trade_data.get("instrument"),
                 "role": trade_data.get("role"),
@@ -1033,7 +1032,6 @@ class BaseAMLAgent(TraderAgent):
                 "portfolio_after": self._portfolio_snapshot(),
             }
         )
-
     async def _handle_order_confirmation(self, payload: dict[str, Any]) -> None:
         await super()._handle_order_confirmation(payload)
         self._cleanup_completed_market_order(
