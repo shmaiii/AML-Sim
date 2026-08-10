@@ -93,6 +93,21 @@ class DiversityResultsAnalysisTests(unittest.TestCase):
                 True,
             )
 
+    def test_missing_outcome_may_have_no_result_timestamp(self) -> None:
+        missing = {
+            "outcome_status": "missing",
+            "interval_end": "2025-03-01T09:40:00+00:00",
+            "result_available_timestamp": "",
+        }
+        completed_without_result = {
+            "outcome_status": "completed",
+            "interval_end": "2025-03-01T09:40:00+00:00",
+            "result_available_timestamp": "",
+        }
+
+        self.assertFalse(MODULE._has_invalid_result_timestamp(missing))
+        self.assertTrue(MODULE._has_invalid_result_timestamp(completed_without_result))
+
 
 if __name__ == "__main__":
     unittest.main()

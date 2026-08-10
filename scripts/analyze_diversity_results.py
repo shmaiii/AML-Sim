@@ -70,6 +70,18 @@ def _parse_timestamp(value: str | None) -> datetime | None:
         return None
 
 
+def _has_invalid_result_timestamp(item: dict[str, str]) -> bool:
+    """Allow unavailable timestamps only when the outcome is explicitly missing."""
+    status = str(item.get("outcome_status", "")).lower()
+    interval_end = _parse_timestamp(item.get("interval_end"))
+    result_time = _parse_timestamp(item.get("result_available_timestamp"))
+    if interval_end is None:
+        return True
+    if status == "missing" and result_time is None:
+        return False
+    return result_time is None or result_time < interval_end
+
+
 def _parse_interval_seconds(value: Any) -> float:
     if isinstance(value, (int, float)):
         return float(value)
@@ -232,9 +244,7 @@ def inspect_run(run_dir: Path, level: str, seed: int) -> dict[str, Any]:
         outcome_status_counts[status] += 1
         if status not in allowed_statuses:
             invalid_outcome_status_count += 1
-        interval_end = _parse_timestamp(item.get("interval_end"))
-        result_time = _parse_timestamp(item.get("result_available_timestamp"))
-        if interval_end is None or result_time is None or result_time < interval_end:
+        if _has_invalid_result_timestamp(item):
             invalid_result_timestamp_count += 1
         if item.get("split") != "validation":
             invalid_outcome_split_count += 1
