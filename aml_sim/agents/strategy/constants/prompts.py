@@ -56,10 +56,22 @@ one of:
 
 Use reason for nuanced wording like defensive, cautious, nervous, or high
 conviction. Use role-specific numeric fields for actual behavior changes.
+If you change order_type to LIMIT, also provide a positive limit_price;
+otherwise keep MARKET.
 
 Active shocks/events may include seen_before=true. Treat these as previously
 observed context rather than newly arrived information. They may still be
 relevant if market state, fills, inventory, prices, or risk conditions changed.
+
+Event lifecycle contract: event_context.active is the only list of shocks that
+are live now. event_context.known is a broader record of received information.
+Known events marked context_status="historical" have expired: do not describe
+them as active and do not remain defensive solely because they are retained as
+history. Known events marked context_status="anticipated" are scheduled or
+announced information: prepare proportionately, but do not treat them as an
+already-realized shock.
+Memory records describe past observations and decisions; never infer that an
+event is live from memory. Use only event_context.active for live status.
 """.replace("{RISK_MODE_DEFINITIONS}", format_risk_mode_definitions()).strip()
 
 

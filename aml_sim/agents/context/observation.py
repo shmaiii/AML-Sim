@@ -30,8 +30,16 @@ def build_observation_context(
     """
 
     instruments = list(getattr(agent, "instrument_exchange_map", {}).keys())
-    active_events = [serialize_mapping(event) for event in (events or [])]
+    active_events = [
+        _with_event_context(event, "active") for event in (events or [])
+    ]
     observed_events = [serialize_mapping(event) for event in (known_events or events or [])]
+    historical_events = [
+        event for event in observed_events if event.get("context_status") == "historical"
+    ]
+    anticipated_events = [
+        event for event in observed_events if event.get("context_status") == "anticipated"
+    ]
 
     return {
         "agent": _build_agent_context(agent, profile),
@@ -59,15 +67,19 @@ def build_observation_context(
         "event_context": {
             "active": active_events,
             "known": observed_events,
-            "calendar": [
-                event
-                for event in observed_events
-                if str(event.get("phase", "")).lower()
-                in {"announcement", "scheduled", "expectation"}
-            ],
+            "historical": historical_events,
+            "anticipated": anticipated_events,
+            "calendar": anticipated_events,
             "latest": observed_events[-1] if observed_events else None,
         },
     }
+
+
+def _with_event_context(event: Mapping[str, Any], context_status: str) -> dict[str, Any]:
+    contextual_event = serialize_mapping(event)
+    contextual_event["context_status"] = context_status
+    contextual_event["is_active"] = context_status == "active"
+    return contextual_event
 
 
 class ObservationProcessor:

@@ -26,6 +26,11 @@ _EFFECT_DEFAULTS: dict[str, float] = {
     "risk_aversion_shift": 0.0,
 }
 _EFFECT_KEYS = tuple(_EFFECT_DEFAULTS.keys())
+_NEUTRAL_PRESSURE: dict[str, float] = {
+    "severity": 0.0,
+    "directional_bias": 0.0,
+    **_EFFECT_DEFAULTS,
+}
 
 
 def clamp(value: float, lower: float, upper: float) -> float:
@@ -232,7 +237,9 @@ def market_state_pressure(
     conditions, liquidity, and risk appetite after the event itself expires.
     """
     if not market_state:
-        return dict(_EFFECT_DEFAULTS)
+        # event_pressure always consumes the complete pressure contract, even
+        # before the shock agent has broadcast its initial central state.
+        return dict(_NEUTRAL_PRESSURE)
 
     baseline = market_state_baseline or {}
     liquidity = max(0.01, _safe_float(market_state.get("liquidity_index"), 1.0))

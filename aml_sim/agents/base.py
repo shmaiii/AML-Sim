@@ -60,6 +60,7 @@ class BaseAMLAgent(TraderAgent):
         self.observation_processor = observation_processor or ObservationProcessor()
         self.slow_strategist = self._build_slow_strategist(slow_strategist)
         self.strategy_validator = strategy_validator or validate_strategy_state
+        self._last_strategy_rejection_reason: Optional[str] = None
         self.strategy_state = self._validate_or_keep(strategy_state, is_initial=True)
 
         if slow_loop_interval_seconds is None:
@@ -158,7 +159,10 @@ class BaseAMLAgent(TraderAgent):
 
     async def run_slow_loop(self, observation: Mapping[str, Any]) -> None:
         before = self._strategy_snapshot(self.strategy_state)
+        slow_loop_status = "completed"
+        failure_reason: Optional[str] = None
         try:
+            self._last_strategy_rejection_reason = None
             proposal = self.slow_strategist.propose(
                 observation,
                 self.strategy_state,
@@ -169,11 +173,17 @@ class BaseAMLAgent(TraderAgent):
                 proposal = await proposal
 
             self.strategy_state = self._validate_or_keep(proposal)
-        except StrategyValidationError:
+            if self._last_strategy_rejection_reason is not None:
+                slow_loop_status = "rejected"
+                failure_reason = self._last_strategy_rejection_reason
+        except StrategyValidationError as exc:
             # Already logged in _validate_or_keep; propagate only if initial.
             # For the slow loop, the previous state is kept inside _validate_or_keep.
-            pass
+            slow_loop_status = "rejected"
+            failure_reason = str(exc)
         except Exception as exc:
+            slow_loop_status = "failed"
+            failure_reason = f"{type(exc).__name__}: {exc}"
             self.logger.error(
                 f"{self.agent_id} slow loop failed; keeping current strategy: {exc}"
             )
@@ -183,10 +193,15 @@ class BaseAMLAgent(TraderAgent):
             observation=observation,
             before=before,
             after=after,
+            slow_loop_status=slow_loop_status,
+            failure_reason=failure_reason,
         )
-        self._mark_observed_events_seen_by_slow_loop(observation)
+        # A failed model call is not an observed strategic response. Keeping the
+        # event unseen lets the next successful slow loop react to it correctly.
+        if slow_loop_status == "completed":
+            self._mark_observed_events_seen_by_slow_loop(observation)
         self.logger.info(
-            f"{self.agent_id} slow loop completed: "
+            f"{self.agent_id} slow loop {slow_loop_status}: "
             f"strategist={type(self.slow_strategist).__name__}, "
             f"before={before}, after={after}"
         )
@@ -197,6 +212,8 @@ class BaseAMLAgent(TraderAgent):
         observation: Mapping[str, Any],
         before: Mapping[str, Any],
         after: Mapping[str, Any],
+        slow_loop_status: str,
+        failure_reason: Optional[str],
     ) -> None:
         event_context = observation.get("event_context", {})
         if not isinstance(event_context, Mapping):
@@ -204,23 +221,29 @@ class BaseAMLAgent(TraderAgent):
 
         active_events = self._as_event_list(event_context.get("active"))
         known_events = self._as_event_list(event_context.get("known"))
-        changed = dict(before) != dict(after)
+        changed_fields = self._strategy_changed_fields(before, after)
+        metadata_changed_fields = self._strategy_metadata_changes(before, after)
+        changed = bool(changed_fields)
         confidence = self._numeric_strategy_field(after, "confidence")
-        low_confidence = confidence is not None and confidence <= 0.3
+        confidence_changed = "confidence" in metadata_changed_fields
         unseen_active_events = [
             event
             for event in active_events
             if not bool(event.get("seen_before", False))
         ]
 
-        if not changed and not unseen_active_events and not low_confidence:
-            return
-
         primary_event = self._primary_memory_event(active_events, known_events)
         payload = {
+            "slow_loop_status": slow_loop_status,
+            "failure_reason": failure_reason,
             "strategy_changed": changed,
+            "strategy_changed_fields": changed_fields,
+            "metadata_changed_fields": metadata_changed_fields,
+            "confidence_changed": confidence_changed,
             "event_context_present": bool(active_events or known_events),
-            "possible_event_influence": changed and bool(active_events or known_events),
+            "possible_event_influence": (
+                (changed or confidence_changed) and bool(active_events or known_events)
+            ),
             "strategy_before": dict(before),
             "strategy_after": dict(after),
             "confidence": confidence,
@@ -241,6 +264,31 @@ class BaseAMLAgent(TraderAgent):
             "slow_loop_decision",
             payload,
             timestamp=self.current_time,
+        )
+
+    @staticmethod
+    def _strategy_changed_fields(
+        before: Mapping[str, Any],
+        after: Mapping[str, Any],
+    ) -> list[str]:
+        """Return behavioral changes, excluding decision-record metadata."""
+        metadata_fields = {"confidence", "reason", "updated_at"}
+        return sorted(
+            key
+            for key in set(before) | set(after)
+            if key not in metadata_fields and before.get(key) != after.get(key)
+        )
+
+    @staticmethod
+    def _strategy_metadata_changes(
+        before: Mapping[str, Any],
+        after: Mapping[str, Any],
+    ) -> list[str]:
+        metadata_fields = {"confidence", "reason", "updated_at"}
+        return sorted(
+            key
+            for key in metadata_fields
+            if before.get(key) != after.get(key)
         )
 
     def _as_event_list(self, events: Any) -> list[dict[str, Any]]:
@@ -292,6 +340,7 @@ class BaseAMLAgent(TraderAgent):
             "phase": event.get("phase"),
             "severity": event.get("severity"),
             "direction": event.get("direction"),
+            "context_status": event.get("context_status"),
             "message": event.get("message"),
         }
 
@@ -329,6 +378,7 @@ class BaseAMLAgent(TraderAgent):
                     f"Initial strategy state for {self.agent_id} is invalid and "
                     f"cannot be accepted: {exc}"
                 ) from exc
+            self._last_strategy_rejection_reason = str(exc)
             self.logger.warning(
                 f"Rejected strategy proposal for {self.agent_id}; keeping previous state: {exc}"
             )
@@ -578,7 +628,23 @@ class BaseAMLAgent(TraderAgent):
         }
 
     def _known_events(self) -> list[dict[str, Any]]:
-        return self.recent_events[-50:]
+        active_object_ids = {id(event) for event in self._active_events()}
+        known_events: list[dict[str, Any]] = []
+        for event in self.recent_events[-50:]:
+            contextual_event = dict(event)
+            phase = str(contextual_event.get("phase", "")).lower()
+            if id(event) in active_object_ids:
+                context_status = "active"
+            elif phase in {"announcement", "scheduled", "expectation"}:
+                context_status = "anticipated"
+            else:
+                # An event whose duration has ended remains available as
+                # history, but must not be presented to the LLM as a live shock.
+                context_status = "historical"
+            contextual_event["context_status"] = context_status
+            contextual_event["is_active"] = context_status == "active"
+            known_events.append(contextual_event)
+        return known_events
 
     def _record_price(self, instrument: Any, price: Any) -> None:
         if not instrument:
