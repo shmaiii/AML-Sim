@@ -78,6 +78,7 @@ class AMLRetailTrader(BaseAMLAgent):
             observation_processor=observation_processor,
             slow_strategist=self._build_slow_strategist(slow_strategist),
             slow_loop_interval_seconds=slow_loop_interval_seconds,
+            experiment_policy=kwargs.get("experiment_policy"),
             agent_id=agent_id,
             rabbitmq_host=rabbitmq_host,
             **trader_kwargs,
@@ -146,6 +147,11 @@ class AMLRetailTrader(BaseAMLAgent):
         trade_probability += pressure["severity"] * strategy.shock_sensitivity * 0.35
         trade_probability += min(abs(momentum) * strategy.herding_tendency * 10, 0.2)
         trade_probability *= risk_policy.participation_multiplier
+        trade_probability = self.experiment_policy.resolve_value(
+            "participation_response",
+            trade_probability,
+            strategy.trade_probability,
+        )
 
         buy_bias = strategy.buy_bias
         buy_bias += pressure["directional_bias"] * strategy.sentiment_sensitivity * 0.25
@@ -168,4 +174,9 @@ class AMLRetailTrader(BaseAMLAgent):
         size = self.strategy_state.max_order_size
         size *= pressure["risk_limit_multiplier"]
         size *= self._risk_policy().order_size_multiplier
+        size = self.experiment_policy.resolve_value(
+            "order_capacity_response",
+            size,
+            self.strategy_state.max_order_size,
+        )
         return max(1, int(size))

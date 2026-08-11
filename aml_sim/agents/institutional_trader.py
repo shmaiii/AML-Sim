@@ -97,6 +97,7 @@ class AMLInstitutionalTrader(BaseAMLAgent):
             observation_processor=observation_processor,
             slow_strategist=self._build_slow_strategist(slow_strategist),
             slow_loop_interval_seconds=slow_loop_interval_seconds,
+            experiment_policy=kwargs.get("experiment_policy"),
             agent_id=agent_id,
             rabbitmq_host=rabbitmq_host,
             **trader_kwargs,
@@ -170,8 +171,7 @@ class AMLInstitutionalTrader(BaseAMLAgent):
             strategy.min_position,
             int(
                 strategy.max_position
-                * pressure["risk_limit_multiplier"]
-                * risk_policy.position_limit_multiplier
+                * self._position_capacity_multiplier(pressure)
             ),
         )
         effective_min_position = min(strategy.min_position, effective_max_position)
@@ -219,8 +219,7 @@ class AMLInstitutionalTrader(BaseAMLAgent):
             strategy.min_position,
             int(
                 strategy.max_position
-                * pressure["risk_limit_multiplier"]
-                * risk_policy.position_limit_multiplier
+                * self._position_capacity_multiplier(pressure)
             ),
         )
         target = min(
@@ -257,6 +256,11 @@ class AMLInstitutionalTrader(BaseAMLAgent):
         child_size *= pressure["risk_limit_multiplier"]
         child_size *= risk_policy.execution_size_multiplier(
             reduces_exposure=reduces_exposure,
+        )
+        child_size = self.experiment_policy.resolve_value(
+            "order_capacity_response",
+            child_size,
+            strategy.child_order_size,
         )
         quantity = min(abs(gap), max(1, int(child_size)))
         self._update_fast_loop_state(

@@ -88,6 +88,7 @@ class AMLInformedTrader(BaseAMLAgent):
             observation_processor=observation_processor,
             slow_strategist=self._build_slow_strategist(slow_strategist),
             slow_loop_interval_seconds=slow_loop_interval_seconds,
+            experiment_policy=kwargs.get("experiment_policy"),
             agent_id=agent_id,
             rabbitmq_host=rabbitmq_host,
             **trader_kwargs,
@@ -133,16 +134,19 @@ class AMLInformedTrader(BaseAMLAgent):
             strategy.min_position,
             int(
                 strategy.max_position
-                * pressure["risk_limit_multiplier"]
-                * risk_policy.position_limit_multiplier
+                * self._position_capacity_multiplier(pressure)
             ),
         )
         effective_order_cap = max(
             1,
             int(
-                strategy.max_order_size
-                * pressure["risk_limit_multiplier"]
-                * risk_policy.order_size_multiplier
+                self.experiment_policy.resolve_value(
+                    "order_capacity_response",
+                    strategy.max_order_size
+                    * pressure["risk_limit_multiplier"]
+                    * risk_policy.order_size_multiplier,
+                    strategy.max_order_size,
+                )
             ),
         )
         current_position = (
@@ -168,6 +172,11 @@ class AMLInformedTrader(BaseAMLAgent):
         participation *= pressure["order_arrival_multiplier"]
         participation *= risk_policy.participation_multiplier
         participation *= 0.5 + (strategy.information_edge * 0.5)
+        participation = self.experiment_policy.resolve_value(
+            "participation_response",
+            participation,
+            strategy.trade_probability,
+        )
         effective_participation = clamp(participation, 0.0, 1.0)
         self._update_fast_loop_state(
             instrument,

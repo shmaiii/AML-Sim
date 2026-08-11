@@ -1,4 +1,5 @@
 .aml_runs/
+.aml_experiments/
 .env
 simulators/StockSim/.env
 __pycache__/

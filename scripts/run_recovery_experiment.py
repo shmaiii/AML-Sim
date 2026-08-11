@@ -33,6 +33,45 @@ RUNS_DIR = ROOT / ".aml_runs"
 EXPERIMENTS_DIR = ROOT / ".aml_experiments"
 SEEDED_PARAMETER = "random_seed"
 
+ABLATION_PRESETS: dict[str, dict[str, Any]] = {
+    "inventory-constraints": {
+        "mechanism_overrides": {
+            "position_capacity": {"multiplier": 1.0},
+        },
+    },
+    "participation-withdrawal": {
+        "mechanism_overrides": {
+            "participation_response": {"multiplier": 1.0},
+            "liquidity_provision_response": {"multiplier": 1.0},
+        },
+        "frozen_strategy_fields": [
+            "trade_probability",
+            "flow_intensity",
+            "liquidity_withdrawal_sensitivity",
+        ],
+    },
+    "execution-aggressiveness": {
+        "frozen_strategy_fields": [
+            "aggression",
+            "order_type",
+            "limit_offset",
+            "urgency",
+        ],
+    },
+    "order-quote-capacity": {
+        "mechanism_overrides": {
+            "order_capacity_response": {"multiplier": 1.0},
+        },
+        "frozen_strategy_fields": [
+            "max_order_size",
+            "child_order_size",
+            "quote_size",
+            "quote_levels",
+            "size_decay",
+        ],
+    },
+}
+
 
 def _utc_now() -> str:
     return datetime.now(timezone.utc).isoformat()
@@ -41,6 +80,11 @@ def _utc_now() -> str:
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("scenario", type=Path, help="Source recovery scenario YAML.")
+    parser.add_argument(
+        "--ablation",
+        choices=sorted(ABLATION_PRESETS),
+        help="Apply one named experimental ablation to the source scenario.",
+    )
     parser.add_argument(
         "--experiment-id",
         required=True,
@@ -69,6 +113,21 @@ def _parse_args() -> argparse.Namespace:
         help="Continue to later replications if one simulation or plot step fails.",
     )
     return parser.parse_args()
+
+
+def _apply_ablation(
+    source: dict[str, Any],
+    ablation: str | None,
+) -> dict[str, Any]:
+    scenario = copy.deepcopy(source)
+    aml_config = scenario.setdefault("aml_config", {})
+    if not isinstance(aml_config, dict):
+        raise ValueError("Scenario aml_config must be a mapping")
+    if ablation is None:
+        aml_config.pop("experiment", None)
+    else:
+        aml_config["experiment"] = copy.deepcopy(ABLATION_PRESETS[ablation])
+    return scenario
 
 
 def _load_yaml(path: Path) -> dict[str, Any]:
@@ -392,6 +451,7 @@ def _initial_manifest(
     scenario_path: Path,
     scenario_hash: str,
     seed_base: int,
+    ablation: str | None,
 ) -> dict[str, Any]:
     return {
         "experiment_id": experiment_id,
@@ -400,6 +460,7 @@ def _initial_manifest(
         "source_scenario": str(scenario_path),
         "source_scenario_sha256": scenario_hash,
         "seed_base": seed_base,
+        "ablation": ablation,
         "seed_formula": "seed_base + (replication - 1) * 100 + seeded_agent_offset",
         "execution": "sequential",
         "note": "Simulator seeds do not make remote LLM responses deterministic.",
@@ -414,6 +475,7 @@ def _load_or_create_manifest(
     scenario_path: Path,
     scenario_hash: str,
     seed_base: int,
+    ablation: str | None,
 ) -> dict[str, Any]:
     if not path.exists():
         return _initial_manifest(
@@ -421,6 +483,7 @@ def _load_or_create_manifest(
             scenario_path=scenario_path,
             scenario_hash=scenario_hash,
             seed_base=seed_base,
+            ablation=ablation,
         )
     manifest = json.loads(path.read_text(encoding="utf-8"))
     expected = {
@@ -428,6 +491,7 @@ def _load_or_create_manifest(
         "source_scenario": str(scenario_path),
         "source_scenario_sha256": scenario_hash,
         "seed_base": seed_base,
+        "ablation": ablation,
     }
     mismatches = [key for key, value in expected.items() if manifest.get(key) != value]
     if mismatches:
@@ -453,8 +517,10 @@ def main() -> int:
         raise ValueError("--replications must be at least 1")
 
     scenario_path = args.scenario.expanduser().resolve()
-    source = _load_yaml(scenario_path)
-    scenario_hash = _scenario_digest(scenario_path)
+    source = _apply_ablation(_load_yaml(scenario_path), args.ablation)
+    scenario_hash = hashlib.sha256(
+        scenario_path.read_bytes() + str(args.ablation).encode("utf-8")
+    ).hexdigest()
     experiment_dir = EXPERIMENTS_DIR / args.experiment_id
     generated_scenarios_dir = experiment_dir / "scenarios"
     manifest_path = experiment_dir / "manifest.json"
@@ -469,6 +535,7 @@ def main() -> int:
         scenario_path=scenario_path,
         scenario_hash=scenario_hash,
         seed_base=args.seed_base,
+        ablation=args.ablation,
     )
 
     for replication in range(1, args.replications + 1):

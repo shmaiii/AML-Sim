@@ -669,6 +669,11 @@ def start_trader_processes(
         llm_defaults = {}
     if not isinstance(llm_defaults, dict):
         raise ValueError("aml_config.llm must be a mapping when provided")
+    experiment_policy = aml_config.get("experiment", {})
+    if experiment_policy is None:
+        experiment_policy = {}
+    if not isinstance(experiment_policy, dict):
+        raise ValueError("aml_config.experiment must be a mapping when provided")
 
     agent_ids_by_name = build_agent_instance_id_map(agents_config)
     shock_target_agent_ids = [
@@ -704,6 +709,8 @@ def start_trader_processes(
                 instance_params,
                 llm_defaults=llm_defaults,
             )
+            if str(agent_type).startswith("AML_") and agent_type != "AML_Shock_Agent":
+                instance_params["experiment_policy"] = experiment_policy
 
             instance_params["agent_id"] = unique_agent_id
             instance_params.setdefault(

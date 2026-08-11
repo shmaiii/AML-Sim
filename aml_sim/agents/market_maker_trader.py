@@ -99,6 +99,7 @@ class AMLMarketMakerTrader(BaseAMLAgent):
             observation_processor=observation_processor,
             slow_strategist=self._build_slow_strategist(slow_strategist),
             slow_loop_interval_seconds=slow_loop_interval_seconds,
+            experiment_policy=kwargs.get("experiment_policy"),
             agent_id=agent_id,
             rabbitmq_host=rabbitmq_host,
             **trader_kwargs,
@@ -280,9 +281,20 @@ class AMLMarketMakerTrader(BaseAMLAgent):
         size_multiplier *= pressure["liquidity_multiplier"]
         size_multiplier *= pressure["risk_limit_multiplier"]
         size_multiplier *= risk_policy.order_size_multiplier
+        natural_size = strategy.quote_size * max(0.05, size_multiplier)
+        natural_size = self.experiment_policy.resolve_value(
+            "liquidity_provision_response",
+            natural_size,
+            strategy.quote_size,
+        )
+        natural_size = self.experiment_policy.resolve_value(
+            "order_capacity_response",
+            natural_size,
+            strategy.quote_size,
+        )
         effective_size = max(
             1,
-            int(strategy.quote_size * max(0.05, size_multiplier)),
+            int(natural_size),
         )
         self._update_fast_loop_state(
             instrument,
@@ -299,8 +311,7 @@ class AMLMarketMakerTrader(BaseAMLAgent):
             self.strategy_state.min_inventory,
             int(
                 self.strategy_state.max_inventory
-                * pressure["risk_limit_multiplier"]
-                * risk_policy.position_limit_multiplier
+                * self._position_capacity_multiplier(pressure)
             ),
         )
         inventory = self.long_qty[instrument] - self.short_qty[instrument]

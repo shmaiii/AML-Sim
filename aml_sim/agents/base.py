@@ -17,6 +17,7 @@ from aml_sim.agents.strategy.constants.risk_modes import RiskModePolicy, risk_mo
 from aml_sim.agents.strategy.llm_slow_strategy import SlowStrategist, create_llm_strategist
 from aml_sim.agents.strategy.signals import event_pressure
 from aml_sim.agents.strategy.validator import StrategyValidationError, validate_strategy_state
+from aml_sim.experiments.policy import ExperimentPolicy
 from aml_sim.serialization import serialize_value
 from agents.benchmark_traders.trader import TraderAgent
 from utils.messages import MessageType
@@ -44,6 +45,7 @@ class BaseAMLAgent(TraderAgent):
         slow_strategist: Optional[SlowStrategist | Mapping[str, Any]] = None,
         strategy_validator: Optional[Callable[[Any], Any]] = None,
         slow_loop_interval_seconds: Optional[int] = None,
+        experiment_policy: ExperimentPolicy | Mapping[str, Any] | None = None,
         agent_id: Optional[str] = None,
         rabbitmq_host: str = "localhost",
         **trader_kwargs: Any,
@@ -61,6 +63,7 @@ class BaseAMLAgent(TraderAgent):
         self.slow_strategist = self._build_slow_strategist(slow_strategist)
         self.strategy_validator = strategy_validator or validate_strategy_state
         self.strategy_state = self._validate_or_keep(strategy_state, is_initial=True)
+        self.experiment_policy = ExperimentPolicy.from_config(experiment_policy)
 
         if slow_loop_interval_seconds is None:
             self.logger.warning(
@@ -181,6 +184,10 @@ class BaseAMLAgent(TraderAgent):
             if inspect.isawaitable(proposal):
                 proposal = await proposal
 
+            proposal = self.experiment_policy.restore_frozen_fields(
+                proposal,
+                self.strategy_state,
+            )
             self.strategy_state = self._validate_or_keep(proposal)
         except StrategyValidationError:
             # Already logged in _validate_or_keep; propagate only if initial.
@@ -684,6 +691,27 @@ class BaseAMLAgent(TraderAgent):
         """Return the persistent slow-loop posture used by fast-loop decisions."""
 
         return risk_mode_policy(getattr(self.strategy_state, "risk_mode", "normal"))
+
+    def _position_capacity_multiplier(
+        self,
+        pressure: Mapping[str, Any],
+    ) -> float:
+        """Return the dynamic scaling applied to a configured position cap.
+
+        Inventory-constraint ablations retain the configured hard cap but
+        neutralize shock- and risk-mode-driven contractions. Other risk-mode
+        effects remain active, and role-specific target logic is unchanged.
+        """
+
+        baseline = (
+            float(pressure["risk_limit_multiplier"])
+            * self._risk_policy().position_limit_multiplier
+        )
+        return self.experiment_policy.resolve_value(
+            "position_capacity",
+            baseline,
+            1.0,
+        )
 
     def _risk_policy_snapshot(self) -> dict[str, float | str]:
         """Describe the derived policy active for one recorded trading action."""

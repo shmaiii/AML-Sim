@@ -66,6 +66,7 @@ class AMLLiquidityTaker(BaseAMLAgent):
             observation_processor=observation_processor,
             slow_strategist=self._build_slow_strategist(slow_strategist),
             slow_loop_interval_seconds=slow_loop_interval_seconds,
+            experiment_policy=kwargs.get("experiment_policy"),
             agent_id=agent_id,
             rabbitmq_host=rabbitmq_host,
             **trader_kwargs,
@@ -89,6 +90,11 @@ class AMLLiquidityTaker(BaseAMLAgent):
         participation += pressure["severity"] * strategy.shock_sensitivity * 0.25
         participation *= 0.5 + (strategy.aggression * 0.5)
         participation *= risk_policy.participation_multiplier
+        participation = self.experiment_policy.resolve_value(
+            "participation_response",
+            participation,
+            strategy.flow_intensity,
+        )
 
         effective_participation = clamp(participation, 0.0, 1.0)
         buy_bias = strategy.buy_bias
@@ -102,6 +108,11 @@ class AMLLiquidityTaker(BaseAMLAgent):
             2.0,
         )
         effective_order_cap *= risk_policy.order_size_multiplier
+        effective_order_cap = self.experiment_policy.resolve_value(
+            "order_capacity_response",
+            effective_order_cap,
+            strategy.max_order_size,
+        )
         effective_order_cap = max(1, int(effective_order_cap))
         current_position = (
             self.long_qty[instrument] - self.short_qty[instrument]
@@ -110,8 +121,7 @@ class AMLLiquidityTaker(BaseAMLAgent):
             0,
             int(
                 strategy.inventory_limit
-                * pressure["risk_limit_multiplier"]
-                * risk_policy.position_limit_multiplier
+                * self._position_capacity_multiplier(pressure)
             ),
         )
         self._update_fast_loop_state(
