@@ -1,9 +1,13 @@
 from __future__ import annotations
 
 import importlib.util
+import json
 import sys
+import tempfile
 import unittest
 from pathlib import Path
+
+import yaml
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -30,6 +34,7 @@ class DiversityResultsAnalysisTests(unittest.TestCase):
     def setUp(self) -> None:
         self.protocol = {
             "validation_seeds": [11, 22],
+            "out_of_sample_seeds": [33, 44],
             "validation_thresholds": {
                 "minimum_herding_reduction_relative_to_d0": 0.15,
                 "minimum_absolute_correlation_reduction": 0.10,
@@ -107,6 +112,64 @@ class DiversityResultsAnalysisTests(unittest.TestCase):
 
         self.assertFalse(MODULE._has_invalid_result_timestamp(missing))
         self.assertTrue(MODULE._has_invalid_result_timestamp(completed_without_result))
+
+    def test_oos_summary_uses_frozen_selection_instead_of_reselecting(self) -> None:
+        rows = []
+        for seed in self.protocol["out_of_sample_seeds"]:
+            rows.extend(
+                metric_row(level, seed, self.d0 if level == "D0" else self.d1)
+                for level in MODULE.LEVELS
+            )
+
+        summary, metadata = MODULE.build_oos_level_summary(
+            rows,
+            self.protocol,
+            self.protocol["out_of_sample_seeds"],
+            {"selection_result": "selected", "selected_level": "D2"},
+        )
+
+        self.assertEqual("D2", metadata["selected_level"])
+        self.assertEqual("exploratory_not_selected", summary[1]["threshold_status"])
+        self.assertEqual("confirmatory_pass", summary[2]["threshold_status"])
+        self.assertTrue(metadata["confirmatory_threshold_pass"])
+        self.assertTrue(all(item["eligible"] is None for item in summary))
+
+    def test_selection_lock_detects_analysis_changes(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            root = Path(temp_dir)
+            protocol_path = root / "protocol.yaml"
+            protocol_path.write_text(
+                yaml.safe_dump({"validation_seeds": [11, 22]}), encoding="utf-8"
+            )
+            output_dir = root / "analysis"
+            output_dir.mkdir()
+            (output_dir / "analysis_summary.json").write_text(
+                json.dumps({"metadata": {"analysis_status": "validation_complete"}}),
+                encoding="utf-8",
+            )
+            script_path = root / "analysis.py"
+            script_path.write_text("frozen = True\n", encoding="utf-8")
+            metadata = {
+                "analysis_status": "validation_complete",
+                "run_count": 10,
+                "missing_runs": [],
+                "levels": list(MODULE.LEVELS),
+                "selected_level": "D1",
+            }
+
+            lock_path = MODULE.freeze_selection(
+                metadata, protocol_path, output_dir, script_path
+            )
+            lock = MODULE._load_verified_selection_lock(
+                lock_path, protocol_path, script_path
+            )
+            self.assertEqual("D1", lock["selected_level"])
+
+            script_path.write_text("frozen = False\n", encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "Analysis script changed"):
+                MODULE._load_verified_selection_lock(
+                    lock_path, protocol_path, script_path
+                )
 
 
 if __name__ == "__main__":

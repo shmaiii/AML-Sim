@@ -1,14 +1,15 @@
-"""Validate and summarize locked validation runs for the D0-D4 experiment."""
+"""Validate and summarize phase-locked D0-D4 diversity experiments."""
 
 from __future__ import annotations
 
 import argparse
 import csv
+import hashlib
 import json
 import math
 import re
 from collections import Counter
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from statistics import mean
 from typing import Any, Iterable
@@ -19,7 +20,8 @@ import yaml
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_PROTOCOL = ROOT / "experiments" / "diversity_matrix.yaml"
 DEFAULT_RUNS_DIR = ROOT / ".aml_runs"
-DEFAULT_OUTPUT_DIR = DEFAULT_RUNS_DIR / "diversity_analysis" / "validation"
+DEFAULT_ANALYSIS_DIR = DEFAULT_RUNS_DIR / "diversity_analysis"
+DEFAULT_SELECTION_LOCK = DEFAULT_ANALYSIS_DIR / "validation" / "selection_lock.json"
 LEVELS = ("D0", "D1", "D2", "D3", "D4")
 METRIC_FIELDS = (
     "mean_signed_flow_herding_index",
@@ -182,12 +184,18 @@ def _read_api_records(run_dir: Path) -> tuple[list[dict[str, Any]], int]:
     return records, parse_errors
 
 
-def inspect_run(run_dir: Path, level: str, seed: int) -> dict[str, Any]:
+def inspect_run(
+    run_dir: Path,
+    level: str,
+    seed: int,
+    expected_split: str = "validation",
+) -> dict[str, Any]:
     """Return primary metrics and structural quality checks for one run."""
     reports_dir = run_dir / "reports"
     missing = [name for name in REQUIRED_REPORTS if not (reports_dir / name).exists()]
     row: dict[str, Any] = {
         "run_id": run_dir.name,
+        "phase": expected_split,
         "diversity_level": level,
         "seed": seed,
         "run_exists": run_dir.exists(),
@@ -231,7 +239,7 @@ def inspect_run(run_dir: Path, level: str, seed: int) -> dict[str, Any]:
             item.get("submitted_action", "")
         ).upper():
             action_mismatch_count += 1
-        if item.get("split") != "validation":
+        if item.get("split") != expected_split:
             invalid_decision_split_count += 1
 
     allowed_statuses = {"completed", "inactive", "missing"}
@@ -246,7 +254,7 @@ def inspect_run(run_dir: Path, level: str, seed: int) -> dict[str, Any]:
             invalid_outcome_status_count += 1
         if _has_invalid_result_timestamp(item):
             invalid_result_timestamp_count += 1
-        if item.get("split") != "validation":
+        if item.get("split") != expected_split:
             invalid_outcome_split_count += 1
 
     api_records, api_parse_errors = _read_api_records(run_dir)
@@ -481,6 +489,63 @@ def build_level_summary(
     return summary, metadata
 
 
+def build_oos_level_summary(
+    rows: list[dict[str, Any]],
+    protocol: dict[str, Any],
+    requested_seeds: list[int],
+    selection_lock: dict[str, Any],
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    """Aggregate OOS runs without performing data-driven model selection."""
+    locked_seeds = [int(seed) for seed in protocol["out_of_sample_seeds"]]
+    complete_oos = set(requested_seeds) == set(locked_seeds)
+    all_quality_pass = bool(rows) and all(bool(row.get("quality_pass")) for row in rows)
+    comparison_protocol = dict(protocol)
+    comparison_protocol["validation_seeds"] = locked_seeds
+    summary, _ = build_level_summary(rows, comparison_protocol, requested_seeds)
+    selected_level = selection_lock.get("selected_level")
+    confirmatory_threshold_pass: bool | None = None
+    for item in summary:
+        calculated_eligible = item.get("eligible")
+        level = item["diversity_level"]
+        item["eligible"] = None
+        if level == "D0":
+            item["threshold_status"] = "baseline"
+        elif selected_level and level == selected_level:
+            if complete_oos and all_quality_pass:
+                confirmatory_threshold_pass = bool(calculated_eligible)
+                item["threshold_status"] = (
+                    "confirmatory_pass"
+                    if confirmatory_threshold_pass
+                    else "confirmatory_fail"
+                )
+            else:
+                item["threshold_status"] = "confirmatory_incomplete"
+        elif selected_level:
+            item["threshold_status"] = "exploratory_not_selected"
+        else:
+            item["threshold_status"] = "exploratory_no_validation_candidate"
+
+    analysis_status = (
+        "oos_complete"
+        if complete_oos and all_quality_pass
+        else "oos_quality_failure"
+        if complete_oos
+        else "exploratory_only"
+    )
+    metadata = {
+        "phase": "out_of_sample",
+        "analysis_status": analysis_status,
+        "requested_seeds": requested_seeds,
+        "locked_oos_seed_count": len(locked_seeds),
+        "all_requested_runs_pass_quality": all_quality_pass,
+        "validation_selection_result": selection_lock["selection_result"],
+        "selected_level": selected_level,
+        "confirmatory_threshold_pass": confirmatory_threshold_pass,
+        "selection_permitted": False,
+    }
+    return summary, metadata
+
+
 def _write_csv(path: Path, rows: Iterable[dict[str, Any]]) -> None:
     values = list(rows)
     if not values:
@@ -495,6 +560,72 @@ def _write_csv(path: Path, rows: Iterable[dict[str, Any]]) -> None:
         writer = csv.DictWriter(handle, fieldnames=fieldnames)
         writer.writeheader()
         writer.writerows(values)
+
+
+def _sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(65536), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def freeze_selection(
+    metadata: dict[str, Any],
+    protocol_path: Path,
+    output_dir: Path,
+    script_path: Path | None = None,
+) -> Path:
+    """Freeze a complete validation result before any OOS analysis is allowed."""
+    protocol = _read_yaml(protocol_path)
+    expected_runs = len(LEVELS) * len(protocol["validation_seeds"])
+    if metadata.get("analysis_status") != "validation_complete":
+        raise ValueError("Selection can only be frozen after complete validation")
+    if metadata.get("run_count") != expected_runs or metadata.get("missing_runs"):
+        raise ValueError("Selection lock requires every D0-D4 validation run")
+    if metadata.get("levels") != list(LEVELS):
+        raise ValueError("Selection lock requires all D0-D4 levels in order")
+    summary_path = output_dir / "analysis_summary.json"
+    script = (script_path or Path(__file__)).resolve()
+    selected_level = metadata.get("selected_level")
+    lock = {
+        "locked": True,
+        "locked_at": datetime.now(timezone.utc).isoformat(),
+        "phase": "validation",
+        "selection_result": (
+            "selected" if selected_level else "no_qualifying_level"
+        ),
+        "selected_level": selected_level,
+        "validation_seeds": [int(seed) for seed in protocol["validation_seeds"]],
+        "protocol_sha256": _sha256(protocol_path),
+        "analysis_script_sha256": _sha256(script),
+        "validation_summary_sha256": _sha256(summary_path),
+    }
+    lock_path = output_dir / "selection_lock.json"
+    with lock_path.open("w", encoding="utf-8") as handle:
+        json.dump(lock, handle, indent=2)
+    return lock_path
+
+
+def _load_verified_selection_lock(
+    lock_path: Path,
+    protocol_path: Path,
+    script_path: Path | None = None,
+) -> dict[str, Any]:
+    if not lock_path.exists():
+        raise FileNotFoundError("OOS analysis requires a frozen validation selection lock")
+    value = _read_json(lock_path)
+    if not isinstance(value, dict) or value.get("locked") is not True:
+        raise ValueError("Invalid selection lock")
+    if value.get("protocol_sha256") != _sha256(protocol_path):
+        raise ValueError("Protocol changed after validation selection was frozen")
+    script = (script_path or Path(__file__)).resolve()
+    if value.get("analysis_script_sha256") != _sha256(script):
+        raise ValueError("Analysis script changed after validation selection was frozen")
+    selected_level = value.get("selected_level")
+    if selected_level is not None and selected_level not in LEVELS[1:]:
+        raise ValueError("Selection lock contains an invalid selected level")
+    return value
 
 
 def analyze(
@@ -544,15 +675,80 @@ def analyze(
     return rows, level_summary, metadata
 
 
+def analyze_oos(
+    protocol_path: Path,
+    runs_dir: Path,
+    output_dir: Path,
+    levels: list[str],
+    seeds: list[int],
+    allow_partial: bool,
+    selection_lock_path: Path,
+    script_path: Path | None = None,
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]], dict[str, Any]]:
+    protocol = _read_yaml(protocol_path)
+    selection_lock = _load_verified_selection_lock(
+        selection_lock_path, protocol_path, script_path
+    )
+    locked = {int(seed) for seed in protocol["out_of_sample_seeds"]}
+    unlocked = sorted(set(seeds) - locked)
+    if unlocked:
+        raise ValueError(f"Seeds are not locked OOS seeds: {unlocked}")
+    rows: list[dict[str, Any]] = []
+    missing_runs: list[str] = []
+    for level in levels:
+        for seed in seeds:
+            run_id = f"diversity_oos_{level.lower()}_seed_{seed}"
+            run_dir = runs_dir / run_id
+            if not run_dir.exists():
+                missing_runs.append(run_id)
+                continue
+            rows.append(inspect_run(run_dir, level, seed, "out_of_sample"))
+    if missing_runs and not allow_partial:
+        raise FileNotFoundError("Missing requested runs: " + ", ".join(missing_runs))
+
+    level_summary, metadata = build_oos_level_summary(
+        rows, protocol, seeds, selection_lock
+    )
+    metadata.update(
+        {
+            "levels": levels,
+            "run_count": len(rows),
+            "missing_runs": missing_runs,
+            "total_api_calls": sum(int(row.get("api_call_count") or 0) for row in rows),
+            "total_input_tokens": sum(int(row.get("input_tokens") or 0) for row in rows),
+            "total_output_tokens": sum(int(row.get("output_tokens") or 0) for row in rows),
+            "total_tokens": sum(int(row.get("total_tokens") or 0) for row in rows),
+            "selection_lock_sha256": _sha256(selection_lock_path),
+        }
+    )
+    output_dir.mkdir(parents=True, exist_ok=True)
+    _write_csv(output_dir / "run_quality.csv", rows)
+    _write_csv(output_dir / "level_summary.csv", level_summary)
+    with (output_dir / "analysis_summary.json").open("w", encoding="utf-8") as handle:
+        json.dump({"metadata": metadata, "levels": level_summary}, handle, indent=2)
+    return rows, level_summary, metadata
+
+
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Analyze locked validation D0-D4 outputs without opening OOS results."
+        description="Analyze phase-locked D0-D4 outputs without OOS selection leakage."
     )
     parser.add_argument("--protocol", type=Path, default=DEFAULT_PROTOCOL)
     parser.add_argument("--runs-dir", type=Path, default=DEFAULT_RUNS_DIR)
-    parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT_DIR)
+    parser.add_argument("--output-dir", type=Path)
+    parser.add_argument(
+        "--phase",
+        choices=("validation", "out_of_sample"),
+        default="validation",
+    )
     parser.add_argument("--levels", nargs="+", choices=LEVELS, default=list(LEVELS))
     parser.add_argument("--seeds", nargs="+", type=int)
+    parser.add_argument("--selection-lock", type=Path, default=DEFAULT_SELECTION_LOCK)
+    parser.add_argument(
+        "--freeze-selection",
+        action="store_true",
+        help="Write an immutable validation selection record after complete analysis.",
+    )
     parser.add_argument(
         "--allow-partial",
         action="store_true",
@@ -563,16 +759,43 @@ def _parse_args() -> argparse.Namespace:
 
 def main() -> int:
     args = _parse_args()
-    protocol = _read_yaml(args.protocol.resolve())
-    seeds = args.seeds or [int(seed) for seed in protocol["validation_seeds"]]
-    rows, level_summary, metadata = analyze(
-        args.protocol.resolve(),
-        args.runs_dir.resolve(),
-        args.output_dir.resolve(),
-        list(args.levels),
-        seeds,
-        args.allow_partial,
+    protocol_path = args.protocol.resolve()
+    protocol = _read_yaml(protocol_path)
+    seed_field = (
+        "validation_seeds"
+        if args.phase == "validation"
+        else "out_of_sample_seeds"
     )
+    seeds = args.seeds or [int(seed) for seed in protocol[seed_field]]
+    output_dir = (
+        args.output_dir.resolve()
+        if args.output_dir
+        else (DEFAULT_ANALYSIS_DIR / args.phase).resolve()
+    )
+    if args.phase == "validation":
+        rows, level_summary, metadata = analyze(
+            protocol_path,
+            args.runs_dir.resolve(),
+            output_dir,
+            list(args.levels),
+            seeds,
+            args.allow_partial,
+        )
+        if args.freeze_selection:
+            lock_path = freeze_selection(metadata, protocol_path, output_dir)
+            print(f"Selection lock: {lock_path}")
+    else:
+        if args.freeze_selection:
+            raise ValueError("Selection can only be frozen from validation results")
+        rows, level_summary, metadata = analyze_oos(
+            protocol_path,
+            args.runs_dir.resolve(),
+            output_dir,
+            list(args.levels),
+            seeds,
+            args.allow_partial,
+            args.selection_lock.resolve(),
+        )
     print(f"Analysis status: {metadata['analysis_status']}")
     print(f"Runs analyzed: {len(rows)}; API calls: {metadata['total_api_calls']}")
     print(f"Selected level: {metadata['selected_level'] or 'none'}")
@@ -582,7 +805,7 @@ def main() -> int:
             f"quality={item['quality_pass_run_count']} "
             f"status={item['threshold_status']}"
         )
-    print(f"Outputs: {args.output_dir.resolve()}")
+    print(f"Outputs: {output_dir}")
     if metadata["missing_runs"] or any(not row.get("quality_pass") for row in rows):
         return 1
     return 0
