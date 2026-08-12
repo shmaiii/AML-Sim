@@ -185,6 +185,16 @@ def validate_strategy_state(
         if order_type not in limits.allowed_order_types:
             allowed = ", ".join(limits.allowed_order_types)
             errors.append(f"order_type must be one of [{allowed}], got {order_type!r}")
+        elif order_type == "LIMIT":
+            limit_price = getattr(strategy_state, "limit_price", None)
+            try:
+                valid_limit_price = float(limit_price) > 0
+            except (TypeError, ValueError):
+                valid_limit_price = False
+            if not valid_limit_price:
+                errors.append(
+                    "limit_price must be a positive number when order_type is LIMIT"
+                )
 
     if errors:
         state_name = type(strategy_state).__name__

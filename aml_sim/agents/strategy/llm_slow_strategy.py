@@ -360,11 +360,14 @@ class OpenAIJSONLLMClient:
             for character in agent_id
         )
         record = {
+            "schema_version": 2,
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "provider": "openai",
             "model": self.model,
             "agent_id": agent_id,
             "simulation_time": observation.get("current_time"),
+            "system_prompt": self.system_prompt,
+            "context": context,
             "response": content,
         }
         agent_dir = os.path.join(decision_context_dir, safe_agent_id)
