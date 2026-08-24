@@ -61,4 +61,16 @@ ROLE_PROMPTS = {
             "impact, volatility, or liquidity stress rises."
         ),
     },
+    "cross_market_arbitrage": {
+        "role_name": "cross-market arbitrageur",
+        "goal": (
+            "capture only executable relative-value opportunities while keeping "
+            "both legs hedged and limiting spread, fill, and inventory risk."
+        ),
+        "behavior": (
+            "Think in terms of executable bid/ask basis, entry and exit thresholds, "
+            "hedge ratio, child order size, partial-fill risk, and risk mode. Do not "
+            "treat a theoretical mid-price difference as an executable opportunity."
+        ),
+    },
 }

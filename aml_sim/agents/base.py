@@ -46,6 +46,7 @@ class BaseAMLAgent(TraderAgent):
         slow_loop_interval_seconds: Optional[int] = None,
         agent_id: Optional[str] = None,
         rabbitmq_host: str = "localhost",
+        enable_ecology: bool = False,
         **trader_kwargs: Any,
     ) -> None:
         super().__init__(
@@ -79,6 +80,11 @@ class BaseAMLAgent(TraderAgent):
         self.slow_loop_seen_event_ids: set[Any] = set()
         self.market_state: dict[str, Any] = {}
         self.market_state_baseline: dict[str, Any] = {}
+        # Ecology is an opt-in layer. These fields remain unused by the
+        # existing agent path unless an ecology scenario enables it.
+        self.ecology_enabled = bool(enable_ecology)
+        self.scoped_market_state: dict[str, Any] = {}
+        self._order_provenance: dict[str, dict[str, Any]] = {}
 
         self.price_history: dict[str, list[dict[str, Any]]] = {
             instrument: [] for instrument in self.instrument_exchange_map.keys()
@@ -418,8 +424,14 @@ class BaseAMLAgent(TraderAgent):
         explanation: Optional[str] = None,
         is_short: bool = False,
         is_short_cover: bool = False,
+        provenance: Optional[Mapping[str, Any]] = None,
     ) -> Optional[str]:
         before = self._portfolio_snapshot()
+        clean_provenance = (
+            dict(serialize_value(dict(provenance)))
+            if isinstance(provenance, Mapping)
+            else None
+        )
         order_id = await super().place_order(
             instrument=instrument,
             side=side,
@@ -431,8 +443,9 @@ class BaseAMLAgent(TraderAgent):
             is_short=is_short,
             is_short_cover=is_short_cover,
         )
-        self._record_action_event(
-            {
+        if order_id and clean_provenance:
+            self._order_provenance[str(order_id)] = clean_provenance
+        event = {
                 "event_type": "order_submitted" if order_id else "order_rejected",
                 "order_id": order_id,
                 "instrument": instrument,
@@ -445,20 +458,23 @@ class BaseAMLAgent(TraderAgent):
                 "risk_policy": self._risk_policy_snapshot(),
                 "portfolio_before": before,
                 "portfolio_after": self._portfolio_snapshot(),
-            }
-        )
+        }
+        if clean_provenance is not None:
+            event["ecology"] = clean_provenance
+        self._record_action_event(event)
         return order_id
 
     async def on_trade_execution(self, trade_data: dict[str, Any]) -> None:
         before = self._portfolio_snapshot()
+        order_id = trade_data.get("order_id")
+        provenance = self._order_provenance.get(str(order_id)) if order_id else None
         await super().on_trade_execution(trade_data)
         self._cleanup_completed_market_order(
             trade_data.get("order_id"),
             trade_data.get("order_status"),
         )
         self._record_price(trade_data.get("instrument"), trade_data.get("price"))
-        self._record_action_event(
-            {
+        event = {
                 "event_type": "trade_executed",
                 "order_id": trade_data.get("order_id"),
                 "instrument": trade_data.get("instrument"),
@@ -473,8 +489,16 @@ class BaseAMLAgent(TraderAgent):
                 "risk_policy": self._risk_policy_snapshot(),
                 "portfolio_before": before,
                 "portfolio_after": self._portfolio_snapshot(),
-            }
-        )
+        }
+        if provenance is not None:
+            event["ecology"] = provenance
+        self._record_action_event(event)
+        if str(trade_data.get("order_status", "")).upper() in {
+            "FILLED",
+            "CANCELED",
+            "REJECTED",
+        } and order_id:
+            self._order_provenance.pop(str(order_id), None)
 
     async def _handle_order_confirmation(self, payload: dict[str, Any]) -> None:
         await super()._handle_order_confirmation(payload)
@@ -514,8 +538,7 @@ class BaseAMLAgent(TraderAgent):
 
         self.recent_events.append(observed)
         self.recent_events = self.recent_events[-50:]
-        self._record_action_event(
-            {
+        action_event = {
                 "event_type": "event_observed",
                 "shock_id": observed.get("shock_id"),
                 "shock_type": observed.get("shock_type"),
@@ -538,8 +561,14 @@ class BaseAMLAgent(TraderAgent):
                 "affected_asset_classes": observed.get("affected_asset_classes"),
                 "market_state": observed.get("market_state"),
                 "market_state_baseline": observed.get("market_state_baseline"),
-            }
-        )
+        }
+        if self.ecology_enabled:
+            action_event["delivery_type"] = observed.get("delivery_type")
+            action_event["information_relationship_ids"] = observed.get(
+                "information_relationship_ids"
+            )
+            action_event["scoped_market_state"] = observed.get("scoped_market_state")
+        self._record_action_event(action_event)
         self.logger.info(
             f"{self.agent_id} observed AML shock: "
             f"type={observed.get('shock_type')}, phase={observed.get('phase')}, "
@@ -548,19 +577,34 @@ class BaseAMLAgent(TraderAgent):
         )
 
     def _handle_market_state_update(self, payload: Mapping[str, Any]) -> None:
-        previous_state = dict(self.market_state)
+        previous_state = dict(
+            self.scoped_market_state if self.ecology_enabled else self.market_state
+        )
         self._update_market_state_from_payload(payload)
-        if self.market_state == previous_state:
+        current_state = dict(
+            self.scoped_market_state if self.ecology_enabled else self.market_state
+        )
+        if current_state == previous_state:
             return
-        self._record_action_event(
-            {
+        action_event = {
                 "event_type": "market_state_updated",
                 "market_state": self.market_state,
                 "market_state_baseline": self.market_state_baseline,
-            }
-        )
+        }
+        if self.ecology_enabled:
+            action_event["scoped_market_state"] = self.scoped_market_state
+        self._record_action_event(action_event)
 
     def _update_market_state_from_payload(self, payload: Mapping[str, Any]) -> None:
+        scoped_state = payload.get("scoped_market_state")
+        if self.ecology_enabled and isinstance(scoped_state, Mapping):
+            self.scoped_market_state = dict(serialize_value(scoped_state))
+            global_state = self.scoped_market_state.get("global")
+            if isinstance(global_state, Mapping):
+                self.market_state = dict(global_state)
+            scoped_baseline = self.scoped_market_state.get("baseline")
+            if isinstance(scoped_baseline, Mapping):
+                self.market_state_baseline = dict(scoped_baseline)
         state = payload.get("market_state")
         if isinstance(state, Mapping):
             self.market_state = dict(serialize_value(state))
@@ -598,10 +642,15 @@ class BaseAMLAgent(TraderAgent):
 
     def _market_pressure(self, instrument: str) -> dict[str, float]:
         """Combine live shock effects with the current central market state."""
+        market_state = self.market_state
+        if self.ecology_enabled:
+            from aml_sim.ecology.state import effective_market_state
+
+            market_state = effective_market_state(self.scoped_market_state, instrument)
         return event_pressure(
             self._active_events(),
             instrument,
-            market_state=self.market_state,
+            market_state=market_state,
             market_state_baseline=self.market_state_baseline,
         )
 

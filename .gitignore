@@ -1,5 +1,7 @@
 .aml_runs/
+artifacts/
 .env
 simulators/StockSim/.env
 __pycache__/
 .DS_Store
+erl_crash.dump

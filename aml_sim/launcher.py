@@ -11,7 +11,7 @@ import time
 from contextlib import contextmanager
 from multiprocessing import Process
 from pathlib import Path
-from typing import Any, Callable, Iterator
+from typing import Any, Callable, Iterator, Mapping
 
 from aml_sim.runs import AMLRun
 from aml_sim.scenario import AMLScenario
@@ -166,6 +166,10 @@ def import_agent_class(agent_type: str) -> type:
         from aml_sim.agents.liquidity_taker import AMLLiquidityTaker
 
         return AMLLiquidityTaker
+    if agent_type == "AML_Cross_Market_Arbitrageur":
+        from aml_sim.agents.cross_market_arbitrageur import AMLCrossMarketArbitrageur
+
+        return AMLCrossMarketArbitrageur
     if agent_type == "AML_Shock_Agent":
         from aml_sim.agents.shock_agent import AMLShockAgent
 
@@ -284,6 +288,9 @@ def build_agent_param_customizers(
         ),
         "AML_Informed_Trader": lambda params: _normalize_aml_agent_params(params, 60),
         "AML_Liquidity_Taker": lambda params: _normalize_aml_agent_params(params, 60),
+        "AML_Cross_Market_Arbitrageur": lambda params: _normalize_aml_agent_params(
+            params, 60
+        ),
         "AML_Shock_Agent": lambda params: params,
     }
 
@@ -359,6 +366,15 @@ def run_stocksim_components(
     exchanges_config: dict[str, Any] = config.get("exchanges", {})
     agents_config: dict[str, Any] = config.get("agents", {})
     simulation_config: dict[str, Any] = config.get("simulation", {})
+    from aml_sim.ecology.config import load_ecology_config
+    from aml_sim.ecology.registry import RelationshipRegistry
+
+    ecology_config = load_ecology_config(aml_config or {})
+    if ecology_config.enabled:
+        instrument_metadata = normalize_instrument_metadata(instruments, exchanges_config)
+        RelationshipRegistry(instrument_metadata, ecology_config.relationships)
+    else:
+        instrument_metadata = normalize_instrument_metadata(instruments, exchanges_config)
 
     simulation_start_time: str = simulation_config["start_time"]
     simulation_end_time: str = simulation_config["end_time"]
@@ -393,7 +409,6 @@ def run_stocksim_components(
 
     # --- Trader processes ---
     instrument_exchange_map = build_instrument_exchange_map(exchange_mode, instruments)
-    instrument_metadata = normalize_instrument_metadata(instruments, exchanges_config)
     agent_custom_params = build_agent_param_customizers(
         interval_to_seconds=interval_to_seconds,
     )
@@ -472,7 +487,11 @@ def run_stocksim_components(
         exit_code = 130
 
     if exit_code == 0:
-        generate_aml_reports(aml_run)
+        generate_aml_reports(
+            aml_run,
+            aml_config=aml_config or {},
+            stocksim_config=config,
+        )
         if generate_reports:
             generate_stocksim_reports(config, aml_run)
 
@@ -549,11 +568,29 @@ def terminate_processes(processes: list[Process]) -> None:
 # ---------------------------------------------------------------------------
 
 
-def generate_aml_reports(aml_run: AMLRun) -> None:
+def generate_aml_reports(
+    aml_run: AMLRun,
+    *,
+    aml_config: dict[str, Any] | None = None,
+    stocksim_config: dict[str, Any] | None = None,
+) -> None:
     """Generate AML-owned reports from run-local agent artifacts."""
     from aml_sim.reporting import generate_trader_action_report
 
     generate_trader_action_report(aml_run.reports_dir / "agents", aml_run.reports_dir)
+    from aml_sim.ecology.config import load_ecology_config
+
+    aml_config = aml_config or {}
+    stocksim_config = stocksim_config or {}
+    if load_ecology_config(aml_config).enabled:
+        from aml_sim.ecology.reporting import generate_ecology_reports
+
+        generate_ecology_reports(
+            reports_dir=aml_run.reports_dir,
+            metadata_path=aml_run.metadata_path,
+            aml_config=aml_config,
+            stocksim_config=stocksim_config,
+        )
 
 
 def generate_stocksim_reports(config: dict[str, Any], aml_run: AMLRun) -> None:
@@ -669,8 +706,20 @@ def start_trader_processes(
         llm_defaults = {}
     if not isinstance(llm_defaults, dict):
         raise ValueError("aml_config.llm must be a mapping when provided")
+    from aml_sim.ecology.config import load_ecology_config
+
+    ecology_config = load_ecology_config(aml_config)
 
     agent_ids_by_name = build_agent_instance_id_map(agents_config)
+    agent_instrument_map = (
+        build_agent_instrument_map(
+            agents_config,
+            agent_ids_by_name,
+            instrument_exchange_map,
+        )
+        if ecology_config.enabled
+        else {}
+    )
     shock_target_agent_ids = [
         agent_id
         for agent_name, agent_ids in agent_ids_by_name.items()
@@ -713,11 +762,48 @@ def start_trader_processes(
             if agent_type == "AML_Shock_Agent":
                 instance_params.setdefault("target_agent_ids", shock_target_agent_ids)
                 instance_params.setdefault("instrument_metadata", instrument_metadata)
+                if ecology_config.enabled:
+                    instance_params.setdefault("ecology_enabled", True)
+                    instance_params.setdefault("agent_instrument_map", agent_instrument_map)
+                    instance_params.setdefault("relationships", list(ecology_config.relationships))
+            if ecology_config.enabled and agent_type == "AML_Cross_Market_Arbitrageur":
+                instance_params.setdefault("relationships", list(ecology_config.relationships))
+                instance_params.setdefault("instrument_metadata", instrument_metadata)
+            if ecology_config.enabled and agent_type != "AML_Shock_Agent":
+                instance_params.setdefault("enable_ecology", True)
+
+            if ecology_config.enabled:
+                from aml_sim.ecology.seeding import component_seed, unique_configured_seed
+
+                configured_seed = unique_configured_seed(
+                    instance_params.get("random_seed"),
+                    count=count,
+                    agent_type=str(agent_type),
+                    agent_id=unique_agent_id,
+                    replicate_id=ecology_config.experiment.replicate_id,
+                )
+                if configured_seed is not None:
+                    instance_params["random_seed"] = configured_seed
+                else:
+                    instance_params["random_seed"] = component_seed(
+                        ecology_config.experiment.master_seed,
+                        ecology_config.experiment.replicate_id,
+                        str(agent_type),
+                        unique_agent_id,
+                    )
 
             # Deterministic seed: derived from run_id and agent identity so
             # every re-run of the same scenario produces the same behaviour.
             if agent_type == "Random_Trader":
-                instance_params["seed"] = _make_seed(run_id, unique_agent_id)
+                if ecology_config.enabled:
+                    instance_params["seed"] = component_seed(
+                        ecology_config.experiment.master_seed,
+                        ecology_config.experiment.replicate_id,
+                        str(agent_type),
+                        unique_agent_id,
+                    )
+                else:
+                    instance_params["seed"] = _make_seed(run_id, unique_agent_id)
 
             process = Process(
                 target=_async_process_runner,
@@ -730,6 +816,33 @@ def start_trader_processes(
             logger.info("Started trader '%s'.", unique_agent_id)
 
     return agent_processes
+
+
+def build_agent_instrument_map(
+    agents_config: Mapping[str, Mapping[str, Any]],
+    agent_ids_by_name: Mapping[str, list[str]],
+    default_instrument_exchange_map: Mapping[str, str],
+) -> dict[str, list[str]]:
+    """Record each launched agent's traded instruments for shock visibility routing."""
+    agent_instruments: dict[str, list[str]] = {}
+    for agent_name, agent_ids in agent_ids_by_name.items():
+        details = agents_config.get(agent_name, {})
+        if details.get("type") == "AML_Shock_Agent":
+            continue
+        parameters = details.get("parameters", {})
+        configured_map = (
+            parameters.get("instrument_exchange_map", default_instrument_exchange_map)
+            if isinstance(parameters, Mapping)
+            else default_instrument_exchange_map
+        )
+        instruments = (
+            [str(instrument) for instrument in configured_map]
+            if isinstance(configured_map, Mapping)
+            else [str(instrument) for instrument in default_instrument_exchange_map]
+        )
+        for agent_id in agent_ids:
+            agent_instruments[agent_id] = instruments
+    return agent_instruments
 
 
 def apply_aml_agent_defaults(
@@ -770,7 +883,5 @@ def build_agent_instance_id_map(agents_config: dict[str, Any]) -> dict[str, list
 def _make_seed(run_id: str, agent_id: str) -> int:
     """Produce a deterministic seed from run and agent identity."""
     # hash() is deterministic within a single Python process but not across
-    # runs.  For true cross-run reproducibility we would store the seed in
-    # the run metadata.  For now this guarantees that two agents with the
-    # same run_id + agent_id get the same seed every launch.
+    # runs. For now this preserves the existing Random_Trader behavior.
     return hash(f"{run_id}:{agent_id}") & 0x7FFF_FFFF

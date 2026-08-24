@@ -30,6 +30,19 @@ class SlowStrategist(Protocol):
         """Return a proposed strategy state for validation and application."""
 
 
+class FrozenStrategist:
+    """Explicit deterministic control that leaves the configured strategy intact."""
+
+    def propose(
+        self,
+        observation: Mapping[str, Any],
+        current_strategy: Any,
+        **kwargs: Any,
+    ) -> Any:
+        del observation, kwargs
+        return current_strategy
+
+
 class LLMStrategistConfigurationError(RuntimeError):
     """Raised when the LLM strategist is used without a configured client."""
 
@@ -380,13 +393,16 @@ class OpenAIJSONLLMClient:
 def create_llm_strategist(
     role: str,
     config: Optional[Mapping[str, Any]] = None,
-) -> LLMStrategist:
+) -> SlowStrategist:
     """Create a slow-loop strategist from role-specific config."""
     config = dict(config or {})
     strategist_type = str(config.get("type", "static")).lower()
 
     if not config.get("enabled", True):
         strategist_type = "static"
+
+    if strategist_type in {"frozen", "noop", "disabled"}:
+        return FrozenStrategist()
 
     if strategist_type in {"static", "fixed", "test"}:
         response = STATIC_RESPONSES_BY_ROLE[role]
@@ -431,5 +447,5 @@ def create_llm_strategist(
 
     raise LLMStrategistConfigurationError(
         f"Unsupported slow_strategist type {strategist_type!r}. "
-        "Use 'static' or 'openai'."
+        "Use 'static', 'frozen', or 'openai'."
     )

@@ -1,0 +1,203 @@
+name: financial_ecology_stock_future_d0_disconnected_llm
+description: >
+  Research-grade disconnected control for the paired stock-future transmission
+  experiment. Every trading participant uses a role-specific OpenAI slow loop;
+  fast execution remains deterministic and role-specific. One seeded,
+  unexpected stock-specific shock is sampled per replicate.
+rabbitmq_host: localhost
+
+aml_config:
+  llm:
+    provider: openai
+    model: gpt-5.4
+    api_key_env: OPENAI_API_KEY
+    temperature: 0.0
+    timeout_seconds: 30
+    max_retries: 2
+    max_output_tokens: 500
+  ecology:
+    enabled: true
+    experiment:
+      id: stock_future_transmission
+      treatment: D0_disconnected
+      master_seed: 20260806
+      replicate_id: 1
+    relationships: []
+
+stocksim_config:
+  exchange_mode: orderbook
+  instruments: [AAPL, AAPL_FUT]
+
+  exchanges:
+    AAPL:
+      data_source: synthetic
+      symbol_type: stock
+      asset_class: stock
+      warmup_candles: 0
+    AAPL_FUT:
+      data_source: synthetic
+      symbol_type: future
+      asset_class: future
+      underlying: AAPL
+      contract_multiplier: 1.0
+      expiry_days: 30
+      warmup_candles: 0
+
+  agents:
+    stock_market_maker:
+      type: AML_Market_Maker
+      parameters:
+        instrument_exchange_map: {AAPL: exchange_aapl}
+        initial_cash: 250000
+        initial_positions: {AAPL: 1200}
+        initial_cost_basis: {AAPL: 100.0}
+        action_interval: 30s
+        slow_loop_interval: 3m
+        slow_strategist: {type: openai}
+        fair_price: 100.0
+        spread: 0.20
+        quote_size: 40
+        quote_levels: 3
+        level_spacing: 0.05
+        target_inventory: 1000
+        min_inventory: 100
+        max_inventory: 2000
+
+    future_market_maker:
+      type: AML_Market_Maker
+      parameters:
+        instrument_exchange_map: {AAPL_FUT: exchange_aapl_fut}
+        initial_cash: 250000
+        initial_positions: {AAPL_FUT: 1200}
+        initial_cost_basis: {AAPL_FUT: 100.41}
+        action_interval: 30s
+        slow_loop_interval: 3m
+        slow_strategist: {type: openai}
+        fair_price: 100.41
+        spread: 0.20
+        quote_size: 40
+        quote_levels: 3
+        level_spacing: 0.05
+        target_inventory: 1000
+        min_inventory: 100
+        max_inventory: 2000
+
+    stock_retail:
+      type: AML_Retail_Trader
+      count: 2
+      parameters:
+        instrument_exchange_map: {AAPL: exchange_aapl}
+        initial_cash: 25000
+        initial_positions: {AAPL: 20}
+        initial_cost_basis: {AAPL: 100.0}
+        random_seed: 1101
+        action_interval: 30s
+        slow_loop_interval: 3m
+        slow_strategist: {type: openai}
+        trade_probability: 0.70
+        max_order_size: 8
+        buy_bias: 0.50
+
+    future_retail:
+      type: AML_Retail_Trader
+      count: 1
+      parameters:
+        instrument_exchange_map: {AAPL_FUT: exchange_aapl_fut}
+        initial_cash: 25000
+        initial_positions: {AAPL_FUT: 20}
+        initial_cost_basis: {AAPL_FUT: 100.41}
+        random_seed: 2101
+        action_interval: 30s
+        slow_loop_interval: 3m
+        slow_strategist: {type: openai}
+        trade_probability: 0.70
+        max_order_size: 8
+        buy_bias: 0.50
+
+    stock_institutional:
+      type: AML_Institutional_Trader
+      parameters:
+        instrument_exchange_map: {AAPL: exchange_aapl}
+        initial_cash: 300000
+        initial_positions: {AAPL: 0}
+        initial_cost_basis: {AAPL: 100.0}
+        action_interval: 30s
+        slow_loop_interval: 3m
+        slow_strategist: {type: openai}
+        target_positions: {AAPL: 250}
+        child_order_size: 15
+        order_type: MARKET
+        alpha_strategy: target_execution
+        alpha_strategies: [target_execution, momentum, mean_reversion]
+        strategy_weights: {momentum: 0.45, mean_reversion: 0.55}
+        lookback_ticks: 5
+        entry_threshold: 0.002
+        exit_threshold: 0.0005
+        max_position: 500
+        min_position: 0
+        shock_reactivity: 0.70
+
+    future_institutional:
+      type: AML_Institutional_Trader
+      parameters:
+        instrument_exchange_map: {AAPL_FUT: exchange_aapl_fut}
+        initial_cash: 300000
+        initial_positions: {AAPL_FUT: 0}
+        initial_cost_basis: {AAPL_FUT: 100.41}
+        action_interval: 30s
+        slow_loop_interval: 3m
+        slow_strategist: {type: openai}
+        target_positions: {AAPL_FUT: 250}
+        child_order_size: 15
+        order_type: MARKET
+        alpha_strategy: target_execution
+        alpha_strategies: [target_execution, momentum, mean_reversion]
+        strategy_weights: {momentum: 0.45, mean_reversion: 0.55}
+        lookback_ticks: 5
+        entry_threshold: 0.002
+        exit_threshold: 0.0005
+        max_position: 500
+        min_position: 0
+        shock_reactivity: 0.70
+
+    shock_agent:
+      type: AML_Shock_Agent
+      parameters:
+        random_seed: 3101
+        default_duration_ticks: 8
+        initial_market_state:
+          policy_rate_bps: 425
+          liquidity_index: 1.0
+          funding_spread_bps: 25
+          risk_aversion: 0.0
+        # One surprise shock is guaranteed at 09:59. Its severity is sampled
+        # from the paired shock-agent seed, so D0/I1/A1 see the same draw for
+        # a given master seed and replicate.
+        random_events:
+          enabled: true
+          probability_per_tick: 1.0
+          max_events: 1
+          start_tick: 58
+          end_tick: 58
+          templates:
+          - id: localized_stock_news
+            shock_type: negative_news
+            shock_class: non_systematic
+            scope: micro
+            state_scope: instrument
+            visibility: affected
+            severity_range: [0.45, 0.75]
+            direction: -1
+            affected_instruments: [AAPL]
+            fundamental_price_shift_per_severity: 1.0
+            duration_ticks: 8
+            state_reversion_ticks: 8
+            message: Unexpected localized stock news for cross-market transmission testing.
+
+  simulation:
+    start_time: "2025-03-01T09:30:00+00:00"
+    end_time: "2025-03-01T10:30:00+00:00"
+    tick_interval: 30s
+    startup_grace_seconds: 2
+    max_wall_time_seconds: 3600
+    expected_exchange_agent_count: 2

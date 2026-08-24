@@ -1,0 +1,310 @@
+name: financial_ecology_stock_future_bond_c0_control
+description: >
+  Three-market, two-shock control for financial-ecology research. A localized,
+  unexpected stock-news shock and a later scheduled macro rate/liquidity event
+  occur in one synthetic hour. The stock, future, and bond books are otherwise
+  disconnected; the macro event is common state, not a cross-market linkage.
+rabbitmq_host: localhost
+
+aml_config:
+  # The scenario defaults to frozen controls. Pass --slow-strategist openai to
+  # make every trading participant use the same model settings.
+  llm:
+    provider: openai
+    model: gpt-5.4
+    api_key_env: OPENAI_API_KEY
+    temperature: 0.0
+    timeout_seconds: 30
+    max_retries: 2
+    max_output_tokens: 500
+  ecology:
+    enabled: true
+    experiment:
+      id: stock_future_bond_two_shock
+      treatment: C0_three_market_control
+      master_seed: 20260816
+      replicate_id: 1
+    relationships: []
+
+stocksim_config:
+  exchange_mode: orderbook
+  instruments: [AAPL, AAPL_FUT, UST10Y]
+
+  exchanges:
+    AAPL:
+      data_source: synthetic
+      symbol_type: stock
+      asset_class: stock
+      warmup_candles: 0
+    AAPL_FUT:
+      data_source: synthetic
+      symbol_type: future
+      asset_class: future
+      underlying: AAPL
+      contract_multiplier: 1.0
+      expiry_days: 30
+      warmup_candles: 0
+    UST10Y:
+      data_source: synthetic
+      symbol_type: bond
+      asset_class: bond
+      duration: 8.0
+      maturity_years: 10
+      warmup_candles: 0
+
+  agents:
+    stock_market_maker:
+      type: AML_Market_Maker
+      parameters:
+        instrument_exchange_map: {AAPL: exchange_aapl}
+        initial_cash: 250000
+        initial_positions: {AAPL: 1200}
+        initial_cost_basis: {AAPL: 100.0}
+        action_interval: 30s
+        slow_loop_interval: 3m
+        slow_strategist: {type: frozen}
+        fair_price: 100.0
+        spread: 0.20
+        quote_size: 40
+        quote_levels: 3
+        level_spacing: 0.05
+        target_inventory: 1000
+        min_inventory: 100
+        max_inventory: 2000
+
+    future_market_maker:
+      type: AML_Market_Maker
+      parameters:
+        instrument_exchange_map: {AAPL_FUT: exchange_aapl_fut}
+        initial_cash: 250000
+        initial_positions: {AAPL_FUT: 1200}
+        initial_cost_basis: {AAPL_FUT: 100.41}
+        action_interval: 30s
+        slow_loop_interval: 3m
+        slow_strategist: {type: frozen}
+        fair_price: 100.41
+        spread: 0.20
+        quote_size: 40
+        quote_levels: 3
+        level_spacing: 0.05
+        target_inventory: 1000
+        min_inventory: 100
+        max_inventory: 2000
+
+    bond_market_maker:
+      type: AML_Market_Maker
+      parameters:
+        instrument_exchange_map: {UST10Y: exchange_ust10y}
+        initial_cash: 250000
+        initial_positions: {UST10Y: 1600}
+        initial_cost_basis: {UST10Y: 100.0}
+        action_interval: 30s
+        slow_loop_interval: 3m
+        slow_strategist: {type: frozen}
+        fair_price: 100.0
+        spread: 0.12
+        quote_size: 50
+        quote_levels: 3
+        level_spacing: 0.03
+        target_inventory: 1300
+        min_inventory: 200
+        max_inventory: 2800
+
+    stock_retail:
+      type: AML_Retail_Trader
+      count: 2
+      parameters:
+        instrument_exchange_map: {AAPL: exchange_aapl}
+        initial_cash: 25000
+        initial_positions: {AAPL: 20}
+        initial_cost_basis: {AAPL: 100.0}
+        random_seed: 1101
+        action_interval: 30s
+        slow_loop_interval: 3m
+        slow_strategist: {type: frozen}
+        trade_probability: 0.70
+        max_order_size: 8
+        buy_bias: 0.50
+
+    future_retail:
+      type: AML_Retail_Trader
+      parameters:
+        instrument_exchange_map: {AAPL_FUT: exchange_aapl_fut}
+        initial_cash: 25000
+        initial_positions: {AAPL_FUT: 20}
+        initial_cost_basis: {AAPL_FUT: 100.41}
+        random_seed: 2101
+        action_interval: 30s
+        slow_loop_interval: 3m
+        slow_strategist: {type: frozen}
+        trade_probability: 0.70
+        max_order_size: 8
+        buy_bias: 0.50
+
+    bond_retail:
+      type: AML_Retail_Trader
+      parameters:
+        instrument_exchange_map: {UST10Y: exchange_ust10y}
+        initial_cash: 25000
+        initial_positions: {UST10Y: 20}
+        initial_cost_basis: {UST10Y: 100.0}
+        random_seed: 3101
+        action_interval: 30s
+        slow_loop_interval: 3m
+        slow_strategist: {type: frozen}
+        trade_probability: 0.40
+        max_order_size: 5
+        buy_bias: 0.50
+
+    stock_institutional:
+      type: AML_Institutional_Trader
+      parameters:
+        instrument_exchange_map: {AAPL: exchange_aapl}
+        initial_cash: 300000
+        initial_positions: {AAPL: 0}
+        initial_cost_basis: {AAPL: 100.0}
+        action_interval: 30s
+        slow_loop_interval: 3m
+        slow_strategist: {type: frozen}
+        target_positions: {AAPL: 250}
+        child_order_size: 15
+        order_type: MARKET
+        alpha_strategy: target_execution
+        alpha_strategies: [target_execution, momentum, mean_reversion]
+        strategy_weights: {momentum: 0.45, mean_reversion: 0.55}
+        lookback_ticks: 5
+        entry_threshold: 0.002
+        exit_threshold: 0.0005
+        max_position: 500
+        min_position: 0
+        shock_reactivity: 0.70
+
+    future_institutional:
+      type: AML_Institutional_Trader
+      parameters:
+        instrument_exchange_map: {AAPL_FUT: exchange_aapl_fut}
+        initial_cash: 300000
+        initial_positions: {AAPL_FUT: 0}
+        initial_cost_basis: {AAPL_FUT: 100.41}
+        action_interval: 30s
+        slow_loop_interval: 3m
+        slow_strategist: {type: frozen}
+        target_positions: {AAPL_FUT: 250}
+        child_order_size: 15
+        order_type: MARKET
+        alpha_strategy: target_execution
+        alpha_strategies: [target_execution, momentum, mean_reversion]
+        strategy_weights: {momentum: 0.45, mean_reversion: 0.55}
+        lookback_ticks: 5
+        entry_threshold: 0.002
+        exit_threshold: 0.0005
+        max_position: 500
+        min_position: 0
+        shock_reactivity: 0.70
+
+    bond_institutional:
+      type: AML_Institutional_Trader
+      parameters:
+        instrument_exchange_map: {UST10Y: exchange_ust10y}
+        initial_cash: 300000
+        initial_positions: {UST10Y: 0}
+        initial_cost_basis: {UST10Y: 100.0}
+        action_interval: 30s
+        slow_loop_interval: 3m
+        slow_strategist: {type: frozen}
+        target_positions: {UST10Y: 300}
+        child_order_size: 15
+        order_type: MARKET
+        alpha_strategy: target_execution
+        alpha_strategies: [target_execution, momentum, mean_reversion]
+        strategy_weights: {momentum: 0.35, mean_reversion: 0.65}
+        lookback_ticks: 5
+        entry_threshold: 0.0015
+        exit_threshold: 0.0005
+        max_position: 600
+        min_position: 0
+        shock_reactivity: 0.85
+
+    shock_agent:
+      type: AML_Shock_Agent
+      parameters:
+        random_seed: 4101
+        default_duration_ticks: 8
+        initial_market_state:
+          policy_rate_bps: 425
+          yield_curve_shift_bps: 0
+          liquidity_index: 1.0
+          funding_spread_bps: 25
+          risk_aversion: 0.0
+        # Unexpected micro event at 09:45. Severity is sampled from the paired
+        # shock-agent seed; only stock agents receive direct exposure in C0.
+        random_events:
+          enabled: true
+          probability_per_tick: 1.0
+          max_events: 1
+          start_tick: 30
+          end_tick: 30
+          templates:
+          - id: localized_stock_news
+            shock_type: negative_news
+            shock_class: non_systematic
+            scope: micro
+            state_scope: instrument
+            visibility: affected
+            severity_range: [0.45, 0.75]
+            direction: -1
+            affected_instruments: [AAPL]
+            fundamental_price_shift_per_severity: 1.0
+            duration_ticks: 8
+            state_reversion_ticks: 8
+            message: Unexpected localized stock news for the two-shock ecology experiment.
+        # Announced at 09:57 and realized at 10:00. The global state reverts so
+        # the remaining session captures recovery rather than a permanent regime.
+        scheduled_events:
+        - id: scheduled_policy_liquidity_stress
+          tick: 60
+          announce_tick: 54
+          trigger_type: scheduled
+          scheduled: true
+          expected_probability: 1.0
+          surprise: 0.35
+          shock_type: policy_rate_hike
+          shock_class: systematic
+          scope: macro
+          state_scope: global
+          visibility: public
+          severity: 0.60
+          direction: -1
+          affected_instruments: [AAPL, AAPL_FUT, UST10Y]
+          duration_ticks: 8
+          state_persistence: transient
+          state_reversion_ticks: 12
+          market_state_delta:
+            policy_rate_bps: 25
+            yield_curve_shift_bps: 18
+            funding_spread_bps: 12
+            risk_aversion: 0.25
+          effects:
+            order_arrival_multiplier: 1.25
+            risk_limit_multiplier: 0.78
+            liquidity_multiplier: 0.80
+            volatility_multiplier: 1.45
+            spread_multiplier: 1.35
+            price_impact_multiplier: 1.30
+            sentiment_shift: -0.35
+            risk_aversion_shift: 0.25
+          # The UST10Y effect is a simple duration approximation:
+          # -8 years x +18 bps yield change x $100 reference price = -$1.44.
+          per_instrument_effects:
+            AAPL: {fundamental_price_shift: -0.60}
+            AAPL_FUT: {fundamental_price_shift: -0.70}
+            UST10Y: {fundamental_price_shift: -1.44}
+          message: Scheduled policy decision raises rates, funding costs, and liquidity stress.
+
+  simulation:
+    start_time: "2025-03-01T09:30:00+00:00"
+    end_time: "2025-03-01T10:30:00+00:00"
+    tick_interval: 30s
+    startup_grace_seconds: 2
+    max_wall_time_seconds: 3600
+    expected_exchange_agent_count: 3
