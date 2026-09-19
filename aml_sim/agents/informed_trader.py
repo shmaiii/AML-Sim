@@ -129,18 +129,71 @@ class AMLInformedTrader(BaseAMLAgent):
         effective_signal_threshold = (
             strategy.signal_threshold * risk_policy.signal_threshold_multiplier
         )
+        effective_position_limit = max(
+            strategy.min_position,
+            int(
+                strategy.max_position
+                * pressure["risk_limit_multiplier"]
+                * risk_policy.position_limit_multiplier
+            ),
+        )
+        effective_order_cap = max(
+            1,
+            int(
+                strategy.max_order_size
+                * pressure["risk_limit_multiplier"]
+                * risk_policy.order_size_multiplier
+            ),
+        )
+        current_position = (
+            self.long_qty[instrument] - self.short_qty[instrument]
+        )
         if abs(signal) < effective_signal_threshold:
+            self._update_fast_loop_state(
+                instrument,
+                signal_strength=signal,
+                effective_signal_threshold=effective_signal_threshold,
+                effective_position_limit=effective_position_limit,
+                position_limit_utilization=self._position_limit_utilization(
+                    current_position,
+                    effective_position_limit,
+                ),
+                effective_order_size_cap=effective_order_cap,
+                effective_participation_probability=0.0,
+                preferred_order_type=strategy.order_type,
+            )
             return
 
         participation = strategy.trade_probability
         participation *= pressure["order_arrival_multiplier"]
         participation *= risk_policy.participation_multiplier
         participation *= 0.5 + (strategy.information_edge * 0.5)
-        if self.random.random() > clamp(participation, 0.0, 1.0):
+        effective_participation = clamp(participation, 0.0, 1.0)
+        self._update_fast_loop_state(
+            instrument,
+            signal_strength=signal,
+            effective_signal_threshold=effective_signal_threshold,
+            effective_position_limit=effective_position_limit,
+            position_limit_utilization=self._position_limit_utilization(
+                current_position,
+                effective_position_limit,
+            ),
+            buy_constrained=current_position >= effective_position_limit,
+            sell_constrained=self.long_qty[instrument] <= 0,
+            effective_order_size_cap=effective_order_cap,
+            effective_participation_probability=effective_participation,
+            preferred_order_type=strategy.order_type,
+        )
+        if self.random.random() > effective_participation:
             return
 
         side = Side.BUY.value if signal > 0 else Side.SELL.value
-        quantity = self._order_quantity(instrument, side, pressure)
+        quantity = self._order_quantity(
+            instrument,
+            side,
+            max_position=effective_position_limit,
+            max_size=effective_order_cap,
+        )
         if quantity <= 0:
             return
 
@@ -178,27 +231,11 @@ class AMLInformedTrader(BaseAMLAgent):
         self,
         instrument: str,
         side: str,
-        pressure: Mapping[str, float],
+        *,
+        max_position: int,
+        max_size: int,
     ) -> int:
-        strategy = self.strategy_state
-        risk_policy = self._risk_policy()
         current_position = self.long_qty[instrument] - self.short_qty[instrument]
-        max_position = max(
-            strategy.min_position,
-            int(
-                strategy.max_position
-                * pressure["risk_limit_multiplier"]
-                * risk_policy.position_limit_multiplier
-            ),
-        )
-        max_size = max(
-            1,
-            int(
-                strategy.max_order_size
-                * pressure["risk_limit_multiplier"]
-                * risk_policy.order_size_multiplier
-            ),
-        )
         quantity = self.random.randint(1, max_size)
 
         if side == Side.BUY.value:
