@@ -120,6 +120,35 @@ def write_metadata(
             "launch_mode": "aml_component_orchestrator",
         },
     }
+    from aml_sim.ecology.config import load_ecology_config
+
+    ecology_config = load_ecology_config(scenario.aml_config)
+    if ecology_config.enabled:
+        from aml_sim.ecology.config import scenario_fingerprint
+        from aml_sim.ecology.registry import RelationshipRegistry
+        from aml_sim.ecology.seeding import build_agent_seed_plan
+
+        exchanges = scenario.stocksim_config.get("exchanges", {})
+        instruments = scenario.stocksim_config.get("instruments", [])
+        instrument_metadata = {
+            str(instrument): dict(exchanges.get(instrument, {}))
+            for instrument in instruments
+        }
+        registry = RelationshipRegistry(instrument_metadata, ecology_config.relationships)
+        metadata["ecology"] = {
+            "enabled": True,
+            "experiment_id": ecology_config.experiment.experiment_id,
+            "treatment": ecology_config.experiment.treatment,
+            "master_seed": ecology_config.experiment.master_seed,
+            "replicate_id": ecology_config.experiment.replicate_id,
+            "scenario_sha256": scenario_fingerprint(scenario.raw),
+            "relationships": registry.as_manifest(),
+            "agent_seed_plan": build_agent_seed_plan(
+                scenario.stocksim_config.get("agents", {}),
+                master_seed=ecology_config.experiment.master_seed,
+                replicate_id=ecology_config.experiment.replicate_id,
+            ),
+        }
 
     with metadata_path.open("w", encoding="utf-8") as handle:
         json.dump(metadata, handle, indent=2)

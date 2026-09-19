@@ -108,3 +108,17 @@ class LiquidityTakerStrategyState(BaseStrategyState):
     inventory_limit: int = 500
     shock_sensitivity: float = 0.7
     aggression: float = 0.75
+
+
+@dataclass
+class CrossMarketArbitrageStrategyState(BaseStrategyState):
+    """Bounded execution parameters for a two-instrument relative-value agent."""
+
+    strategy_type: str = "cross_market_arbitrage"
+    relationship_id: str = ""
+    entry_threshold_bps: float = 15.0
+    exit_threshold_bps: float = 5.0
+    child_order_size: int = 20
+    max_position: int = 500
+    hedge_ratio: float = 1.0
+    order_type: str = "MARKET"

@@ -73,6 +73,18 @@ def normalize_instrument_metadata(
             "region": inst_cfg.get("region"),
             "currency": inst_cfg.get("currency", "USD"),
         }
+        for field in (
+            "underlying",
+            "contract_multiplier",
+            "expiry_days",
+            "strike",
+            "option_type",
+            "basket_weights",
+            "duration",
+            "maturity_years",
+        ):
+            if field in inst_cfg:
+                metadata[instrument][field] = inst_cfg[field]
     return metadata
 
 
@@ -164,6 +176,8 @@ def build_shock_payload(
         "market_state": deepcopy(dict(market_state or {})),
         "message": event_map.get("message", event_map.get("narrative", "")),
     }
+    if "state_scope" in event_map:
+        payload["state_scope"] = event_map["state_scope"]
     payload.update(round_effects(base_effects))
     return payload
 

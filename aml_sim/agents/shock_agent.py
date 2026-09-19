@@ -31,12 +31,15 @@ class AMLShockAgent(Agent):
         scheduled_events: Optional[list[Mapping[str, Any]]] = None,
         random_events: Optional[Mapping[str, Any]] = None,
         target_agent_ids: Optional[list[str]] = None,
+        agent_instrument_map: Optional[Mapping[str, Mapping[str, Any] | list[str]]] = None,
+        relationships: Optional[list[Mapping[str, Any]]] = None,
         instrument_metadata: Optional[Mapping[str, Mapping[str, Any]]] = None,
         initial_market_state: Optional[Mapping[str, Any]] = None,
         default_duration_ticks: int = 10,
         random_seed: Optional[int] = None,
         agent_id: Optional[str] = None,
         rabbitmq_host: str = "localhost",
+        ecology_enabled: bool = False,
         **_: Any,
     ) -> None:
         super().__init__(agent_id=agent_id, rabbitmq_host=rabbitmq_host)
@@ -48,10 +51,29 @@ class AMLShockAgent(Agent):
             for key, value in (instrument_metadata or {}).items()
             if isinstance(value, Mapping)
         }
-        self.market_state_engine = MarketStateEngine(initial_market_state)
+        self.ecology_enabled = bool(ecology_enabled)
+        self.information_router = None
+        if self.ecology_enabled:
+            from aml_sim.ecology.information import EcologyInformationRouter
+            from aml_sim.ecology.registry import RelationshipRegistry
+            from aml_sim.ecology.state import ScopedMarketStateEngine
+
+            self.market_state_engine = ScopedMarketStateEngine(
+                initial_market_state,
+                self.instrument_metadata,
+            )
+            self.information_router = EcologyInformationRouter(
+                RelationshipRegistry(self.instrument_metadata, list(relationships or [])),
+                agent_instrument_map or {},
+            )
+        else:
+            self.market_state_engine = MarketStateEngine(initial_market_state)
         self.market_state_baseline = dict(self.market_state_engine.baseline)
-        self.market_state = dict(self.market_state_engine.current_state)
+        self.scoped_market_state: dict[str, Any] = {}
+        self.market_state = {}
         self._last_broadcast_market_state: dict[str, Any] | None = None
+        self._last_broadcast_scoped_market_state: dict[str, Any] | None = None
+        self._update_market_state(0)
         self.default_duration_ticks = default_duration_ticks
         self.emitted_event_ids: set[str] = set()
         self.announced_event_ids: set[str] = set()
@@ -68,7 +90,7 @@ class AMLShockAgent(Agent):
     async def handle_time_tick(self, payload: dict[str, Any]) -> None:
         await super().handle_time_tick(payload)
         tick_id = safe_int(payload.get("tick_id"), 0) or 0
-        self.market_state = self.market_state_engine.snapshot(tick_id)
+        self._update_market_state(tick_id)
         for index, event in enumerate(self.scheduled_events):
             event_id = str(event.get("id") or event.get("shock_id") or f"shock_{index}")
             if (
@@ -105,7 +127,7 @@ class AMLShockAgent(Agent):
                 trigger_type=str(event.get("trigger_type", "unexpected")),
             )
 
-        self.market_state = self.market_state_engine.snapshot(tick_id)
+        self._update_market_state(tick_id)
         await self._broadcast_market_state_if_changed(payload)
 
     def _event_due(self, event: Mapping[str, Any], payload: Mapping[str, Any]) -> bool:
@@ -184,7 +206,7 @@ class AMLShockAgent(Agent):
                 current_tick_id=current_tick,
                 default_duration_ticks=self.default_duration_ticks,
             )
-            self.market_state = self.market_state_engine.snapshot(current_tick)
+            self._update_market_state(current_tick)
             shock_payload["market_state"] = dict(self.market_state)
             shock_payload["market_state_contribution"] = (
                 self._market_state_contribution(
@@ -193,6 +215,8 @@ class AMLShockAgent(Agent):
                 )
             )
         shock_payload["market_state_baseline"] = dict(self.market_state_baseline)
+        if self.ecology_enabled:
+            shock_payload["scoped_market_state"] = deepcopy(self.scoped_market_state)
 
         if not self.target_agent_ids:
             self.logger.warning(f"AMLShockAgent has no targets for shock {event_id}")
@@ -200,20 +224,42 @@ class AMLShockAgent(Agent):
                 self.emitted_event_ids.add(event_id)
             return
 
-        for target_agent_id in self.target_agent_ids:
-            await self.send_message(
-                target_agent_id,
-                MessageType.STATUS_UPDATE,
+        if self.ecology_enabled and self.information_router is not None:
+            deliveries = self.information_router.deliveries(
+                event,
                 shock_payload,
+                self.target_agent_ids,
             )
+            for delivery in deliveries:
+                recipient_payload = deepcopy(shock_payload)
+                recipient_payload["delivery_type"] = delivery.delivery_type
+                recipient_payload["information_relationship_ids"] = list(
+                    delivery.relationship_ids
+                )
+                await self.send_message(
+                    delivery.agent_id,
+                    MessageType.STATUS_UPDATE,
+                    recipient_payload,
+                )
+        else:
+            deliveries = self.target_agent_ids
+            for target_agent_id in self.target_agent_ids:
+                await self.send_message(
+                    target_agent_id,
+                    MessageType.STATUS_UPDATE,
+                    shock_payload,
+                )
 
         if phase == "active":
             self.emitted_event_ids.add(event_id)
             # The active payload already carries this state snapshot. Subsequent
             # state-only messages are reserved for decay/recovery changes.
-            self._last_broadcast_market_state = dict(self.market_state)
+            if self.ecology_enabled:
+                self._last_broadcast_scoped_market_state = deepcopy(self.scoped_market_state)
+            else:
+                self._last_broadcast_market_state = dict(self.market_state)
         self.logger.info(
-            f"AMLShockAgent emitted {phase} {event_id} to {len(self.target_agent_ids)} targets: "
+            f"AMLShockAgent emitted {phase} {event_id} to {len(deliveries)} targets: "
             f"type={shock_payload['shock_type']}, class={shock_payload['shock_class']}, "
             f"severity={shock_payload['severity']}, direction={shock_payload['direction']}"
         )
@@ -222,7 +268,13 @@ class AMLShockAgent(Agent):
         self,
         payload: Mapping[str, Any],
     ) -> None:
-        if not self.target_agent_ids or self.market_state == self._last_broadcast_market_state:
+        previous_state = (
+            self._last_broadcast_scoped_market_state
+            if self.ecology_enabled
+            else self._last_broadcast_market_state
+        )
+        current_state = self.scoped_market_state if self.ecology_enabled else self.market_state
+        if not self.target_agent_ids or current_state == previous_state:
             return
 
         current_time = payload.get("current_time")
@@ -238,13 +290,25 @@ class AMLShockAgent(Agent):
             "market_state": dict(self.market_state),
             "market_state_baseline": dict(self.market_state_baseline),
         }
+        if self.ecology_enabled:
+            state_payload["scoped_market_state"] = deepcopy(self.scoped_market_state)
         for target_agent_id in self.target_agent_ids:
             await self.send_message(
                 target_agent_id,
                 MessageType.STATUS_UPDATE,
                 state_payload,
             )
-        self._last_broadcast_market_state = dict(self.market_state)
+        if self.ecology_enabled:
+            self._last_broadcast_scoped_market_state = deepcopy(self.scoped_market_state)
+        else:
+            self._last_broadcast_market_state = dict(self.market_state)
+
+    def _update_market_state(self, tick_id: int) -> None:
+        if self.ecology_enabled:
+            self.scoped_market_state = self.market_state_engine.snapshot(tick_id)
+            self.market_state = dict(self.scoped_market_state["global"])
+        else:
+            self.market_state = self.market_state_engine.snapshot(tick_id)
 
     @staticmethod
     def _market_state_contribution(

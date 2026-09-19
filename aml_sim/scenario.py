@@ -78,6 +78,20 @@ def load_scenario(path: Path) -> AMLScenario:
     if not isinstance(aml_config, dict):
         raise ValueError("Scenario 'aml_config' must be a mapping when provided")
 
+    from aml_sim.ecology.config import load_ecology_config
+    from aml_sim.ecology.registry import RelationshipRegistry
+    from aml_sim.shocks import normalize_instrument_metadata
+
+    ecology_config = load_ecology_config(aml_config)
+    if ecology_config.enabled:
+        RelationshipRegistry(
+            normalize_instrument_metadata(
+                stocksim_config.get("instruments", []),
+                stocksim_config.get("exchanges", {}),
+            ),
+            ecology_config.relationships,
+        )
+
     return AMLScenario(
         path=scenario_path,
         name=name,

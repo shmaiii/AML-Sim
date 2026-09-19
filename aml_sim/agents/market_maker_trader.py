@@ -69,6 +69,7 @@ class AMLMarketMakerTrader(BaseAMLAgent):
             "initial_positions",
             "initial_cost_basis",
             "action_interval_seconds",
+            "enable_ecology",
         ]:
             if param in kwargs:
                 trader_kwargs[param] = kwargs[param]
