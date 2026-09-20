@@ -1,12 +1,12 @@
-# Financial Market Ecology Foundation
+# Financial market ecology foundation
 
 ## Purpose
 
-AML's financial-ecology extension is for controlled, causal experiments. It
-does not attempt to reconstruct historical prices. A scenario declares which
-markets are connected, which shocks arrive, what each agent can observe, and
-which transmission channels are active. Holding those inputs and component
-seeds fixed lets us attribute differences in outcomes to an intervention.
+The financial ecology layer supports controlled, causal experiments. It does
+not try to reconstruct historical prices. Each scenario says which markets are
+connected, which shocks arrive, what agents can observe, and which transmission
+channels are active. Keeping those inputs and component seeds fixed makes it
+possible to attribute changes in the outcome to a specific intervention.
 
 The first implemented pair is a stock and its future. Stocks, options, ETFs,
 bonds, and rate futures use the same graph contract, but each new pair should
@@ -37,7 +37,7 @@ and mark-to-market accounting. AML owns scenario semantics, agent roles,
 shock state, relationship contracts, deterministic seeds, and research
 reporting.
 
-## State and Information
+## State and information
 
 Economic exposure and information visibility are separate:
 
@@ -52,7 +52,7 @@ unexposed instrument a direct shock pressure. The state and direct effects are
 filtered by instrument; a later reaction can still transmit through an enabled
 relationship agent.
 
-## Relationship Graph
+## Relationship graph
 
 Each edge declares `source`, `target`, `type`, `channels`, and `parameters`.
 There are no hidden ticker-name rules.
@@ -68,7 +68,7 @@ The current foundation implements `spot_future` reference pricing and a
 bounded two-leg basis-arbitrageur. Other edge types are validated graph types,
 not yet trading mechanisms.
 
-## Channels and Treatments
+## Channels and treatments
 
 Channels are configured per edge:
 
@@ -87,7 +87,7 @@ event directly while linked-market agents receive its information-only copy.
 `shared_risk` and the eventual full-ecology treatment remain explicitly out of
 scope until shared funding, margin, and capital constraints are implemented.
 
-## Reproducibility and Reporting
+## Reproducibility and reporting
 
 One master seed produces independent streams for each actual agent process:
 
@@ -108,7 +108,7 @@ ecology reporter writes:
 Each cross-market order carries a decision ID, relationship ID, source and
 target instruments, leg, channel, observed basis, and active event IDs.
 
-## Validation Gates
+## Validation checks
 
 Before interpreting an experiment:
 
