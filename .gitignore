@@ -5,3 +5,8 @@ simulators/StockSim/.env
 __pycache__/
 .DS_Store
 erl_crash.dump
+dashboard/node_modules/
+dashboard/dist/
+dashboard/*.tsbuildinfo
+dashboard/vite.config.js
+dashboard/vite.config.d.ts

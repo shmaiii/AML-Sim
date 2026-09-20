@@ -1,323 +1,127 @@
 # AML-Sim
 
-AML-Sim is an experiment layer on top of the `StockSim` market simulator. The
-goal is to study market decision making, robustness, and behavioral finance in
-synthetic multi-agent markets while keeping scenario orchestration outside the
-StockSim submodule.
+AML-Sim is a laboratory for synthetic financial markets. It brings together
+different market participants, realistic order books, controlled shocks, and
+optional LLM-based strategy updates so researchers can study how markets react
+when conditions change.
 
-`simulators/StockSim` is a git submodule. Changes inside StockSim are committed
-and pushed from that directory, then the parent AML-Sim repository commits the
-updated submodule pointer.
+It is built on [StockSim](https://github.com/shmaiii/StockSim). StockSim handles
+the exchange, matching engine, simulation clock, messaging, and portfolio
+accounting. AML-Sim adds the participant roles, shocks, market relationships,
+experiment controls, reporting, and dashboard.
 
-## Built On StockSim
+> AML-Sim is an experimental research platform. Its simulated prices are not
+> live market data, forecasts, or trading recommendations.
 
-AML-Sim builds on top of
-[StockSim](https://github.com/shmaiii/StockSim), which is included as a git
-submodule under `simulators/StockSim`. StockSim provides the core market
-simulation engine, exchange agents, trader framework, RabbitMQ-based
-coordination, and YAML-driven simulation launcher.
+## What it can do
 
-This repository adds AML-specific scenario orchestration and synthetic market
-participants for studying market behavior, robustness, and decision making.
+- Run synthetic single-market and multi-market simulations.
+- Build multi-level limit order books and generate prices from agent trading.
+- Simulate market makers, retail traders, institutional traders, informed
+  traders, liquidity takers, cross-market arbitrageurs, and shock agents.
+- Give trading agents a fast action loop and either a frozen or OpenAI-backed
+  slow strategy loop.
+- Introduce scheduled, announced, or seeded random micro and macro shocks.
+- Connect markets through information, valuation, and arbitrage channels.
+- Track orders, fills, positions, exposure, portfolio value, PnL, and strategy
+  changes by agent.
+- Compare treatments across repeatable random seeds.
+- Watch markets live and open completed runs in the React dashboard.
+- Add supported participant roles through the dashboard's Agent Studio.
 
-## Repository Layout
+The current research scenarios cover stocks, futures, and bonds. The
+relationship framework can be extended to options and ETFs, but not every
+asset-specific pricing and hedging mechanism is implemented yet.
+
+## How it fits together
+
+```mermaid
+flowchart LR
+    Y["Scenario YAML"] --> R["AML runner"]
+    R --> C["Simulation clock"]
+    R --> E["StockSim exchanges"]
+    R --> A["AML market participants"]
+    R --> S["Shock agent"]
+    C <--> Q["RabbitMQ"]
+    E <--> Q
+    A <--> Q
+    S <--> Q
+    E --> O["Logs and order books"]
+    A --> O
+    S --> O
+    O --> P["Reports"]
+    O --> D["Dashboard"]
+```
+
+Every instrument has its own exchange process, and every configured agent runs
+in a separate process. RabbitMQ carries clock ticks, market observations,
+orders, fills, and shock information between them.
+
+## Agent decision model
+
+Trading agents use two connected loops:
+
+- The **fast loop** runs frequently and turns the current strategy into orders.
+- The **slow loop** reviews prices, the order book, inventory, fills, memory,
+  market state, and shocks, then proposes a bounded strategy update.
+
+The slow loop can be:
+
+- `frozen`, for deterministic controls and repeatable experiments; or
+- `openai`, for adaptive LLM-assisted decisions.
+
+The LLM never places orders directly. Its proposal is validated before the
+role-specific fast loop can use it. If an API call fails or the response is
+invalid, the agent keeps its last valid strategy and records the failure.
+
+## Project layout
 
 ```text
 AML-Sim/
-├── aml_runner.py                       # AML scenario runner
-├── aml_sim/
-│   ├── launcher.py                     # AML-owned StockSim component launcher
-│   ├── reporting.py                    # AML-owned report orchestration
-│   ├── runs.py                         # AML run directory/artifact helpers
-│   ├── scenario.py                     # AML scenario loading/validation
-│   └── agents/                         # AML-specific trader agents
-│       ├── base.py                     # Shared fast/slow-loop AML agent base
-│       ├── market_maker_trader.py      # AML market-maker agent
-│       ├── retail_trader.py            # AML retail trader agent
-│       ├── institutional_trader.py     # AML institutional trader agent
-│       ├── informed_trader.py          # AML informed trader agent
-│       ├── liquidity_taker.py          # AML liquidity-taking flow agent
-│       ├── shock_agent.py              # AML scenario shock/event broadcaster
-│       ├── models/
-│       │   ├── profile.py              # Stable role/personality profile models
-│       │   └── state.py                # Role-specific strategy state models
-│       ├── context/
-│       │   ├── observation.py          # LLM/slow-loop observation context
-│       │   └── memory.py               # Local memory + future Zep hook
-│       └── strategy/
-│           ├── llm_slow_strategy.py    # LLM-shaped slow-loop strategist
-│           └── validator.py            # Strategy state bounds validation
-├── scenarios/
-│   └── aml_orderbook_replay.yaml       # Current AML smoke scenario
-└── simulators/
-    └── StockSim/                       # StockSim submodule
-        ├── main_launcher.py            # StockSim entrypoint
-        └── docker-compose.yml          # RabbitMQ + StockSim services
+├── aml_runner.py                 # Headless scenario runner
+├── dashboard_server.py           # Local dashboard and API server
+├── aml_sim/                      # AML orchestration and behavior
+│   ├── agents/                   # Participant roles and fast/slow loops
+│   └── ecology/                  # Relationships, seeds, and research reports
+├── scenarios/                    # General and research scenarios
+├── analysis/                     # Research analysis scripts
+├── dashboard/                    # React/Vite frontend
+├── docs/                         # User, developer, and research guides
+├── tests/                        # AML tests
+└── simulators/StockSim/          # StockSim engine submodule
 ```
 
-## Architecture
+For more detail, see:
 
-AML-Sim is split into two layers:
-
-- Run orchestration: AML-Sim reads scenarios, creates run artifacts, and starts
-  StockSim engine components.
-- Agent behavior: AML-Sim owns the market-maker, retail, and institutional
-  trader behavior while keeping those agents compatible with StockSim's
-  `TraderAgent`.
-
-### Run Orchestration
-
-1. `aml_runner.py` reads an AML scenario YAML file.
-2. The scenario's `stocksim_config` section is extracted and written to
-   `.aml_runs/<run-id>/stocksim_config.yaml`.
-3. AML-Sim also archives the original scenario as
-   `.aml_runs/<run-id>/scenario.yaml` and writes run metadata to
-   `.aml_runs/<run-id>/metadata.json`.
-4. AML-Sim imports StockSim exchange/base-trader/simulation-clock classes and
-   starts those component processes itself. The AML agent behavior classes live
-   under `aml_sim/agents/`. `simulators/StockSim/main_launcher.py` remains
-   StockSim's standalone CLI entrypoint.
-5. AML-Sim starts the exchange agents, trader agents, and simulation clock.
-6. Components communicate through RabbitMQ.
-7. Logs for AML-launched runs are written under `.aml_runs/<run-id>/logs`.
-
-The scenario YAML is the experiment definition. It contains AML-level metadata
-such as `name`, `description`, and `rabbitmq_host`, plus the `stocksim_config`
-mapping that is passed directly into StockSim after generation. In other words,
-the YAML file is where you configure instruments, exchange mode, agents,
-simulation times, and environment settings for a StockSim run.
-
-### Agent Layer
-
-The AML agent layer currently includes these synthetic market participants:
-
-- `AML_Market_Maker`: posts bid/ask limit orders around a configurable fair
-  price and adjusts quotes with an inventory skew.
-- `AML_Retail_Trader`: submits occasional small noisy market orders with a
-  configurable buy bias and trade probability.
-- `AML_Institutional_Trader`: works toward target positions using sliced child
-  orders.
-- `AML_Informed_Trader`: trades from a private/fundamental value signal when
-  the signal is strong enough.
-- `AML_Liquidity_Taker`: submits directional flow against available liquidity
-  with bounded size and inventory exposure.
-- `AML_Shock_Agent`: emits scheduled, announced, and random AML shock/event
-  messages to target agents.
-- `aml_orderbook_replay.yaml`: runs a short synthetic AAPL order book scenario
-  with one market maker, five retail traders, and one institutional trader.
-- `aml_agent_infra_smoke.yaml` and `aml_one_hour_live.yaml`: exercise the
-  broader AML agent set, including informed flow, liquidity-taking flow, and
-  scheduled shock events.
-
-These AML agents live in `aml_sim/agents/`. They still inherit StockSim's
-`TraderAgent` and use StockSim's order/message primitives, but AML-Sim owns
-their behavior and maps YAML types such as `AML_Market_Maker` to these classes.
-
-AML agents now use a shared fast-loop / slow-loop architecture:
-
-- `BaseAMLAgent` inherits from StockSim's `TraderAgent` and keeps the shared AML
-  agent plumbing in one place.
-- StockSim still owns execution, messaging, portfolio/accounting state, order
-  state, and RabbitMQ integration.
-- AML-Sim owns behavioral strategy state, observation packaging, memory hooks,
-  strategy validation, slow-loop strategy updates, and role-specific fast
-  execution behavior.
-- `action_interval` controls how often the fast loop is allowed to submit
-  orders.
-- `slow_loop_interval` controls how often the slow loop updates the agent's
-  strategy state.
-
-The fast loop is role-specific and runs from the currently validated strategy
-state:
-
-- Market maker fast loop refreshes bid/ask quotes using fair price, spread,
-  quote size, target inventory, and inventory skew.
-- Retail fast loop submits small probabilistic market orders using trade
-  probability, buy bias, and max order size.
-- Institutional fast loop works toward target positions using child order size,
-  order type, and execution style.
-
-The slow loop uses `aml_sim/agents/strategy/llm_slow_strategy.py`. By default it
-uses fixed role-specific JSON responses so the control flow can be tested
-without spending API credits. Agents can opt into real OpenAI calls through
-scenario YAML by setting `slow_strategist.type: openai`.
-
-### Strategy State And Validation
-
-Role-specific strategy states live in `aml_sim/agents/models/state.py`:
-
-- `MarketMakerStrategyState`
-- `RetailStrategyState`
-- `InstitutionalStrategyState`
-- `InformedStrategyState`
-- `LiquidityTakerStrategyState`
-
-Before a strategy proposal is applied, `aml_sim/agents/strategy/validator.py`
-checks bounds such as trade probability, buy bias, quote size, spread, child
-order size, confidence, and risk mode. If validation fails, the agent keeps its
-previous strategy state and logs the rejection.
-
-### Risk Modes And Fast-Loop Policy
-
-Every AML strategy state defaults to `risk_mode: normal`. Experiments can set a
-different initial posture in an agent's YAML parameters:
-
-```yaml
-parameters:
-  risk_mode: conservative
-```
-
-For an OpenAI slow strategist with an explicit `allowed_strategy_fields`
-allowlist, include `risk_mode` to let the LLM change the posture dynamically:
-
-```yaml
-slow_strategist:
-  type: openai
-  allowed_strategy_fields:
-    - risk_mode
-```
-
-Risk modes map to a normalized risk-aversion value, `gamma`:
-
-| Risk mode | `gamma` |
-| --- | ---: |
-| `risk_off` | 3.00 |
-| `conservative` | 1.50 |
-| `normal` | 1.00 |
-| `opportunistic` | 0.75 |
-| `aggressive` | 0.50 |
-
-The shared fast-loop policy derives these values from `gamma`:
-
-- participation multiplier: `clamp(1 / gamma, 0.25, 1.50)`
-- order-size multiplier: `clamp(1 / sqrt(gamma), 0.40, 1.40)`
-- position-limit multiplier: `clamp(1 / gamma, 0.25, 1.00)`
-- signal-threshold multiplier: `clamp(sqrt(gamma), 0.70, 2.00)`
-
-`clamp(value, minimum, maximum)` restricts a result to the stated range.
-`normal` therefore produces `1.0` multipliers and preserves existing behavior.
-The policy is composed with, rather than substituted for, event pressure:
-
-```text
-effective fast-loop behavior =
-    configured strategy × event pressure × risk-mode policy
-```
-
-The common preference produces role-specific behavior:
-
-- market makers adjust quote size, maximum inventory, spread, and
-  inventory-based price skew;
-- retail traders adjust participation probability and maximum order size;
-- informed traders adjust participation, order size, position limit, and the
-  signal strength required to trade;
-- liquidity takers adjust participation, order size, and inventory limit;
-- institutional traders use smaller child orders when adding exposure, but
-  higher risk aversion accelerates child orders that reduce existing exposure.
-
-The relationships are informed by Merton-style portfolio choice,
-Avellaneda-Stoikov market making, and Almgren-Chriss execution. The mode values
-are normalized simulation categories because those source models use
-differently scaled risk parameters.
-
-Slow-loop memory records `strategy_before` and `strategy_after`, including
-`risk_mode`. Submitted, rejected, and executed order artifacts record both the
-strategy state and the derived `risk_policy`, so experiments can verify which
-policy was active for each action.
-
-### Observation Context For LLM Strategy
-
-The observation processor in `aml_sim/agents/context/observation.py` builds the
-structured context package used by the slow loop. Today that package includes:
-
-- agent id
-- current simulation time
-- latest market snapshot
-- cash, portfolio value, and per-instrument inventory
-- pending orders
-- recent fills
-- current strategy state
-- memory context
-- active shock/event context and known future/scheduled event context
-
-### Shock Agent
-
-`AML_Shock_Agent` is the scenario-level event broadcaster for market stress,
-news, policy, liquidity, and other uncertainty injections. It supports:
-
-- **Scheduled shocks** with `tick`/`time`, optional `notice_ticks` or
-  `announce_tick`, and separate announcement vs active phases.
-- **Unexpected shocks** through `random_events` templates with deterministic
-  `random_seed`, per-tick probability, max event count, and severity ranges.
-- **Systematic and non-systematic taxonomy** through fields such as
-  `shock_class`, `scope`, `trigger_type`, `visibility`, `surprise`, and
-  `expected_probability`.
-- **Cross-asset effects** through `affected_instruments`,
-  `affected_asset_classes`, `asset_class_effects`, and
-  `per_instrument_effects`.
-- **Central market state** through `initial_market_state`, `market_state`, and
-  `market_state_delta`. Temporary impacts revert after their event duration;
-  structural changes can use `state_persistence: permanent`.
-
-Supported effect fields include `fundamental_price_shift`,
-`order_arrival_multiplier`, `risk_limit_multiplier`, `liquidity_multiplier`,
-`volatility_multiplier`, `spread_multiplier`, `price_impact_multiplier`,
-`rate_shift_bps`, `yield_shift_bps`, `funding_spread_bps`,
-`credit_spread_bps`, `sentiment_shift`, and `risk_aversion_shift`. Current
-agents react mainly through price/fundamental pressure, order-arrival pressure,
-risk-limit pressure, liquidity withdrawal, spread/volatility widening, and
-sentiment shifts. The same event payload is included in the observation context
-so LLM slow loops can reason over active shocks and announced future events.
-The observation also carries the current central market state and its baseline,
-which the fast loops use for ongoing rate, funding, credit, liquidity, and risk
-conditions after an individual shock has expired.
+- [User guide](docs/USER_GUIDE.md)
+- [Developer guide](docs/DEVELOPER_GUIDE.md)
+- [Financial ecology architecture](docs/research/financial_ecology_architecture.md)
+- [Server capacity report](docs/SERVER_CAPACITY_REPORT.md)
 
 ## Setup
 
-Clone the repo with submodules in one step:
+### 1. Prepare the repository
 
 ```bash
-git clone --recurse-submodules <AML-Sim repo URL>
-cd AML-Sim
-```
-
-Or clone normally, then initialize the StockSim submodule afterward:
-
-```bash
-git clone <AML-Sim repo URL>
-cd AML-Sim
 git submodule update --init --recursive
-```
-
-Create and activate a Python environment from the AML-Sim root:
-
-```bash
-python3.11 -m venv .venv
+python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install --upgrade pip
-pip install -r requirements.txt
+python -m pip install -r requirements.txt
 ```
 
-For the current synthetic order book scenario, no Polygon, Alpha Vantage, or
-OpenAI API key is required. RabbitMQ is required.
+### 2. Start RabbitMQ
 
-Optional root `.env`:
+RabbitMQ must be available at `localhost:5672` unless the scenario uses another
+host.
+
+With Homebrew on macOS:
 
 ```bash
-RABBITMQ_HOST=localhost
-LOG_DIR=logs
-OPENAI_API_KEY=sk-...
+brew services start rabbitmq
 ```
 
-`aml_runner.py` will also set `LOG_DIR` to the run-specific log directory and
-will pass `rabbitmq_host` from the scenario to StockSim.
-
-OpenAI is only used for scenarios or agents that explicitly configure
-`slow_strategist.type: openai`.
-
-## Start RabbitMQ
-
-The easiest route is to use the StockSim Docker Compose file and start only
-RabbitMQ:
+Or with Docker:
 
 ```bash
 cd simulators/StockSim
@@ -325,186 +129,139 @@ docker compose up -d rabbitmq
 cd ../..
 ```
 
-Before running a scenario, make sure the RabbitMQ container is actually up:
+### 3. Configure OpenAI only when needed
 
-```bash
-docker ps | grep rabbitmq
+Frozen scenarios do not need an API key. For OpenAI-backed slow loops, create a
+private `.env` file in the AML-Sim root:
+
+```text
+OPENAI_API_KEY=your_api_key
 ```
 
-This should print the running RabbitMQ container, usually named
-`stocksim-rabbitmq`. If it prints nothing, RabbitMQ is not running and StockSim
-agents will fail to connect to the message broker, usually with a connection
-refused or AMQP connection error.
+Never place an API key in source code, scenario YAML, reports, or shared files.
 
-## Run The Current AML Scenario
+## Run a simulation
 
-From the AML-Sim root, first check that the scenario can generate a valid
-StockSim config:
+Check a scenario without starting its processes:
 
 ```bash
 python aml_runner.py scenarios/aml_orderbook_replay.yaml --dry-run
 ```
 
-This creates a run directory under `.aml_runs/` and writes:
+Run it and generate reports:
+
+```bash
+python aml_runner.py scenarios/aml_orderbook_replay.yaml \
+  --run-id local_smoke \
+  --reports
+```
+
+Run IDs identify the output folder under `.aml_runs/`. They must be unique.
+When no ID is provided, AML-Sim creates a timestamped one.
+
+For a compact stock/future simulation with LLM agents and random shocks:
+
+```bash
+python aml_runner.py scenarios/research/stock_future_llm_random_shocks.yaml \
+  --run-id stock_future_llm \
+  --reports
+```
+
+## Use the dashboard
+
+Build the frontend after cloning or changing dashboard code:
+
+```bash
+cd dashboard
+npm ci
+npm run build
+cd ..
+```
+
+Start the local server:
+
+```bash
+python dashboard_server.py --port 8766
+```
+
+Open [http://127.0.0.1:8766](http://127.0.0.1:8766).
+
+From the dashboard you can:
+
+- select and launch a scenario;
+- choose a run ID;
+- add supported participant groups and adjust their parameters;
+- watch prices, order books, trades, shocks, and agent activity;
+- switch between instruments in a multi-market run;
+- inspect LLM status and strategy changes; and
+- reopen completed runs and their reports.
+
+The dashboard is a trusted local tool. It has no authentication and should not
+be exposed directly to the public internet.
+
+## Reproducible research runs
+
+Ecology scenarios support paired seeds, strategist selection, and calibrated
+arbitrage thresholds:
+
+```bash
+python aml_runner.py \
+  scenarios/research/financial_ecology_stock_future_foundation.yaml \
+  --run-id ecology_a1_r1 \
+  --master-seed 20261001 \
+  --replicate-id 1 \
+  --arbitrage-entry-bps 10 \
+  --arbitrage-exit-bps 3 \
+  --slow-strategist frozen \
+  --reports
+```
+
+Use `--slow-strategist openai` for an adaptive treatment. The override applies
+to trading participants, not the shock agent.
+
+## Run outputs
+
+Each run is archived under `.aml_runs/<run-id>/`:
 
 ```text
-.aml_runs/<run-id>/scenario.yaml
-.aml_runs/<run-id>/stocksim_config.yaml
-.aml_runs/<run-id>/metadata.json
-.aml_runs/<run-id>/logs/
-.aml_runs/<run-id>/charts/
-.aml_runs/<run-id>/reports/
+.aml_runs/<run-id>/
+├── scenario.yaml
+├── stocksim_config.yaml
+├── metadata.json
+├── logs/
+├── decision_context/
+├── charts/
+└── reports/
 ```
 
-Completed AML runs also write trader action artifacts under:
+Reports include market paths, order and fill activity, agent portfolios,
+strategy changes, shock delivery, relationship decisions, and experiment seed
+metadata. The exact files depend on whether the scenario enables ecology and
+OpenAI features.
 
-```text
-.aml_runs/<run-id>/reports/agents/
-.aml_runs/<run-id>/reports/trader_actions.json
-```
+## Tests
 
-The combined `trader_actions.json` report contains submitted orders, rejected
-orders, trade executions, strategy state at the time of the action, and
-portfolio/share state before and after the action.
-
-Then run the full scenario with RabbitMQ running:
+Run the AML test suite:
 
 ```bash
-python aml_runner.py scenarios/aml_orderbook_replay.yaml
+source .venv/bin/activate
+python -m unittest discover -s tests -p 'test_*.py'
 ```
 
-To call StockSim's post-simulation artifact generator and save reports/charts
-inside the AML run directory, add `--reports`:
+Check the dashboard build:
 
 ```bash
-python aml_runner.py scenarios/aml_orderbook_replay.yaml --reports
+cd dashboard
+npm run build
 ```
 
-For the current synthetic order book scenario, this writes the StockSim summary
-JSON under `.aml_runs/<run-id>/reports/`. Future AML-specific reports should use
-the same run-local `reports/` and `charts/` folders, but can add synthetic
-orderbook/trade HTML views instead of relying only on external candle data.
+## Current boundaries
 
-You can set a stable run directory name while iterating:
-
-```bash
-python aml_runner.py scenarios/aml_orderbook_replay.yaml --run-id smoke_orderbook
-```
-
-Use a new `--run-id` each time, because the runner intentionally refuses to
-overwrite an existing `.aml_runs/<run-id>` directory.
-
-## Run A Small OpenAI LLM Smoke Test
-
-`scenarios/aml_llm_api_smoke.yaml` enables real OpenAI slow-loop calls for only
-three agent groups to keep API usage small:
-
-```bash
-python aml_runner.py scenarios/aml_llm_api_smoke.yaml --dry-run
-python aml_runner.py scenarios/aml_llm_api_smoke.yaml --run-id llm_api_smoke
-```
-
-OpenAI defaults live at the AML scenario level because the LLM call belongs to
-AML-Sim, not StockSim:
-
-```yaml
-aml_config:
-  llm:
-    provider: openai
-    model: gpt-5.4
-    api_key_env: OPENAI_API_KEY
-    temperature: 0.2
-    timeout_seconds: 30
-    max_retries: 2
-```
-
-Each configured agent can opt into those defaults like this:
-
-```yaml
-slow_strategist:
-  type: openai
-```
-
-Agent-level `slow_strategist` values override `aml_config.llm`, so one agent can
-use a different model or temperature for an experiment without changing the
-global defaults.
-
-The OpenAI slow strategist receives profile, memory, observation, and current
-strategy state, then returns JSON strategy updates. It does not place orders
-directly; strategy updates still pass through AML validation before the fast
-loop can use them.
-
-## Run From The Dashboard
-
-For local iteration, the dashboard can serve the UI and launch a simulation from
-one small Python server. If Docker Desktop is installed and the `docker`
-command works in your terminal, use:
-
-```bash
-python dashboard_server.py --start-rabbitmq --run --run-id one_hour_live
-```
-
-If Docker is not installed or is not on your `PATH`, start RabbitMQ manually on
-`localhost:5672` first, then run the dashboard without `--start-rabbitmq`:
-
-```bash
-python dashboard_server.py --run --run-id one_hour_live
-```
-
-Open the printed URL, or go directly to:
-
-```text
-http://127.0.0.1:8765/dashboard.html?run=one_hour_live
-```
-
-The `Run Simulation` button in `dashboard.html` works only when the page is
-served by `dashboard_server.py`, because plain `python3 -m http.server 8765`
-cannot start local Python processes. If RabbitMQ is already running and you only
-want the UI/API server, use:
-
-```bash
-python dashboard_server.py
-```
-
-While a simulation is running, the dashboard streams run artifacts from
-`/api/live` and updates the price chart, order book, trade tape, shock monitor,
-participant activity, and top-line stats as the StockSim logs are written. Final
-report files are still loaded after shutdown for completed-run metrics.
-
-Runs are finite by default. The scenario YAML controls the simulated clock with
-`simulation.start_time`, `simulation.end_time`, and `simulation.tick_interval`.
-For example, `scenarios/aml_one_hour_live.yaml` runs from 09:30 to 10:30 with
-30-second ticks. The dashboard streams updates while this run is active; after
-the scenario clock reaches `end_time`, the run stops and the final reports are
-loaded. StockSim currently sleeps for roughly 5 wall-clock seconds per tick, so
-this one simulated hour usually takes about 10 wall-clock minutes plus
-startup/reporting overhead. Longer live scenarios should set
-`simulation.max_wall_time_seconds` high enough for the wall-clock runtime; the
-one-hour dashboard scenario uses 900 seconds.
-
-## Working With The StockSim Submodule
-
-When editing files under `simulators/StockSim`, commit and push those changes
-from inside the submodule:
-
-```bash
-cd simulators/StockSim
-git status
-git add .
-git commit -m "Update AML StockSim agents"
-git push
-```
-
-Then commit the updated submodule pointer from the parent repo:
-
-```bash
-cd ../..
-git status
-git add simulators/StockSim
-git commit -m "Update StockSim submodule"
-git push
-```
-
-Push the StockSim commit first. The parent repo only stores a pointer to a
-specific StockSim commit, so other users need that commit to exist on the
-StockSim remote.
+- Runs are finite and controlled by the scenario clock.
+- A simulated hour with 30-second ticks usually takes about ten real minutes,
+  plus startup, LLM, and reporting time.
+- Multi-leg orders can fill unevenly because execution is not atomic.
+- Thin synthetic books can amplify feedback between agents and prices.
+- Large agent populations need a longer RabbitMQ startup grace.
+- The system is designed for experiments, not live trading or production order
+  routing.
