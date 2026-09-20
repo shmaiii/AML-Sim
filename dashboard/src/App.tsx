@@ -358,7 +358,7 @@ export function App() {
               <div><span>Mark</span><strong>{formatMoney(currentPrice ?? null)}</strong></div>
               <div><span>Best ask</span><strong className="negative">{formatMoney(bestAsk ?? null)}</strong></div>
             </div>
-            <OrderBookSide title="Asks" levels={selectedBook.asks.slice(0, 8)} side="ask" />
+            <OrderBookSide title="Asks" levels={selectedBook.asks.slice(0, 8).reverse()} side="ask" />
             <div className="book-mid"><span>Depth</span><strong>{selectedBook.bids.length + selectedBook.asks.length} levels</strong><span>Queue</span></div>
             <OrderBookSide title="Bids" levels={selectedBook.bids.slice(0, 8)} side="bid" />
           </section>
